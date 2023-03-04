@@ -1,32 +1,66 @@
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:25:main()] Logging initialized
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:42:main()] Vulkan instance version: 1.3.224
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:53:main()] SDL2 initialized
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:70:main()] SDL2 requires these vulkan extensions: 
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:74:main()] 	* VK_KHR_surface
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:74:main()] 	* VK_KHR_win32_surface
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:80:main()] App requires these vulkan extensions: 
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:87:main()] 	* VK_EXT_debug_report
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:87:main()] 	* VK_KHR_get_physical_device_properties2
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:113:main()] Vulkan extensions available: 
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_device_group_creation
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_display
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_external_fence_capabilities
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_external_memory_capabilities
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_external_semaphore_capabilities
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_get_display_properties2
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_get_physical_device_properties2
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_get_surface_capabilities2
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_surface
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_surface_protected_capabilities
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_win32_surface
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_EXT_debug_report
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_EXT_debug_utils
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_EXT_direct_mode_display
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_EXT_swapchain_colorspace
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_NV_external_memory_capabilities
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:115:main()] 	* VK_KHR_portability_enumeration
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:118:main()] Checking extensions: 
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:122:main()] 	✓ VK_KHR_surface
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:122:main()] 	✓ VK_KHR_win32_surface
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:122:main()] 	✓ VK_EXT_debug_report
-[INFO ] --- [2023-03-04 19:13:55] [main.odin:122:main()] 	✓ VK_KHR_get_physical_device_properties2
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:51:main()] Logging initialized
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:55:main()] Loaded vulkan-1.dll
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:59:main()] Loaded vulkan global functions
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:70:main()] Vulkan instance version: 1.3.224
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:80:main()] Required layers: 
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:82:main()] 	* VK_LAYER_KHRONOS_validation
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:97:main()] Available layers: 
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_NV_optimus
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_RENDERDOC_Capture
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* GalaxyOverlayVkLayer
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* GalaxyOverlayVkLayer_VERBOSE
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* GalaxyOverlayVkLayer_DEBUG
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_NV_nomad_release_public_2021_2_1
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_NV_GPU_Trace_release_public_2021_2_1
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_RTSS
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_OW_OVERLAY
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_OW_OBS_HOOK
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_VALVE_steam_overlay
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_VALVE_steam_fossilize
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_OBS_HOOK
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_EOS_Overlay
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_EOS_Overlay
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_OBS_HOOK
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_LUNARG_api_dump
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_LUNARG_device_simulation
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_LUNARG_gfxreconstruct
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_KHRONOS_synchronization2
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_KHRONOS_validation
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_LUNARG_monitor
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_LUNARG_screenshot
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:103:main()] 	* VK_LAYER_ROCKSTAR_GAMES_social_club
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:106:main()] Checking extensions: 
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:109:main()] 	✓ VK_LAYER_KHRONOS_validation
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:122:main()] SDL2 initialized
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:139:main()] SDL2 requires these vulkan extensions: 
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:143:main()] 	* VK_KHR_surface
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:143:main()] 	* VK_KHR_win32_surface
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:149:main()] App requires these vulkan extensions: 
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:156:main()] 	* VK_EXT_debug_report
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:156:main()] 	* VK_KHR_get_physical_device_properties2
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:175:main()] Vulkan extensions available: 
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_device_group_creation
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_display
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_external_fence_capabilities
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_external_memory_capabilities
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_external_semaphore_capabilities
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_get_display_properties2
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_get_physical_device_properties2
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_get_surface_capabilities2
+[INFO ] --- [2023-03-04 23:44:07] [main.odin:177:main()] 	* VK_KHR_surface
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_KHR_surface_protected_capabilities
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_KHR_win32_surface
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_EXT_debug_report
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_EXT_debug_utils
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_EXT_direct_mode_display
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_EXT_swapchain_colorspace
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_NV_external_memory_capabilities
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:177:main()] 	* VK_KHR_portability_enumeration
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:180:main()] Checking extensions: 
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:184:main()] 	✓ VK_KHR_surface
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:184:main()] 	✓ VK_KHR_win32_surface
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:184:main()] 	✓ VK_EXT_debug_report
+[INFO ] --- [2023-03-04 23:44:08] [main.odin:184:main()] 	✓ VK_KHR_get_physical_device_properties2
+[INFO ] --- [2023-03-04 23:44:11] [main.odin:210:main()] Vulkan instance created.
+[INFO ] --- [2023-03-04 23:44:11] [main.odin:219:main()] Loaded vulkan instance functions
+[INFO ] --- [2023-03-04 23:44:11] [main.odin:242:main()] Created debug callback.

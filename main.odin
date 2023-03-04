@@ -7,6 +7,7 @@ import "core:mem"
 import "core:os"
 import "core:slice"
 import "core:strings"
+import "core:runtime"
 import "vendor:sdl2"
 import vk "vendor:vulkan"
 
@@ -18,6 +19,31 @@ check :: proc(result: vk.Result, error: string) {
 	}
 }
 
+vulkan_debug :: proc "stdcall" (
+	flags: vk.DebugReportFlagsEXT,
+	object_type: vk.DebugReportObjectTypeEXT,
+	object: u64,
+	location: int,
+	messageCode: i32,
+	layer_prefix: cstring,
+	message: cstring,
+	user_data: rawptr
+) -> b32 {
+	context_pointer := cast(^runtime.Context)user_data
+	context = context_pointer^
+	switch {
+		case vk.DebugReportFlagEXT.ERROR in flags:
+			log.errorf("[%s] %s", layer_prefix, message)
+		case vk.DebugReportFlagEXT.WARNING in flags:
+			log.warnf("[%s] %s", layer_prefix, message)
+		case vk.DebugReportFlagEXT.PERFORMANCE_WARNING in flags:
+			log.warnf("(performance) [%s] %s", layer_prefix, message)
+		case vk.DebugReportFlagEXT.DEBUG in flags:
+			log.debugf("[%s] %s", layer_prefix, message)
+	}
+	return false;
+}
+
 main :: proc() {
 	// NOTE(jan): Set up logging.
 	log_file_handle, log_file_error := os.open("log.txt", os.O_CREATE | os.O_WRONLY | os.O_TRUNC)
@@ -26,9 +52,11 @@ main :: proc() {
 
 	// NOTE(jan): Load Vulkan functions.
 	vk_dll := dynlib.load_library("vulkan-1.dll") or_else panic("Couldn't load vulkan-1.dll!")
+	log.infof("Loaded vulkan-1.dll")
 
 	vk_get_instance_proc_addr := dynlib.symbol_address(vk_dll, "vkGetInstanceProcAddr") or_else panic("vkGetInstanceProcAddr not found");
 	vk.load_proc_addresses_global(vk_get_instance_proc_addr);
+	log.infof("Loaded vulkan global functions")
 
 	// NOTE(jan): Check Vulkan version.
 	vk_version: u32 = 0
@@ -42,6 +70,47 @@ main :: proc() {
 		log.infof("Vulkan instance version: %d.%d.%d", major, minor, patch);
     
 		if ((major < 1) || (minor < 2) || (patch < 141)) do panic("you need at least Vulkan 1.2.141");
+	}
+
+	// NOTE(jan): Check if the layers we require are available.
+	required_layers := make([dynamic]string, context.temp_allocator);
+	{
+		append(&required_layers, "VK_LAYER_KHRONOS_validation")
+
+		log.infof("Required layers: ")
+		for layer in required_layers {
+			log.infof("\t* %s", layer);
+		}
+
+		count: u32;
+		check(
+			vk.EnumerateInstanceLayerProperties(&count, nil),
+			"could not count available layers",
+		);
+
+		available_layers := make([^]vk.LayerProperties, count, context.temp_allocator);
+		check(
+			vk.EnumerateInstanceLayerProperties(&count, available_layers),
+			"could not fetch available layers",
+		);
+
+		log.infof("Available layers: ")
+		available_layer_names := make([dynamic]string, context.temp_allocator)
+		for i in 0..<count {
+			layer := available_layers[i]
+			name := jcwk.odinize_string(layer.layerName[:])
+			append(&available_layer_names, name)
+			log.infof("\t* %s", name);
+		}
+
+		log.infof("Checking extensions: ")
+		for required_layer in required_layers {
+			if slice.contains(available_layer_names[:], required_layer) {
+				log.infof("\t\u2713 %s", required_layer)
+			} else {
+				fmt.panicf("\t\u274C %s", required_layer)
+			}
+		}
 	}
 
 	// NOTE(jan): Start collecting required extensions.
@@ -99,14 +168,7 @@ main :: proc() {
 		available_extension_names := make([dynamic]string, context.temp_allocator)
 		for extension_index in 0..<count {
 			extension := available_extensions[extension_index]
-			end := 0
-			for char in extension.extensionName {
-				if char != 0 do end += 1
-				else do break
-			}
-			name_slice := extension.extensionName[:end]
-			name := strings.clone_from_bytes(name_slice, context.temp_allocator)
-			name = strings.trim_right_null(name)
+			name := jcwk.odinize_string(extension.extensionName[:])
 			append(&available_extension_names, name)
 		}
 
@@ -128,6 +190,7 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create Vulkan instance.
+	vulkan: jcwk.Vulkan
 	{
 		app := vk.ApplicationInfo {
 			sType=vk.StructureType.APPLICATION_INFO,
@@ -139,16 +202,67 @@ main :: proc() {
 			pApplicationInfo = &app,
 			enabledExtensionCount = u32(len(required_extensions)),
 			ppEnabledExtensionNames = jcwk.vulkanize_strings(required_extensions),
-
-			// createInfo.enabledLayerCount = vk.layers.size();
-			// auto enabledLayerNames = stringVectorToC(vk.layers);
-			// createInfo.ppEnabledLayerNames = enabledLayerNames;
-
-			// createInfo.enabledExtensionCount = vk.extensions.size();
-			// auto enabledExtensionNames = stringVectorToC(vk.extensions);
-			// createInfo.ppEnabledExtensionNames = enabledExtensionNames;
+			enabledLayerCount = u32(len(required_layers)),
+			ppEnabledLayerNames = jcwk.vulkanize_strings(required_layers),
 		}
+
+		#partial switch result := vk.CreateInstance(&create, nil, &vulkan.handle); result {
+			case vk.Result.SUCCESS: log.infof("Vulkan instance created.")
+			case vk.Result.ERROR_INITIALIZATION_FAILED: panic("could not init vulkan")
+			case vk.Result.ERROR_LAYER_NOT_PRESENT: panic("layer not present")
+			case vk.Result.ERROR_EXTENSION_NOT_PRESENT: panic("extension not present")
+			case vk.Result.ERROR_INCOMPATIBLE_DRIVER: panic("incompatible driver")
+			case: panic("couldn't create vulkan instance")
+		}
+
+		vk.load_proc_addresses_instance(vulkan.handle)
+		log.infof("Loaded vulkan instance functions")
 	}
+
+	// NOTE(jan): Create debug callback
+	// TODO(jan): Disable in prod
+	debug_context := context
+	{
+		create := vk.DebugReportCallbackCreateInfoEXT {
+			sType = vk.StructureType.DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+			flags = {
+				vk.DebugReportFlagEXT.PERFORMANCE_WARNING,
+				vk.DebugReportFlagEXT.WARNING,
+				vk.DebugReportFlagEXT.ERROR,
+				vk.DebugReportFlagEXT.DEBUG,
+			},
+			pfnCallback = vulkan_debug,
+			pUserData = &debug_context,
+		}
+
+		check(
+			vk.CreateDebugReportCallbackEXT(vulkan.handle, &create, nil, &vulkan.debug_callback),
+			"could not create debug callback",
+		)
+		log.infof("Created debug callback.")
+	}
+    // VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
+    // debugReportCallbackCreateInfo.sType =
+    //     VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+    // debugReportCallbackCreateInfo.flags =
+    //     VK_DEBUG_REPORT_ERROR_BIT_EXT |
+    //     VK_DEBUG_REPORT_WARNING_BIT_EXT;
+    // debugReportCallbackCreateInfo.pfnCallback = debugCallback;
+    // auto create =
+    //     (PFN_vkCreateDebugReportCallbackEXT)
+    //     vkGetInstanceProcAddr(vk.handle, "vkCreateDebugReportCallbackEXT");
+    // if (create == nullptr) {
+    //     WARN("couldn't load debug callback creation function");
+    // } else {
+    //     VKCHECK(
+    //         create(
+    //             vk.handle,
+    //             &debugReportCallbackCreateInfo,
+    //             nullptr,
+    //             &vk.debugCallback
+    //         )
+    //     );
+    // }
 
 	// NOTE(jan): Main loop.
 	// free_all(context.temp_allocator)

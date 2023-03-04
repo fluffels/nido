@@ -1,6 +1,36 @@
 package jcwk
 
 import "core:strings"
+import vk "vendor:vulkan"
+
+// NOTE(jan): Global Vulkan-related state goes in one of these.
+Vulkan :: struct {
+    handle: vk.Instance,
+
+    debug_callback: vk.DebugReportCallbackEXT,
+
+    device: vk.Device,
+    gpu: vk.PhysicalDevice,
+
+    queue: vk.Queue,
+    queue_family: u32,
+
+    compute_queue: vk.Queue,
+    compute_queue_family: u32,
+
+    memories: vk.PhysicalDeviceMemoryProperties,
+}
+
+odinize_string :: proc(from: []u8) -> (to: string) {
+    end := 0
+    for char in from {
+        if char != 0 do end += 1
+        else do break
+    }
+    slice := from[:end]
+    to = strings.clone_from_bytes(slice, context.temp_allocator)
+    return to
+}
 
 vulkanize_strings :: proc(from: [dynamic]string) -> (to: [^]cstring) {
     to = make([^]cstring, len(from), context.temp_allocator)
