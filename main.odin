@@ -504,6 +504,101 @@ main :: proc() {
 		}
 	}
 
+	// NOTE(jan): Create a render pass.
+	{
+		
+	}
+
+	// NOTE(jan): Create framebuffers.
+	{
+		count: u32;
+		check(
+			vk.GetSwapchainImagesKHR(vulkan.device, vulkan.swap.handle, &count, nil),
+			"could not count swapchain images",
+		)
+
+		images := make([^]vk.Image, count, context.temp_allocator)
+		check(
+			vk.GetSwapchainImagesKHR(vulkan.device, vulkan.swap.handle, &count, images),
+			"could not fetch swapchain images",
+		)
+
+		views := make([^]vk.ImageView, count, context.temp_allocator)
+		for i in 0..<count {
+			views[i] = jcwk.view_create(
+				vulkan,
+				images[i],
+				vk.ImageViewType.D2,
+				vulkan.swap.format,
+				{ vk.ImageAspectFlags.COLOR },
+			) or_else panic("couldn't create swapchain views")
+		}
+	}
+
+
+// void getImages(Vulkan& vk) {
+//     uint32_t count = 0;
+//     vkGetSwapchainImagesKHR(vk.device, vk.swap.handle, &count, nullptr);
+//     vector<VkImage> handles(count);
+//     vk.swap.images.resize(count);
+//     VKCHECK(vkGetSwapchainImagesKHR(
+//         vk.device,
+//         vk.swap.handle,
+//         &count,
+//         handles.data()
+//     ));
+//     for (int i = 0; i < handles.size(); i++) {
+//         vk.swap.images[i].handle = handles[i];
+//     }
+// }
+
+// void createSwapImageView(Vulkan& vk, VkImage image, VkImageView& view) {
+//     createView(
+//         vk.device,
+//         image,
+//         VK_IMAGE_VIEW_TYPE_2D,
+//         vk.swap.format,
+//         VK_IMAGE_ASPECT_COLOR_BIT,
+//         view
+//     );
+// }
+
+// void createViews(Vulkan& vk) {
+//     for (auto& image: vk.swap.images) {
+//         createSwapImageView(vk, image.handle, image.view);
+//     }
+// }
+
+// void createFramebuffers(Vulkan& vk) {
+//     for (auto& image: vk.swap.images) {
+//         VkImageView imageViews[] = { vk.color.view, vk.depth.view, image.view };
+//         VkFramebufferCreateInfo createInfo = {};
+//         createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+//         createInfo.attachmentCount = 3;
+//         createInfo.pAttachments = imageViews;
+//         createInfo.renderPass = vk.renderPass;
+//         createInfo.height = vk.swap.extent.height;
+//         createInfo.width = vk.swap.extent.width;
+//         createInfo.layers = 1;
+//         auto& fb = vk.swap.framebuffers.emplace_back();
+//         VKCHECK(vkCreateFramebuffer(vk.device, &createInfo, nullptr, &fb));
+//     }
+// }
+
+// void createSemaphores(Vulkan& vk) {
+//     vk.swap.imageReady = createSemaphore(vk.device);
+//     vk.swap.cmdBufferDone = createSemaphore(vk.device);
+// }
+
+// void initVKSwapChain(Vulkan& vk) {
+//     findSwapFormats(vk);
+//     createSwapChain(vk);
+//     getImages(vk);
+//     createViews(vk);
+//     createSemaphores(vk);
+// }
+
+
 	// NOTE(jan): Main loop.
 	// free_all(context.temp_allocator)
 	// done := false;

@@ -59,3 +59,37 @@ vulkanize_strings :: proc(from: [dynamic]string) -> (to: [^]cstring) {
     }
     return to
 }
+
+view_create :: proc(
+    vulkan: Vulkan,
+    image: vk.Image,
+    view_type: vk.ImageViewType,
+    format: vk.Format,
+    aspect_mask: vk.ImageAspectFlags,
+) -> (
+    view: vk.ImageView,
+    ok: b32,
+) {
+    create := vk.ImageViewCreateInfo {
+        sType = vk.StructureType.IMAGE_VIEW_CREATE_INFO,
+        components = {
+            a = vk.ComponentSwizzle.IDENTITY,
+            b = vk.ComponentSwizzle.IDENTITY,
+            g = vk.ComponentSwizzle.IDENTITY,
+            r = vk.ComponentSwizzle.IDENTITY,
+        },
+        image = image,
+        format = format,
+        viewType = view_type,
+        subresourceRange = {
+            aspectMask = aspect_mask,
+            layerCount = vk.REMAINING_ARRAY_LAYERS,
+            levelCount = vk.REMAINING_MIP_LEVELS,
+        },
+    }
+
+    code := vk.CreateImageView(vulkan.device, &create, nil, &view)
+    ok = code == vk.Result.SUCCESS
+
+    return view, ok
+}
