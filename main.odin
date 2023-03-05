@@ -404,6 +404,10 @@ main :: proc() {
 			"could not create device",
 		)
 		log.infof("Created Vulkan device.")
+
+		vk.GetDeviceQueue(vulkan.device, vulkan.gfx_queue_family, 0, &vulkan.gfx_queue);
+		vk.GetDeviceQueue(vulkan.device, vulkan.compute_queue_family, 0, &vulkan.compute_queue);
+		log.infof("Fetched queues.")
 	}
 
 	// NOTE(jan): Main loop.
