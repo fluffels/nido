@@ -3,11 +3,20 @@ package jcwk
 import "core:strings"
 import vk "vendor:vulkan"
 
+VulkanSwap :: struct {
+    extent: vk.Extent2D,
+    format: vk.Format,
+    color_space: vk.ColorSpaceKHR,
+    present_mode: vk.PresentModeKHR,
+}
+
 // NOTE(jan): Global Vulkan-related state goes in one of these.
 Vulkan :: struct {
     handle: vk.Instance,
 
     debug_callback: vk.DebugReportCallbackEXT,
+
+    surface: vk.SurfaceKHR,
 
     device: vk.Device,
     gpu: vk.PhysicalDevice,
@@ -17,6 +26,8 @@ Vulkan :: struct {
 
     compute_queue: vk.Queue,
     compute_queue_family: u32,
+
+    swap: VulkanSwap,
 
     memories: vk.PhysicalDeviceMemoryProperties,
 }

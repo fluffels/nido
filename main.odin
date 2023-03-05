@@ -243,9 +243,8 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create the surface so we can use it to help query GPU capabilities.
-	surface: vk.SurfaceKHR
 	{
-		success := sdl2.Vulkan_CreateSurface(window, vulkan.handle, &surface)
+		success := sdl2.Vulkan_CreateSurface(window, vulkan.handle, &vulkan.surface)
 		if !success do panic("could not create surface")
 	}
 
@@ -333,7 +332,7 @@ main :: proc() {
 						log.infof("\t\t\u2713 Found a graphics queue family...")
 
 						is_present_queue: b32
-						vk.GetPhysicalDeviceSurfaceSupportKHR(gpu, i, surface, &is_present_queue)
+						vk.GetPhysicalDeviceSurfaceSupportKHR(gpu, i, vulkan.surface, &is_present_queue)
 
 						if is_present_queue {
 							log.infof("\t\t\u2713 and it is a present queue.")
@@ -408,6 +407,76 @@ main :: proc() {
 		vk.GetDeviceQueue(vulkan.device, vulkan.gfx_queue_family, 0, &vulkan.gfx_queue);
 		vk.GetDeviceQueue(vulkan.device, vulkan.compute_queue_family, 0, &vulkan.compute_queue);
 		log.infof("Fetched queues.")
+	}
+
+	// NOTE(jan): Get swap formats.
+	{
+		capabilities: vk.SurfaceCapabilitiesKHR
+		check(
+			vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan.gpu, vulkan.surface, &capabilities),
+			"could not fetch physical device surface capabilities",
+		)
+
+		vulkan.swap.extent = capabilities.currentExtent
+
+		if vk.ImageUsageFlag.COLOR_ATTACHMENT not_in capabilities.supportedUsageFlags {
+			panic("surface does not support color attachment")
+		}
+		if vk.CompositeAlphaFlagKHR.OPAQUE not_in capabilities.supportedCompositeAlpha {
+			panic("surface does not support opaque composition")
+		}
+
+		// NOTE(jan): Find a surface color space & format.
+		{
+			count: u32;
+			check(
+				vk.GetPhysicalDeviceSurfaceFormatsKHR(vulkan.gpu, vulkan.surface, &count, nil),
+				"could not count physical device surface formats",
+			)
+
+			formats := make([^]vk.SurfaceFormatKHR, count, context.temp_allocator)
+			check(
+				vk.GetPhysicalDeviceSurfaceFormatsKHR(vulkan.gpu, vulkan.surface, &count, formats),
+				"could not fetch physical device surface formats",
+			)
+
+			found := false;
+			for format in formats[:count] {
+				if (format.colorSpace == vk.ColorSpaceKHR.SRGB_NONLINEAR) &&
+						(format.format == vk.Format.B8G8R8A8_UNORM) {
+					vulkan.swap.format = format.format;
+					vulkan.swap.color_space = format.colorSpace;
+					log.infof("Found a compatible color space & format.")
+					found = true;
+					break;
+				}
+			}
+
+			if !found do panic("no compatible color space & format")
+		}
+
+		// NOTE(jan): Pick a present mode.
+		{
+			count: u32;
+			check(
+				vk.GetPhysicalDeviceSurfacePresentModesKHR(vulkan.gpu, vulkan.surface, &count, nil),
+				"could not count present modes",
+			)
+
+			modes := make([^]vk.PresentModeKHR, count, context.temp_allocator)
+			check(
+				vk.GetPhysicalDeviceSurfacePresentModesKHR(vulkan.gpu, vulkan.surface, &count, modes),
+				"could not fetch present modes",
+			)
+
+			vulkan.swap.present_mode = vk.PresentModeKHR.FIFO
+			for mode in modes[:count] {
+				if mode == vk.PresentModeKHR.MAILBOX {
+					vulkan.swap.present_mode = vk.PresentModeKHR.MAILBOX
+					log.infof("Present mode switched to mailbox")
+				}
+			}
+		}
 	}
 
 	// NOTE(jan): Main loop.
