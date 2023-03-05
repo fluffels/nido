@@ -508,10 +508,7 @@ main :: proc() {
 	{
 		path := "./shaders/test.vert.spv"
 		bytes: []u8 = os.read_entire_file_from_filename(path, context.temp_allocator) or_else panic("can't read shader")
-		log.infof("shader length = %d bytes", len(bytes))
-		spirv := (transmute([]u32)bytes)[:len(bytes)/4]
-		log.infof("SPIRV length = %d words", len(spirv))
-		jcwk.parse(spirv)
+		jcwk.parse(bytes)
 	}
 
 

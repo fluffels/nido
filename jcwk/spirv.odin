@@ -15,30 +15,72 @@ OpCode :: enum u32 {
     DecorateMember = 72,
 }
 
+Endianness :: enum {
+    Little,
+    Big,
+}
+
 DecorationLocation :: 30
 
 MagicHeader :: 0x07230203
 
 @(private)
 State :: struct {
-    current_word: int,
-    spirv: []u32,
+    endianness: Endianness,
+    index: int,
+    bytes: []u8,
 }
 
-getw :: proc(state: ^State) -> u32 {
+advance_bytes :: proc(state: ^State, count: int) {
     using state
-    word := spirv[current_word]
-    current_word += 1
+
+    index += count
+}
+
+advance_words :: proc(state: ^State, count: int) {
+    using state
+
+    index += count*4
+}
+
+get_bytes :: proc(state: ^State, count: int) -> (result: []u8) {
+    using state
+
+    result = bytes[index:][:count]
+    advance_bytes(state, count)
+
+    return result
+}
+
+getw :: proc(state: ^State) -> (word: u32) {
+    using state
+
+    word = 0
+
+    if endianness == Endianness.Big {
+        word = word | (u32(bytes[index])   << 24)
+        word = word | (u32(bytes[index+1]) << 16)
+        word = word | (u32(bytes[index+2]) <<  8)
+        word = word | (u32(bytes[index+3]) <<  0)
+    } else {
+        word = word | (u32(bytes[index])   <<  0)
+        word = word | (u32(bytes[index+1]) <<  8)
+        word = word | (u32(bytes[index+2]) << 16)
+        word = word | (u32(bytes[index+3]) << 24)
+    }
+
+    advance_words(state, 1)
+
     return word
 }
 
 done :: proc(state: ^State) -> bool {
     using state
-    return current_word >= len(spirv)
+    return index >= len(bytes)
 }
 
 parse :: proc(
-    spirv: []u32
+    bytes: []u8
 ) -> (
     ok: b32
 ) {
@@ -51,15 +93,22 @@ parse :: proc(
     names := make([dynamic]u32, 1, context.temp_allocator)
 
     state := State {
-        current_word = 0,
-        spirv = spirv,
+        endianness = Endianness.Big,
+        index = 0,
+        bytes = bytes,
     }
     using state
 
     magic := getw(&state)
     if magic != MagicHeader {
-        log.fatal("not a spirv file")
-        return false
+        endianness = Endianness.Little
+        index = 0
+
+        magic := getw(&state)
+        if magic != MagicHeader {
+            log.fatal("not a spirv file")
+            return false
+        }
     }
 
     version := getw(&state)
@@ -76,20 +125,16 @@ parse :: proc(
 
         #partial switch op_code_enumerant {
             case OpCode.Name:
+                log.infof("word count %d", word_count)
                 target_id := getw(&state)
                 id_to_string[target_id] = u64(len(names))
-                words := spirv[current_word:][:word_count]
-                // bytes := transmute([]u8)words
-                log.infof("current_word %d", current_word)
-                log.infof("word_count %d", word_count)
-                bytes := (transmute([]u8)spirv)[current_word*4:][:(word_count-2)*4]
-                // log.infof("name length %d bytes length %d", word_count, len(bytes))
-                log.infof("words %d ... bytes %d", len(words), len(bytes))
+
+                byte_count := int((word_count-2)*4)
+                bytes := get_bytes(&state, byte_count)
                 name := odinize_string(bytes)
                 log.infof("name %d = %s", target_id, name)
-                for i in 0..<word_count-2 do getw(&state)
             case:
-                for i in 0..<word_count-1 do getw(&state)
+                advance_words(&state, int(word_count-1))
         }
     }
 
