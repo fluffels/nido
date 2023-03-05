@@ -4,6 +4,7 @@ import "core:strings"
 import vk "vendor:vulkan"
 
 VulkanSwap :: struct {
+    handle: vk.SwapchainKHR,
     extent: vk.Extent2D,
     format: vk.Format,
     color_space: vk.ColorSpaceKHR,

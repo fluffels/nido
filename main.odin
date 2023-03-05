@@ -477,6 +477,31 @@ main :: proc() {
 				}
 			}
 		}
+
+		// NOTE(jan): Creat swap chain.
+		{
+			create := vk.SwapchainCreateInfoKHR {
+				sType = vk.StructureType.SWAPCHAIN_CREATE_INFO_KHR,
+				surface = vulkan.surface,
+				minImageCount = capabilities.minImageCount,
+				imageExtent = capabilities.currentExtent,
+				oldSwapchain = 0,
+				imageFormat = vulkan.swap.format,
+				imageColorSpace = vulkan.swap.color_space,
+				imageArrayLayers = 1,
+				imageUsage = { vk.ImageUsageFlag.COLOR_ATTACHMENT },
+				presentMode = vulkan.swap.present_mode,
+				preTransform = capabilities.currentTransform,
+				compositeAlpha = { vk.CompositeAlphaFlagKHR.OPAQUE },
+				clipped = false,
+			}
+
+			check(
+				vk.CreateSwapchainKHR(vulkan.device, &create, nil, &vulkan.swap.handle),
+				"could not create swapchain",
+			)
+			log.infof("Created swapchain.")
+		}
 	}
 
 	// NOTE(jan): Main loop.
