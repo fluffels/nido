@@ -241,28 +241,170 @@ main :: proc() {
 		)
 		log.infof("Created debug callback.")
 	}
-    // VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
-    // debugReportCallbackCreateInfo.sType =
-    //     VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-    // debugReportCallbackCreateInfo.flags =
-    //     VK_DEBUG_REPORT_ERROR_BIT_EXT |
-    //     VK_DEBUG_REPORT_WARNING_BIT_EXT;
-    // debugReportCallbackCreateInfo.pfnCallback = debugCallback;
-    // auto create =
-    //     (PFN_vkCreateDebugReportCallbackEXT)
-    //     vkGetInstanceProcAddr(vk.handle, "vkCreateDebugReportCallbackEXT");
-    // if (create == nullptr) {
-    //     WARN("couldn't load debug callback creation function");
-    // } else {
-    //     VKCHECK(
-    //         create(
-    //             vk.handle,
-    //             &debugReportCallbackCreateInfo,
-    //             nullptr,
-    //             &vk.debugCallback
-    //         )
-    //     );
-    // }
+
+	// NOTE(jan): Create the surface so we can use it to help query GPU capabilities.
+	surface: vk.SurfaceKHR
+	{
+		success := sdl2.Vulkan_CreateSurface(window, vulkan.handle, &surface)
+		if !success do panic("could not create surface")
+	}
+
+	// NOTE(jan): Gather required device extensions.
+	required_device_extensions := make([dynamic]string, context.temp_allocator)
+	append(&required_device_extensions, vk.KHR_SWAPCHAIN_EXTENSION_NAME)
+	log.infof("App requires these device extensions:")
+	for extension in required_device_extensions {
+		log.infof("\t* %s", extension)
+	}
+
+	// NOTE(jan): Pick a GPU
+	{
+		count: u32;
+		check(
+			vk.EnumeratePhysicalDevices(vulkan.handle, &count, nil),
+			"couldn't count gpus",
+		)
+
+		gpus := make([^]vk.PhysicalDevice, count, context.temp_allocator)
+		check(
+			vk.EnumeratePhysicalDevices(vulkan.handle, &count, gpus),
+			"couldn't fetch gpus",
+		)
+
+		log.infof("%d physical device(s)", count)
+		gpu_loop: for gpu, gpu_index in gpus[:count] {
+			props: vk.PhysicalDeviceProperties
+			vk.GetPhysicalDeviceProperties(gpu, &props)
+
+			{
+				name := jcwk.odinize_string(props.deviceName[:])
+				log.infof("GPU #%d \"%s\":", gpu_index, name)
+			}
+
+			// NOTE(jan): Check extensions.
+			{
+				count: u32;
+				check(
+					vk.EnumerateDeviceExtensionProperties(gpu, nil, &count, nil),
+					"could not count device extension properties",
+				)
+
+				extensions := make([^]vk.ExtensionProperties, count, context.temp_allocator)
+				check(
+					vk.EnumerateDeviceExtensionProperties(gpu, nil, &count, extensions),
+					"could not fetch device extension properties",
+				)
+
+				log.infof("\tAvailable device extensions:")
+				extension_names := make([dynamic]string, context.temp_allocator)
+				for i in 0..<count {
+					name := jcwk.odinize_string(extensions[i].extensionName[:])
+					append(&extension_names, name)
+					log.infof("\t\t* %s", name)
+				}
+
+				log.infof("\tChecking device extensions:")
+				for required in required_device_extensions {
+					if slice.contains(extension_names[:], required) {
+						log.infof("\t\t\u2713 %s", required)
+					} else {
+						log.infof("\t\t\u274C %s", required)
+						continue gpu_loop
+					}
+				}
+			}
+
+			// NOTE(jan): Find queue families.
+			has_compute_queue := false;
+			has_gfx_queue := false;
+			compute_queue_family: u32;
+			gfx_queue_family: u32;
+			log.infof("\tChecking device queues:")
+			{
+				count: u32
+				vk.GetPhysicalDeviceQueueFamilyProperties(gpu, &count, nil)
+
+				families := make([^]vk.QueueFamilyProperties, count, context.temp_allocator)
+				vk.GetPhysicalDeviceQueueFamilyProperties(gpu, &count, families)
+
+				for i in 0..<count {
+					family := families[i]
+					if vk.QueueFlag.GRAPHICS in family.queueFlags {
+						log.infof("\t\t\u2713 Found a graphics queue family...")
+
+						is_present_queue: b32
+						vk.GetPhysicalDeviceSurfaceSupportKHR(gpu, i, surface, &is_present_queue)
+
+						if is_present_queue {
+							log.infof("\t\t\u2713 and it is a present queue.")
+							has_gfx_queue = true
+							gfx_queue_family = i
+						} else {
+							log.infof("\t\t\u274C but it is not a present queue.")
+						}
+					}
+					if vk.QueueFlag.COMPUTE in family.queueFlags {
+						log.infof("\t\t\u2713 Found a compute queue family.")
+						has_compute_queue = true
+						compute_queue_family = i
+					}
+				}
+			}
+
+			if !has_compute_queue {
+				log.infof("\t\t\u274C No compute queue families.")
+				continue gpu_loop
+			}
+			if !has_gfx_queue {
+				log.infof("\t\t\u274C No graphics queue families.")
+				continue gpu_loop
+			}
+
+			log.infof("Selected GPU #%d", gpu_index)
+			vulkan.gpu = gpu
+			vulkan.compute_queue_family = compute_queue_family
+			vulkan.gfx_queue_family = gfx_queue_family
+		}
+	}
+
+	// NOTE(jan): Create device.
+	{
+		prio: f32 = 1.0
+		queues := [?]vk.DeviceQueueCreateInfo {
+			{
+				sType = vk.StructureType.DEVICE_QUEUE_CREATE_INFO,
+				queueCount = 1,
+				queueFamilyIndex = vulkan.compute_queue_family,
+				pQueuePriorities = &prio,
+			},
+			{
+				sType = vk.StructureType.DEVICE_QUEUE_CREATE_INFO,
+				queueCount = 1,
+				queueFamilyIndex = vulkan.gfx_queue_family,
+				pQueuePriorities = &prio,
+			},
+		}
+
+		indexing := vk.PhysicalDeviceDescriptorIndexingFeatures {
+			sType = vk.StructureType.PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+			descriptorBindingPartiallyBound = true,
+		}
+
+		create := vk.DeviceCreateInfo {
+			sType = vk.StructureType.DEVICE_CREATE_INFO,
+			pNext = &indexing,
+			queueCreateInfoCount = u32(len(queues)),
+			pQueueCreateInfos = jcwk.vulkanize(queues),
+			enabledExtensionCount = u32(len(required_device_extensions)),
+			ppEnabledExtensionNames = jcwk.vulkanize_strings(required_device_extensions),
+		}
+
+		check(
+			vk.CreateDevice(vulkan.gpu, &create, nil, &vulkan.device),
+			"could not create device",
+		)
+		log.infof("Created Vulkan device.")
+	}
 
 	// NOTE(jan): Main loop.
 	// free_all(context.temp_allocator)

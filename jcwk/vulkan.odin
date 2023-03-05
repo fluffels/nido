@@ -12,8 +12,8 @@ Vulkan :: struct {
     device: vk.Device,
     gpu: vk.PhysicalDevice,
 
-    queue: vk.Queue,
-    queue_family: u32,
+    gfx_queue: vk.Queue,
+    gfx_queue_family: u32,
 
     compute_queue: vk.Queue,
     compute_queue_family: u32,
@@ -29,6 +29,14 @@ odinize_string :: proc(from: []u8) -> (to: string) {
     }
     slice := from[:end]
     to = strings.clone_from_bytes(slice, context.temp_allocator)
+    return to
+}
+
+vulkanize :: proc(from: [$N]$T) -> (to: [^]T) {
+    to = make([^]T, len(from), context.temp_allocator)
+    for i in 0..<len(from) {
+        to[i] = from[i]
+    }
     return to
 }
 
