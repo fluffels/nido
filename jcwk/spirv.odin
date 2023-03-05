@@ -3,9 +3,89 @@ package jcwk
 import "core:log"
 import "core:strings"
 
+/**********************
+ * Types for export . *
+ **********************/
+
+Dimensionality :: enum {
+    VOID = -1,
+    SCALAR = 0,
+    VECTOR = 1,
+    MATRIX = 2,
+}
+
+ScalarType :: enum {
+    SIGNED_INT,
+    UNSIGNED_INT,
+    FLOAT,
+}
+
+ScalarDescription :: struct {
+    type: ScalarType,
+    // NOTE(jan): in bytes
+    width: int,
+}
+
+ComponentDescription :: union {
+    ScalarDescription,
+    ^TypeDescription,
+}
+
+TypeDescription :: struct {
+    dimensions: Dimensionality,
+    component_type: ComponentDescription,
+}
+
+/****************************
+ * Types for internal use . *
+ ****************************/
+
+SpirvVoid :: struct {
+    id: u32,
+}
+
+SpirvInt :: struct {
+    id: u32,
+    // NOTE(jan): Width in bits.
+    width: u32,
+    // NOTE(jan): 0 means unsigned, 1 means signed
+    signed: u32,
+}
+
+SpirvFloat :: struct {
+    id: u32,
+    // NOTE(jan): Width in bits.
+    width: u32,
+}
+
+SpirvVec :: struct {
+    id: u32,
+    component_type_id: u32,
+    component_count: u32,
+}
+
+SpirvMatrix :: struct {
+    id: u32,
+    column_type_id: u32,
+    column_count: u32,
+}
+
+SpirvType :: union {
+    SpirvVoid,
+    SpirvFloat,
+    SpirvVec,
+    SpirvMatrix,
+}
+
+/**************************
+ * Parsing related types. *
+ **************************/
+
+@(private)
 OpCode :: enum u32 {
     Name = 5,
     TypeVoid = 2,
+    TypeInt = 21,
     TypeFloat = 22,
     TypeVector = 23,
     TypeMatrix = 24,
@@ -15,13 +95,16 @@ OpCode :: enum u32 {
     DecorateMember = 72,
 }
 
+@(private)
 Endianness :: enum {
     Little,
     Big,
 }
 
+@(private)
 DecorationLocation :: 30
 
+@(private)
 MagicHeader :: 0x07230203
 
 @(private)
@@ -31,18 +114,21 @@ State :: struct {
     bytes: []u8,
 }
 
+@(private)
 advance_bytes :: proc(state: ^State, count: int) {
     using state
 
     index += count
 }
 
+@(private)
 advance_words :: proc(state: ^State, count: int) {
     using state
 
     index += count*4
 }
 
+@(private)
 get_bytes :: proc(state: ^State, count: int) -> (result: []u8) {
     using state
 
@@ -52,6 +138,7 @@ get_bytes :: proc(state: ^State, count: int) -> (result: []u8) {
     return result
 }
 
+@(private)
 getw :: proc(state: ^State) -> (word: u32) {
     using state
 
@@ -74,6 +161,7 @@ getw :: proc(state: ^State) -> (word: u32) {
     return word
 }
 
+@(private)
 done :: proc(state: ^State) -> bool {
     using state
     return index >= len(bytes)
@@ -84,13 +172,12 @@ parse :: proc(
 ) -> (
     ok: b32
 ) {
-    loc_to_var := make(map[u32]u32, 1, context.temp_allocator)
-    var_to_type_pointer := make(map[u32]u32, 1, context.temp_allocator)
-    type_pointer_to_type := make(map[u32]u32, 1, context.temp_allocator)
-    type_to_data := make(map[u32]u64, 1, context.temp_allocator)
-    id_to_string := make(map[u32]u64, 1, context.temp_allocator)
-    types := make([dynamic]u32, 1, context.temp_allocator)
-    names := make([dynamic]u32, 1, context.temp_allocator)
+    // loc_to_var := make(map[u32]u32, 1, context.temp_allocator)
+    // var_to_type_pointer := make(map[u32]u32, 1, context.temp_allocator)
+    // type_pointer_to_type := make(map[u32]u32, 1, context.temp_allocator)
+    // type_to_data := make(map[u32]u64, 1, context.temp_allocator)
+    types := make(map[u32]SpirvType, 1, context.temp_allocator)
+    names := make(map[u32]string   , 1, context.temp_allocator)
 
     state := State {
         endianness = Endianness.Big,
@@ -124,18 +211,58 @@ parse :: proc(
         word_count: u32 = op_code >> 16
 
         #partial switch op_code_enumerant {
+            // NOTE(jan): Declares the void type.
+            case OpCode.TypeVoid:
+                type: SpirvVoid;
+                type.id = getw(&state)
+                types[type.id] = type
+                // log.infof("type #%d is void", result_id)
+            // NOTE(jan): Declares a new int type.
+            case OpCode.TypeInt:
+                type: SpirvInt
+                type.id = getw(&state)
+                type.width = getw(&state)
+                type.signed = getw(&state)
+            // NOTE(jan): Declares a new float type.
+            case OpCode.TypeFloat:
+                type: SpirvFloat
+                type.id = getw(&state);
+                type.width = getw(&state);
+                types[type.id] = type
+                // log.infof("type #%d is an f%d", result_id, width)
+            // NOTE(jan): Declares a new vector type.
+            case OpCode.TypeVector:
+                type: SpirvVec
+                type.id = getw(&state)
+                type.component_type_id = getw(&state)
+                type.component_count = getw(&state)
+                types[type.id] = type
+                // log.infof("type #%d is a vec%d of type #%d", result_id, component_count, component_type_id)
+            // NOTE(jan): Declares a new matrix type.
+            case OpCode.TypeMatrix:
+                type: SpirvMatrix
+                type.id = getw(&state)
+                type.column_type_id = getw(&state)
+                type.column_count = getw(&state)
+                types[type.id] = type
+            // NOTE(jan): (Debug info) name for an id
             case OpCode.Name:
-                log.infof("word count %d", word_count)
                 target_id := getw(&state)
-                id_to_string[target_id] = u64(len(names))
 
                 byte_count := int((word_count-2)*4)
                 bytes := get_bytes(&state, byte_count)
                 name := odinize_string(bytes)
+                
+                names[target_id] = name
                 log.infof("name %d = %s", target_id, name)
+            // NOTE(jan): Unhandled opcode.
             case:
                 advance_words(&state, int(word_count-1))
         }
+    }
+
+    for id, type in types {
+        log.info(type)
     }
 
     return true
