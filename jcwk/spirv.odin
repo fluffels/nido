@@ -189,9 +189,9 @@ done :: proc(state: ^State) -> bool {
 }
 
 parse :: proc(
-    bytes: []u8
+    bytes: []u8,
 ) -> (
-    ok: b32
+    ok: b32,
 ) {
     // loc_to_var := make(map[u32]u32, 1, context.temp_allocator)
     // var_to_type_pointer := make(map[u32]u32, 1, context.temp_allocator)
