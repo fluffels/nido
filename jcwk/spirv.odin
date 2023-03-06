@@ -40,6 +40,15 @@ TypeDescription :: struct {
  * Types for internal use . *
  ****************************/
 
+SpirvStorageClass :: enum u32 {
+    UniformConstant = 0,
+    Input = 1,
+    Uniform = 2,
+    Output = 3,
+    // NOTE(jan): These are ones we need. There are many more.
+    // SEE(jan): https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#Storage_Class
+}
+
 SpirvVoid :: struct {
     id: u32,
 }
@@ -75,6 +84,18 @@ SpirvType :: union {
     SpirvFloat,
     SpirvVec,
     SpirvMatrix,
+}
+
+SpirvPointer :: struct {
+    id: u32,
+    type_id: u32,
+    storage_class: SpirvStorageClass,
+}
+
+SpirvVar :: struct {
+    id: u32,
+    type_id: u32,
+    storage_class: SpirvStorageClass,
 }
 
 /**************************
@@ -176,8 +197,10 @@ parse :: proc(
     // var_to_type_pointer := make(map[u32]u32, 1, context.temp_allocator)
     // type_pointer_to_type := make(map[u32]u32, 1, context.temp_allocator)
     // type_to_data := make(map[u32]u64, 1, context.temp_allocator)
-    types := make(map[u32]SpirvType, 1, context.temp_allocator)
-    names := make(map[u32]string   , 1, context.temp_allocator)
+    types    := make(map[u32]SpirvType   , 1, context.temp_allocator)
+    names    := make(map[u32]string      , 1, context.temp_allocator)
+    vars     := make(map[u32]SpirvVar    , 1, context.temp_allocator)
+    pointers := make(map[u32]SpirvPointer, 1, context.temp_allocator)
 
     state := State {
         endianness = Endianness.Big,
@@ -245,6 +268,13 @@ parse :: proc(
                 type.column_type_id = getw(&state)
                 type.column_count = getw(&state)
                 types[type.id] = type
+            case OpCode.TypePointer: {
+                pointer: SpirvPointer
+                pointer.id = getw(&state)
+                pointer.storage_class = SpirvStorageClass(getw(&state))
+                pointer.type_id = getw(&state)
+                pointers[pointer.id] = pointer
+            }
             // NOTE(jan): (Debug info) name for an id
             case OpCode.Name:
                 target_id := getw(&state)
@@ -255,14 +285,43 @@ parse :: proc(
                 
                 names[target_id] = name
                 log.infof("name %d = %s", target_id, name)
+            // NOTE(jan): Declares a variable
+            case OpCode.Variable:
+                var: SpirvVar
+                var.type_id = getw(&state)
+                var.id = getw(&state)
+                var.storage_class = SpirvStorageClass(getw(&state))
+                words_left := word_count - 4
+                if words_left > 0 do advance_words(&state, int(words_left))
+                vars[var.id] = var
             // NOTE(jan): Unhandled opcode.
             case:
                 advance_words(&state, int(word_count-1))
         }
     }
 
-    for id, type in types {
-        log.info(type)
+    for _, var in vars {
+        if var.storage_class == SpirvStorageClass.Input {
+            pointer := pointers[var.type_id]
+            type := types[pointer.type_id]
+            name := names[var.id]
+            log.info(name)
+            log.info(var)
+            log.info(type)
+
+            switch t in type {
+                case SpirvVoid:
+                    // NOTE(jan): don't have to do anything here
+                case SpirvVec:
+                    log.info("vec")
+                case SpirvFloat:
+                    // TODO(jan): implement
+                case SpirvMatrix:
+                    // TODO(jan): implement
+                case:
+                    panic("unknown type")
+            }
+        }
     }
 
     return true
