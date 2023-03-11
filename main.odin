@@ -27,7 +27,7 @@ vulkan_debug :: proc "stdcall" (
 	messageCode: i32,
 	layer_prefix: cstring,
 	message: cstring,
-	user_data: rawptr
+	user_data: rawptr,
 ) -> b32 {
 	context_pointer := cast(^runtime.Context)user_data
 	context = context_pointer^
