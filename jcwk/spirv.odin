@@ -193,10 +193,6 @@ parse :: proc(
 ) -> (
     ok: b32,
 ) {
-    // loc_to_var := make(map[u32]u32, 1, context.temp_allocator)
-    // var_to_type_pointer := make(map[u32]u32, 1, context.temp_allocator)
-    // type_pointer_to_type := make(map[u32]u32, 1, context.temp_allocator)
-    // type_to_data := make(map[u32]u64, 1, context.temp_allocator)
     types    := make(map[u32]SpirvType   , 1, context.temp_allocator)
     names    := make(map[u32]string      , 1, context.temp_allocator)
     vars     := make(map[u32]SpirvVar    , 1, context.temp_allocator)
@@ -239,7 +235,6 @@ parse :: proc(
                 type: SpirvVoid;
                 type.id = getw(&state)
                 types[type.id] = type
-                // log.infof("type #%d is void", result_id)
             // NOTE(jan): Declares a new int type.
             case OpCode.TypeInt:
                 type: SpirvInt
@@ -252,7 +247,6 @@ parse :: proc(
                 type.id = getw(&state);
                 type.width = getw(&state);
                 types[type.id] = type
-                // log.infof("type #%d is an f%d", result_id, width)
             // NOTE(jan): Declares a new vector type.
             case OpCode.TypeVector:
                 type: SpirvVec
@@ -260,7 +254,6 @@ parse :: proc(
                 type.component_type_id = getw(&state)
                 type.component_count = getw(&state)
                 types[type.id] = type
-                // log.infof("type #%d is a vec%d of type #%d", result_id, component_count, component_type_id)
             // NOTE(jan): Declares a new matrix type.
             case OpCode.TypeMatrix:
                 type: SpirvMatrix
@@ -284,7 +277,6 @@ parse :: proc(
                 name := odinize_string(bytes)
                 
                 names[target_id] = name
-                log.infof("name %d = %s", target_id, name)
             // NOTE(jan): Declares a variable
             case OpCode.Variable:
                 var: SpirvVar
@@ -326,104 +318,3 @@ parse :: proc(
 
     return true
 }
-
-//     while (!done) {
-//         u32 opCode = getw();
-//         if (done) break;
-
-//         switch (opCodeEnumerant) {
-//             case OpName:
-//             {
-//                 auto targetId = getw();
-//                 hmput(idToString, targetId, arrlen(stringData));
-//                 auto s = (char*)(buffer + currentWord);
-//                 INFO("name %d %.*s", targetId, (wordCount - 2)*4, s);
-//                 for (u32 i = 2; i < wordCount; i++) {
-//                     auto word = getw();
-//                     arrput(stringData, word);
-//                 }
-//             }
-//             break;
-//             case OpTypeVector:
-//             case OpTypeFloat:
-//             {
-//                 // Supported types.
-//                 auto resultId = getw();
-//                 hmput(typeToData, resultId, arrlen(typeData));
-//                 arrput(typeData, opCodeEnumerant);
-//                 for (u32 i = 2; i < wordCount; i++) {
-//                     auto word = getw();
-//                     arrput(typeData, word);
-//                 }
-//                 INFO("type %d", resultId);
-//             }
-//             break;
-//             case OpTypePointer: {
-//                 auto resultId = getw();
-//                 auto storage = getw();
-//                 auto typeId = getw();
-//                 INFO("type* %d -> typeId %d", resultId, typeId);
-//                 hmput(typePointerToType, resultId, typeId);
-//             }
-//             break;
-//             case OpVariable: {
-//                 auto resultType = getw();
-//                 auto resultId = getw();
-//                 auto storageClass = getw();
-//                 if (wordCount > 4) {
-//                     auto initializer = getw();
-//                     INFO("var %d: %d = initializer %d", resultId, resultType, initializer);
-//                 } else {
-//                     INFO("var %d: %d", resultId, resultType);
-//                 }
-//                 hmput(variableToTypePointer, resultId, resultType);
-//             }
-//             break;
-//             case OpDecorate: {
-//                 auto id = getw();
-//                 auto decoration = getw();
-//                 if ((decoration == DecorationLocation) && (wordCount > 3)) {
-//                     auto location = getw();
-//                     hmput(locationToVariable, location, id);
-//                     INFO("%d is at location %d", id, location);
-//                 } else {
-//                     INFO("decorate %d with %d", id, decoration);
-//                 }
-//             }
-//             break;
-//             case OpDecorateMember: {
-//                 auto stype = getw();
-//                 auto member = getw();
-//                 auto decoration = getw();
-//                 INFO("decorate member %d of %d with %d", member, stype, decoration);
-//             }
-//             break;
-//         }
-//     }
-
-//     auto outFile = openFile("out", "w");
-//     for (i32 i = 0; i < hmlen(locationToVariable); i++) {
-//         auto locationVariablePair = locationToVariable[i];
-//         auto location = locationVariablePair.key;
-//         auto variable = locationVariablePair.value;
-//         auto typePointer = hmget(variableToTypePointer, variable);
-//         auto type = hmget(typePointerToType, typePointer);
-//         auto data = hmget(typeToData, type);
-
-//         fprintf(outFile, "struct Vertex {\n");
-//         if (OpTypeVector == typeData[data]) {
-//             auto componentType = typeData[++data];
-//             auto componentData = hmget(typeToData, componentType);
-//             if (OpTypeFloat != typeData[componentData]) {
-//                 FATAL("unsupported component type");
-//             }
-//             auto componentCount = typeData[++data];
-//             auto stringIdx = hmget(idToString, variable);
-//             auto string = (char*)(stringData + stringIdx);
-//             fprintf(outFile, "    Vec%d %s;\n", componentCount, string);
-//         }
-//         fprintf(outFile, "};\n");
-//     }
-
-//     return 0;
-// }
