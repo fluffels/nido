@@ -521,11 +521,11 @@ main :: proc() {
 			stencilLoadOp = vk.AttachmentLoadOp.DONT_CARE,
 			stencilStoreOp = vk.AttachmentStoreOp.DONT_CARE,
 			initialLayout = vk.ImageLayout.UNDEFINED,
-			finalLayout = vk.ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+			finalLayout = vk.ImageLayout.PRESENT_SRC_KHR,
 		})
 		append(&color_refs, vk.AttachmentReference {
 			attachment = u32(len(attachments)) - 1,
-			layout = vk.ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+			layout = vk.ImageLayout.PRESENT_SRC_KHR,
 		})
 
 		append(&subpasses, vk.SubpassDescription {
