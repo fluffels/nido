@@ -1,4 +1,4 @@
-package main
+package nido
 
 import "core:dynlib"
 import "core:fmt"
@@ -10,8 +10,6 @@ import "core:strings"
 import "core:runtime"
 import "vendor:sdl2"
 import vk "vendor:vulkan"
-
-import "jcwk"
 
 check :: proc(result: vk.Result, error: string) {
 	if (result != vk.Result.SUCCESS) {
@@ -98,7 +96,7 @@ main :: proc() {
 		available_layer_names := make([dynamic]string, context.temp_allocator)
 		for i in 0..<count {
 			layer := available_layers[i]
-			name := jcwk.odinize_string(layer.layerName[:])
+			name := odinize_string(layer.layerName[:])
 			append(&available_layer_names, name)
 			log.infof("\t* %s", name);
 		}
@@ -168,7 +166,7 @@ main :: proc() {
 		available_extension_names := make([dynamic]string, context.temp_allocator)
 		for extension_index in 0..<count {
 			extension := available_extensions[extension_index]
-			name := jcwk.odinize_string(extension.extensionName[:])
+			name := odinize_string(extension.extensionName[:])
 			append(&available_extension_names, name)
 		}
 
@@ -190,7 +188,7 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create Vulkan instance.
-	vulkan: jcwk.Vulkan
+	vulkan: Vulkan
 	{
 		app := vk.ApplicationInfo {
 			sType=vk.StructureType.APPLICATION_INFO,
@@ -201,9 +199,9 @@ main :: proc() {
 			sType = vk.StructureType.INSTANCE_CREATE_INFO,
 			pApplicationInfo = &app,
 			enabledExtensionCount = u32(len(required_extensions)),
-			ppEnabledExtensionNames = jcwk.vulkanize_strings(required_extensions),
+			ppEnabledExtensionNames = vulkanize_strings(required_extensions),
 			enabledLayerCount = u32(len(required_layers)),
-			ppEnabledLayerNames = jcwk.vulkanize_strings(required_layers),
+			ppEnabledLayerNames = vulkanize_strings(required_layers),
 		}
 
 		#partial switch result := vk.CreateInstance(&create, nil, &vulkan.handle); result {
@@ -276,7 +274,7 @@ main :: proc() {
 			vk.GetPhysicalDeviceProperties(gpu, &props)
 
 			{
-				name := jcwk.odinize_string(props.deviceName[:])
+				name := odinize_string(props.deviceName[:])
 				log.infof("GPU #%d \"%s\":", gpu_index, name)
 			}
 
@@ -297,7 +295,7 @@ main :: proc() {
 				log.infof("\tAvailable device extensions:")
 				extension_names := make([dynamic]string, context.temp_allocator)
 				for i in 0..<count {
-					name := jcwk.odinize_string(extensions[i].extensionName[:])
+					name := odinize_string(extensions[i].extensionName[:])
 					append(&extension_names, name)
 					log.infof("\t\t* %s", name)
 				}
@@ -393,9 +391,9 @@ main :: proc() {
 			sType = vk.StructureType.DEVICE_CREATE_INFO,
 			pNext = &indexing,
 			queueCreateInfoCount = u32(len(queues)),
-			pQueueCreateInfos = jcwk.vulkanize(queues),
+			pQueueCreateInfos = vulkanize(queues),
 			enabledExtensionCount = u32(len(required_device_extensions)),
-			ppEnabledExtensionNames = jcwk.vulkanize_strings(required_device_extensions),
+			ppEnabledExtensionNames = vulkanize_strings(required_device_extensions),
 		}
 
 		check(
@@ -560,7 +558,7 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Read shaders.
-	shaders := make([dynamic]jcwk.VulkanShader, context.temp_allocator)
+	shaders := make([dynamic]VulkanShader, context.temp_allocator)
 	{
 		stages := make([dynamic]vk.PipelineShaderStageCreateInfo, context.temp_allocator)
 		paths := [?]string {
@@ -573,7 +571,7 @@ main :: proc() {
 
 			bytes: []u8 = os.read_entire_file_from_filename(path, context.temp_allocator) or_else panic("can't read shader")
 			words := cast(^u32)(raw_data(bytes[0:4]))
-			description := jcwk.parse(bytes) or_else panic("can't describe shader module")
+			description := parse(bytes) or_else panic("can't describe shader module")
 
 			create := vk.ShaderModuleCreateInfo {
 				sType = vk.StructureType.SHADER_MODULE_CREATE_INFO,
@@ -591,9 +589,9 @@ main :: proc() {
 				log.infof("\t... found a %s shader", shader.type)
 				stage_flag: vk.ShaderStageFlag
 				switch shader.type {
-					case jcwk.ShaderType.Vertex:
+					case ShaderType.Vertex:
 						stage_flag = vk.ShaderStageFlag.VERTEX
-					case jcwk.ShaderType.Fragment:
+					case ShaderType.Fragment:
 						stage_flag = vk.ShaderStageFlag.FRAGMENT
 					case:
 						log.info("\t\t... \u274C which is currently unsupported, skipping")
@@ -796,7 +794,7 @@ main :: proc() {
 
 		views := make([^]vk.ImageView, count, context.temp_allocator)
 		for i in 0..<count {
-			views[i] = jcwk.view_create(
+			views[i] = view_create(
 				vulkan,
 				images[i],
 				vk.ImageViewType.D2,

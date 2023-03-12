@@ -1,4 +1,4 @@
-package jcwk
+package nido
 
 import "core:strings"
 import vk "vendor:vulkan"
