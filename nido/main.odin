@@ -838,6 +838,40 @@ main :: proc() {
 	}
 	log.infof("Semaphores created.")
 
+	cmd_pool: vk.CommandPool
+	{
+		create := vk.CommandPoolCreateInfo {
+			sType = vk.StructureType.COMMAND_POOL_CREATE_INFO,
+			// TODO(jan): If we re-record each frame...
+			flags = {
+				// vk.CommandPoolCreateFlag.TRANSIENT,
+				vk.CommandPoolCreateFlag.RESET_COMMAND_BUFFER,
+			},
+			queueFamilyIndex = vulkan.gfx_queue_family,
+		}
+		check(
+			vk.CreateCommandPool(vulkan.device, &create, nil, &cmd_pool),
+			"could not create command pool",
+		)
+		log.infof("Created command pool.")
+	}
+
+	cmd: vk.CommandBuffer
+	{
+		info := vk.CommandBufferAllocateInfo {
+			sType = vk.StructureType.COMMAND_BUFFER_ALLOCATE_INFO,
+			commandBufferCount = 1,
+			commandPool = cmd_pool,
+			level = vk.CommandBufferLevel.PRIMARY,
+		}
+		check(
+			vk.AllocateCommandBuffers(vulkan.device, &info, &cmd),
+			"could not allocate cmd buffer",
+		)
+		log.info("Created command buffer.")
+	}
+
+
 	// NOTE(jan): Main loop.
 	// free_all(context.temp_allocator)
 	// done := false;
