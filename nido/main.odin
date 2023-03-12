@@ -779,6 +779,8 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create framebuffers.
+	framebuffers := make([dynamic]vk.Framebuffer, context.temp_allocator)
+	log.infof("Creating framebuffers...")
 	{
 		count: u32;
 		check(
@@ -801,6 +803,22 @@ main :: proc() {
 				vulkan.swap.format,
 				{ vk.ImageAspectFlags.COLOR },
 			) or_else panic("couldn't create swapchain views")
+
+			create := vk.FramebufferCreateInfo {
+				sType = vk.StructureType.FRAMEBUFFER_CREATE_INFO,
+				attachmentCount = 1,
+				pAttachments = &views[i],
+				renderPass = render_pass,
+				height = vulkan.swap.extent.height,
+				width = vulkan.swap.extent.width,
+				layers = 1,
+			}
+			handle: vk.Framebuffer
+			check(
+				vk.CreateFramebuffer(vulkan.device, &create, nil, &handle),
+				"couldn't create framebuffer",
+			)
+			log.infof("\t\u2713 for swap chain image #%d", i)
 		}
 	}
 
