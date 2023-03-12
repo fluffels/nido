@@ -822,6 +822,22 @@ main :: proc() {
 		}
 	}
 
+	image_ready, cmd_buffer_done : vk.Semaphore
+	{
+		create := vk.SemaphoreCreateInfo {
+			sType = vk.StructureType.SEMAPHORE_CREATE_INFO,
+		}
+		check(
+			vk.CreateSemaphore(vulkan.device, &create, nil, &image_ready),
+			"could not create semaphore",
+		)
+		check(
+			vk.CreateSemaphore(vulkan.device, &create, nil, &cmd_buffer_done),
+			"could not create semaphore",
+		)
+	}
+	log.infof("Semaphores created.")
+
 	// NOTE(jan): Main loop.
 	// free_all(context.temp_allocator)
 	// done := false;
