@@ -3,6 +3,12 @@ package jcwk
 import "core:strings"
 import vk "vendor:vulkan"
 
+VulkanShader :: struct {
+    description: ShaderDescription,
+    handle: vk.ShaderModule,
+    path: string,
+}
+
 VulkanSwap :: struct {
     handle: vk.SwapchainKHR,
     extent: vk.Extent2D,

@@ -7,6 +7,11 @@ import "core:strings"
  * Types for export . *
  **********************/
 
+Endianness :: enum {
+    Little,
+    Big,
+}
+
 Dimensionality :: enum {
     VOID = -1,
     SCALAR = 0,
@@ -36,9 +41,34 @@ TypeDescription :: struct {
     component_type: ComponentDescription,
 }
 
+ShaderType :: enum {
+    Vertex,
+    Fragment,
+}
+
+ShaderDescription :: struct {
+    name: string,
+    type: ShaderType,
+}
+
+ShaderModuleDescription :: struct {
+    endianness: Endianness,
+    shaders: [dynamic]ShaderDescription,
+}
+
 /****************************
  * Types for internal use . *
  ****************************/
+
+SpirvExecutionModel :: enum u32 {
+    Vertex = 0,
+    TesselationControl = 1,
+    TesselationEvaluation = 2,
+    Geometry = 3,
+    Fragment = 4,
+    Compute = 5,
+    Kernel = 6,
+}
 
 SpirvStorageClass :: enum u32 {
     UniformConstant = 0,
@@ -47,6 +77,13 @@ SpirvStorageClass :: enum u32 {
     Output = 3,
     // NOTE(jan): These are ones we need. There are many more.
     // SEE(jan): https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#Storage_Class
+}
+
+SpirvEntryPoint :: struct {
+    id: u32,
+    name: string,
+    execution_model: SpirvExecutionModel,
+    interface_ids: [dynamic]u32,
 }
 
 SpirvVoid :: struct {
@@ -104,8 +141,9 @@ SpirvVar :: struct {
 
 @(private)
 OpCode :: enum u32 {
-    Name = 5,
     TypeVoid = 2,
+    Name = 5,
+    EntryPoint = 15,
     TypeInt = 21,
     TypeFloat = 22,
     TypeVector = 23,
@@ -114,12 +152,6 @@ OpCode :: enum u32 {
     Variable = 59,
     Decorate = 71,
     DecorateMember = 72,
-}
-
-@(private)
-Endianness :: enum {
-    Little,
-    Big,
 }
 
 @(private)
@@ -191,12 +223,16 @@ done :: proc(state: ^State) -> bool {
 parse :: proc(
     bytes: []u8,
 ) -> (
+    description: ShaderModuleDescription,
     ok: b32,
 ) {
-    types    := make(map[u32]SpirvType   , 1, context.temp_allocator)
-    names    := make(map[u32]string      , 1, context.temp_allocator)
-    vars     := make(map[u32]SpirvVar    , 1, context.temp_allocator)
-    pointers := make(map[u32]SpirvPointer, 1, context.temp_allocator)
+    ok = false
+
+    entry_points := make([dynamic]SpirvEntryPoint,    context.temp_allocator)
+    types        := make(map[u32]SpirvType       , 1, context.temp_allocator)
+    names        := make(map[u32]string          , 1, context.temp_allocator)
+    vars         := make(map[u32]SpirvVar        , 1, context.temp_allocator)
+    pointers     := make(map[u32]SpirvPointer    , 1, context.temp_allocator)
 
     state := State {
         endianness = Endianness.Big,
@@ -204,6 +240,11 @@ parse :: proc(
         bytes = bytes,
     }
     using state
+
+    if (len(bytes) % 4 != 0) {
+        log.fatal("file does not contain an even count of words")
+        return
+    }
 
     magic := getw(&state)
     if magic != MagicHeader {
@@ -213,7 +254,7 @@ parse :: proc(
         magic := getw(&state)
         if magic != MagicHeader {
             log.fatal("not a spirv file")
-            return false
+            return
         }
     }
 
@@ -235,6 +276,29 @@ parse :: proc(
                 type: SpirvVoid;
                 type.id = getw(&state)
                 types[type.id] = type
+            // NOTE(jan): (Debug info) name for an id
+            case OpCode.Name:
+                target_id := getw(&state)
+
+                byte_count := int((word_count-2)*4)
+                bytes := get_bytes(&state, byte_count)
+                name := odinize_string(bytes)
+                
+                names[target_id] = name
+            case OpCode.EntryPoint:
+                entry: SpirvEntryPoint
+                entry.execution_model = SpirvExecutionModel(getw(&state))
+                entry.id = getw(&state)
+
+                bytes := get_bytes(&state, 4)
+                entry.name = odinize_string(bytes)
+
+                entry.interface_ids = make([dynamic]u32, context.temp_allocator)
+                for i in 4..<word_count {
+                    append(&entry.interface_ids, getw(&state))
+                }
+
+                append(&entry_points, entry)
             // NOTE(jan): Declares a new int type.
             case OpCode.TypeInt:
                 type: SpirvInt
@@ -268,15 +332,6 @@ parse :: proc(
                 pointer.type_id = getw(&state)
                 pointers[pointer.id] = pointer
             }
-            // NOTE(jan): (Debug info) name for an id
-            case OpCode.Name:
-                target_id := getw(&state)
-
-                byte_count := int((word_count-2)*4)
-                bytes := get_bytes(&state, byte_count)
-                name := odinize_string(bytes)
-                
-                names[target_id] = name
             // NOTE(jan): Declares a variable
             case OpCode.Variable:
                 var: SpirvVar
@@ -292,29 +347,55 @@ parse :: proc(
         }
     }
 
-    for _, var in vars {
-        if var.storage_class == SpirvStorageClass.Input {
-            pointer := pointers[var.type_id]
-            type := types[pointer.type_id]
-            name := names[var.id]
-            log.info(name)
-            log.info(var)
-            log.info(type)
+    // for _, var in vars {
+    //     if var.storage_class == SpirvStorageClass.Input {
+    //         pointer := pointers[var.type_id]
+    //         type := types[pointer.type_id]
+    //         name := names[var.id]
+    //         log.info(name)
+    //         log.info(var)
+    //         log.info(type)
 
-            switch t in type {
-                case SpirvVoid:
-                    // NOTE(jan): don't have to do anything here
-                case SpirvVec:
-                    log.info("vec")
-                case SpirvFloat:
-                    // TODO(jan): implement
-                case SpirvMatrix:
-                    // TODO(jan): implement
-                case:
-                    panic("unknown type")
-            }
+    //         switch t in type {
+    //             case SpirvVoid:
+    //                 // NOTE(jan): don't have to do anything here
+    //             case SpirvVec:
+    //                 log.info("vec")
+    //             case SpirvFloat:
+    //                 // TODO(jan): implement
+    //             case SpirvMatrix:
+    //                 // TODO(jan): implement
+    //             case:
+    //                 panic("unknown type")
+    //         }
+    //     }
+    // }
+
+    description.shaders = make([dynamic]ShaderDescription, context.temp_allocator)
+    for entry in entry_points {
+        shader := ShaderDescription {
+            name = entry.name,
         }
+
+        switch entry.execution_model {
+            case SpirvExecutionModel.Vertex:
+                shader.type = ShaderType.Vertex
+            case SpirvExecutionModel.Fragment:
+                shader.type = ShaderType.Fragment
+            case SpirvExecutionModel.Compute: fallthrough
+            case SpirvExecutionModel.Geometry: fallthrough
+            case SpirvExecutionModel.Kernel: fallthrough
+            case SpirvExecutionModel.TesselationControl: fallthrough
+            case SpirvExecutionModel.TesselationEvaluation: fallthrough
+            case:
+                panic("unhandled shader type")
+        }
+
+        append(&description.shaders, shader)
     }
 
-    return true
+    ok = true
+    description.endianness = endianness
+
+    return
 }
