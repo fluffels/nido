@@ -3,6 +3,8 @@ package nido
 import "core:dynlib"
 import "core:fmt"
 import "core:log"
+import "core:math"
+import "core:math/bits"
 import "core:mem"
 import "core:os"
 import "core:slice"
@@ -570,7 +572,7 @@ main :: proc() {
 			log.infof("Loading shader module '%s':", path)
 
 			bytes: []u8 = os.read_entire_file_from_filename(path, context.temp_allocator) or_else panic("can't read shader")
-			words := cast(^u32)(raw_data(bytes[0:4]))
+			words := cast(^u32)(raw_data(bytes[:]))
 			description := parse(bytes) or_else panic("can't describe shader module")
 
 			create := vk.ShaderModuleCreateInfo {
@@ -818,6 +820,7 @@ main :: proc() {
 				vk.CreateFramebuffer(vulkan.device, &create, nil, &handle),
 				"couldn't create framebuffer",
 			)
+			append(&framebuffers, handle)
 			log.infof("\t\u2713 for swap chain image #%d", i)
 		}
 	}
@@ -873,17 +876,105 @@ main :: proc() {
 
 
 	// NOTE(jan): Main loop.
+	// TODO(jan): test freeing
 	// free_all(context.temp_allocator)
-	// done := false;
-	// for (!done) {
-	// 	sdl2.PumpEvents();
-	// 	for event: sdl2.Event; sdl2.PollEvent(&event); {
-	// 		if (event.type == sdl2.EventType.KEYDOWN) {
-	// 			event: sdl2.KeyboardEvent = event.key;
-	// 			if (event.keysym.sym == sdl2.Keycode.ESCAPE) {
-	// 				done = true;
-	// 			}
-	// 		}
-	// 	}
-	// }
+	done := false;
+	for (!done) {
+		// NOTE(jan): Handle events.
+		sdl2.PumpEvents();
+		for event: sdl2.Event; sdl2.PollEvent(&event); {
+			if (event.type == sdl2.EventType.KEYDOWN) {
+				event: sdl2.KeyboardEvent = event.key;
+				if (event.keysym.sym == sdl2.Keycode.ESCAPE) {
+					done = true;
+				}
+			}
+		}
+
+		begin := vk.CommandBufferBeginInfo {
+			sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
+			flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
+		}
+		check(
+			vk.BeginCommandBuffer(cmd, &begin),
+			"could not begin cmd buffer",
+		)
+
+		// NOTE(jan): Acquire next swap image.
+		swap_image_index: u32;
+		check(
+			vk.AcquireNextImageKHR(
+				vulkan.device,
+				vulkan.swap.handle,
+				bits.U64_MAX,
+				image_ready,
+				0,
+				&swap_image_index,
+			),
+			"could not acquire next swap image",
+		)
+		// TODO(jan): Handle resize
+
+		// NOTE(jan): Record command buffer.
+		// clear_color := vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}}
+		clears := [?]vk.ClearValue {
+			vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}},
+		}
+
+		pass := vk.RenderPassBeginInfo {
+			sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
+			clearValueCount = u32(len(clears)),
+			pClearValues = raw_data(&clears),
+			framebuffer = framebuffers[swap_image_index],
+			renderArea = vk.Rect2D {
+				extent = vulkan.swap.extent,
+				offset = {0, 0},
+			},
+			renderPass = render_pass,
+		}
+
+		vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
+		vk.CmdEndRenderPass(cmd)
+
+		check(
+			vk.EndCommandBuffer(cmd),
+			"could not end command buffer",
+		)
+
+		// NOTE(jan): Submit command buffer.
+		submit := vk.SubmitInfo {
+			sType = vk.StructureType.SUBMIT_INFO,
+			commandBufferCount = 1,
+			pCommandBuffers = &cmd,
+			waitSemaphoreCount = 1,
+			pWaitSemaphores = &image_ready,
+			pWaitDstStageMask = raw_data(&[?]vk.PipelineStageFlags {
+				{ vk.PipelineStageFlag.COLOR_ATTACHMENT_OUTPUT },
+			}),
+			signalSemaphoreCount = 1,
+			pSignalSemaphores = &cmd_buffer_done,
+		}
+		check(
+			vk.QueueSubmit(vulkan.gfx_queue, 1, &submit, 0),
+			"could not submit command buffer",
+		)
+
+		// NOTE(jan): Present.
+		present := vk.PresentInfoKHR {
+			sType = vk.StructureType.PRESENT_INFO_KHR,
+			swapchainCount = 1,
+			pSwapchains = &vulkan.swap.handle,
+			waitSemaphoreCount = 1,
+			pWaitSemaphores = &cmd_buffer_done,
+			pImageIndices = &swap_image_index,
+		}
+		check(
+			vk.QueuePresentKHR(vulkan.gfx_queue, &present),
+			"could not present",
+		)
+
+		// NOTE(jan): Wait to be done.
+		// PERF(jan): This might be slow.
+		vk.QueueWaitIdle(vulkan.gfx_queue)
+	}
 }
