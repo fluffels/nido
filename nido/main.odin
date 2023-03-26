@@ -883,11 +883,14 @@ main :: proc() {
 		// NOTE(jan): Handle events.
 		sdl2.PumpEvents();
 		for event: sdl2.Event; sdl2.PollEvent(&event); {
-			if (event.type == sdl2.EventType.KEYDOWN) {
-				event: sdl2.KeyboardEvent = event.key;
-				if (event.keysym.sym == sdl2.Keycode.ESCAPE) {
+			#partial switch event.type {
+				case sdl2.EventType.KEYDOWN:
+					event: sdl2.KeyboardEvent = event.key;
+					if (event.keysym.sym == sdl2.Keycode.ESCAPE) {
+						done = true;
+					}
+				case sdl2.EventType.QUIT:
 					done = true;
-				}
 			}
 		}
 
