@@ -366,6 +366,9 @@ main :: proc() {
 		}
 	}
 
+	// NOTE(jan): Fetch memory types.
+	vk.GetPhysicalDeviceMemoryProperties(vulkan.gpu, &vulkan.memories);
+
 	// NOTE(jan): Create device.
 	{
 		prio: f32 = 1.0
@@ -533,8 +536,8 @@ main :: proc() {
 	modules := make([dynamic]VulkanModule, context.temp_allocator)
 	{
 		paths := [?]string {
-			"./shaders/test.vert.spv",
-			"./shaders/test.frag.spv",
+			"./shaders/xyzw.vert.spv",
+			"./shaders/magenta.frag.spv",
 		}
 		
 		for path in paths {
@@ -651,6 +654,22 @@ main :: proc() {
 			framebuffer_create(&vulkan, render_pass)
 		}
 
+		// NOTE(jan): Update uniforms.
+
+		// NOTE(jan): Upload mesh.
+		mesh := VulkanMesh {
+			vertices = make([dynamic]f32, context.temp_allocator),
+			indices = make([dynamic]u32, context.temp_allocator),
+		}
+		screen : = AABox {
+			left = -1,
+			right = 1,
+			top = 1,
+			bottom = -1,
+		}
+		vulkan_mesh_push_aabox(&mesh, screen)
+		vulkan_mesh_upload(vulkan, &mesh)
+
 		// NOTE(jan): Acquire next swap image.
 		swap_image_index: u32;
 		{
@@ -674,7 +693,6 @@ main :: proc() {
 					fmt.panicf("could not acquire next swap image %d", result)
 			}
 		}
-		// TODO(jan): Handle resize
 
 		// NOTE(jan): Record command buffer.
 		begin := vk.CommandBufferBeginInfo {
@@ -704,8 +722,15 @@ main :: proc() {
 		}
 
 		vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
-		vk.CmdEndRenderPass(cmd)
 
+		vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline)
+		// vk.CmdBindDescriptorSets
+		offsets := [1]vk.DeviceSize {0}
+		vk.CmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.handle, raw_data(offsets[:]))
+		vk.CmdBindIndexBuffer(cmd, mesh.index_buffer.handle, 0, vk.IndexType.UINT32)
+		vk.CmdDrawIndexed(cmd, u32(len(mesh.indices)), 1, 0, 0, 0)
+
+		vk.CmdEndRenderPass(cmd)
 		check(
 			vk.EndCommandBuffer(cmd),
 			"could not end command buffer",

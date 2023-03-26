@@ -31,6 +31,8 @@ Vulkan :: struct {
     device: vk.Device,
     gpu: vk.PhysicalDevice,
 
+    memories: vk.PhysicalDeviceMemoryProperties,
+
     gfx_queue: vk.Queue,
     gfx_queue_family: u32,
 
@@ -39,8 +41,6 @@ Vulkan :: struct {
 
     swap: VulkanSwap,
     framebuffers: [dynamic]vk.Framebuffer,
-
-    memories: vk.PhysicalDeviceMemoryProperties,
 }
 
 odinize_string :: proc(from: []u8) -> (to: string) {
