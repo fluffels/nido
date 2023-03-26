@@ -541,10 +541,8 @@ parse :: proc(
 
     description.shaders = make([dynamic]ShaderDescription)
     for entry in entry_points {
-        // TODO(jan): Copy all names to the other allocator
-
         shader := ShaderDescription {
-            name = entry.name,
+            name = strings.clone(entry.name),
             inputs = make([dynamic]VariableDescription),
             outputs = make([dynamic]VariableDescription),
             uniforms = make([dynamic]VariableDescription),
@@ -554,7 +552,7 @@ parse :: proc(
             desc: VariableDescription
 
             var := vars[var_id]
-            desc.name = names[var.id]
+            desc.name = strings.clone(names[var.id])
 
             pointer_id := var.type_id
             pointer := pointers[pointer_id]
