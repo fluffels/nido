@@ -60,6 +60,7 @@ ShaderModuleDescription :: struct {
  * Types for internal use . *
  ****************************/
 
+@(private)
 SpirvExecutionModel :: enum u32 {
     Vertex = 0,
     TesselationControl = 1,
@@ -70,6 +71,7 @@ SpirvExecutionModel :: enum u32 {
     Kernel = 6,
 }
 
+@(private)
 SpirvStorageClass :: enum u32 {
     UniformConstant = 0,
     Input = 1,
@@ -79,6 +81,7 @@ SpirvStorageClass :: enum u32 {
     // SEE(jan): https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#Storage_Class
 }
 
+@(private)
 SpirvEntryPoint :: struct {
     id: u32,
     name: string,
@@ -86,10 +89,12 @@ SpirvEntryPoint :: struct {
     interface_ids: [dynamic]u32,
 }
 
+@(private)
 SpirvVoid :: struct {
     id: u32,
 }
 
+@(private)
 SpirvInt :: struct {
     id: u32,
     // NOTE(jan): Width in bits.
@@ -98,24 +103,28 @@ SpirvInt :: struct {
     signed: u32,
 }
 
+@(private)
 SpirvFloat :: struct {
     id: u32,
     // NOTE(jan): Width in bits.
     width: u32,
 }
 
+@(private)
 SpirvVec :: struct {
     id: u32,
     component_type_id: u32,
     component_count: u32,
 }
 
+@(private)
 SpirvMatrix :: struct {
     id: u32,
     column_type_id: u32,
     column_count: u32,
 }
 
+@(private)
 SpirvType :: union {
     SpirvVoid,
     SpirvFloat,
@@ -123,12 +132,14 @@ SpirvType :: union {
     SpirvMatrix,
 }
 
+@(private)
 SpirvPointer :: struct {
     id: u32,
     type_id: u32,
     storage_class: SpirvStorageClass,
 }
 
+@(private)
 SpirvVar :: struct {
     id: u32,
     type_id: u32,
