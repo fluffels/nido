@@ -1,5 +1,6 @@
 package nido
 
+import "core:log"
 import "core:strings"
 import vk "vendor:vulkan"
 
@@ -11,6 +12,7 @@ VulkanShader :: struct {
 
 VulkanSwap :: struct {
     handle: vk.SwapchainKHR,
+    capabilities: vk.SurfaceCapabilitiesKHR,
     extent: vk.Extent2D,
     format: vk.Format,
     color_space: vk.ColorSpaceKHR,
@@ -64,6 +66,51 @@ vulkanize_strings :: proc(from: [dynamic]string) -> (to: [^]cstring) {
         to[i] = strings.clone_to_cstring(s, context.temp_allocator)
     }
     return to
+}
+
+swap_create :: proc(vulkan: ^Vulkan) {
+    create := vk.SwapchainCreateInfoKHR {
+        sType = vk.StructureType.SWAPCHAIN_CREATE_INFO_KHR,
+        surface = vulkan.surface,
+        minImageCount = vulkan.swap.capabilities.minImageCount,
+        imageExtent = vulkan.swap.capabilities.currentExtent,
+        oldSwapchain = 0,
+        imageFormat = vulkan.swap.format,
+        imageColorSpace = vulkan.swap.color_space,
+        imageArrayLayers = 1,
+        imageUsage = { vk.ImageUsageFlag.COLOR_ATTACHMENT },
+        presentMode = vulkan.swap.present_mode,
+        preTransform = vulkan.swap.capabilities.currentTransform,
+        compositeAlpha = { vk.CompositeAlphaFlagKHR.OPAQUE },
+        clipped = false,
+    }
+
+    check(
+        vk.CreateSwapchainKHR(vulkan.device, &create, nil, &vulkan.swap.handle),
+        "could not create swapchain",
+    )
+    log.infof("Created swapchain.")
+}
+
+swap_destroy :: proc(vulkan: ^Vulkan) {
+    vk.DestroySwapchainKHR(vulkan.device, vulkan.swap.handle, nil)
+}
+
+swap_resize :: proc(vulkan: ^Vulkan) {
+    swap_update_capabilities(vulkan)
+    swap_update_extent(vulkan)
+    swap_destroy(vulkan)
+}
+
+swap_update_capabilities :: proc(vulkan: ^Vulkan) {
+    check(
+        vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan.gpu, vulkan.surface, &vulkan.swap.capabilities),
+        "could not fetch physical device surface capabilities",
+    )
+}
+
+swap_update_extent :: proc(vulkan: ^Vulkan) {
+    vulkan.swap.extent = vulkan.swap.capabilities.currentExtent
 }
 
 view_create :: proc(

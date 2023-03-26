@@ -122,7 +122,7 @@ main :: proc() {
 	log.infof("SDL2 initialized")
 	
 	// NOTE(jan): Create a window so we can ask which extensions it needs.
-	window: ^sdl2.Window = sdl2.CreateWindow("nido", 100, 100, 640, 480, sdl2.WINDOW_SHOWN | sdl2.WINDOW_VULKAN)
+	window: ^sdl2.Window = sdl2.CreateWindow("nido", 100, 100, 640, 480, sdl2.WINDOW_SHOWN | sdl2.WINDOW_VULKAN | sdl2.WINDOW_RESIZABLE)
 
 	// NOTE(jan): Figure out which extensions are required by SDL2.
 	{
@@ -411,18 +411,13 @@ main :: proc() {
 
 	// NOTE(jan): Get swap formats.
 	{
-		capabilities: vk.SurfaceCapabilitiesKHR
-		check(
-			vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan.gpu, vulkan.surface, &capabilities),
-			"could not fetch physical device surface capabilities",
-		)
+		swap_update_capabilities(&vulkan)
+		swap_update_extent(&vulkan)
 
-		vulkan.swap.extent = capabilities.currentExtent
-
-		if vk.ImageUsageFlag.COLOR_ATTACHMENT not_in capabilities.supportedUsageFlags {
+		if vk.ImageUsageFlag.COLOR_ATTACHMENT not_in vulkan.swap.capabilities.supportedUsageFlags {
 			panic("surface does not support color attachment")
 		}
-		if vk.CompositeAlphaFlagKHR.OPAQUE not_in capabilities.supportedCompositeAlpha {
+		if vk.CompositeAlphaFlagKHR.OPAQUE not_in vulkan.swap.capabilities.supportedCompositeAlpha {
 			panic("surface does not support opaque composition")
 		}
 
@@ -479,29 +474,7 @@ main :: proc() {
 		}
 
 		// NOTE(jan): Create swap chain.
-		{
-			create := vk.SwapchainCreateInfoKHR {
-				sType = vk.StructureType.SWAPCHAIN_CREATE_INFO_KHR,
-				surface = vulkan.surface,
-				minImageCount = capabilities.minImageCount,
-				imageExtent = capabilities.currentExtent,
-				oldSwapchain = 0,
-				imageFormat = vulkan.swap.format,
-				imageColorSpace = vulkan.swap.color_space,
-				imageArrayLayers = 1,
-				imageUsage = { vk.ImageUsageFlag.COLOR_ATTACHMENT },
-				presentMode = vulkan.swap.present_mode,
-				preTransform = capabilities.currentTransform,
-				compositeAlpha = { vk.CompositeAlphaFlagKHR.OPAQUE },
-				clipped = false,
-			}
-
-			check(
-				vk.CreateSwapchainKHR(vulkan.device, &create, nil, &vulkan.swap.handle),
-				"could not create swapchain",
-			)
-			log.infof("Created swapchain.")
-		}
+		swap_create(&vulkan)
 	}
 
 	// NOTE(jan): Create a render pass.
@@ -896,17 +869,25 @@ main :: proc() {
 
 		// NOTE(jan): Acquire next swap image.
 		swap_image_index: u32;
-		check(
-			vk.AcquireNextImageKHR(
+		{
+			result := vk.AcquireNextImageKHR(
 				vulkan.device,
 				vulkan.swap.handle,
 				bits.U64_MAX,
 				image_ready,
 				0,
 				&swap_image_index,
-			),
-			"could not acquire next swap image",
-		)
+			)
+			#partial switch result {
+				case vk.Result.SUBOPTIMAL_KHR:
+					panic("suboptimal")
+				case vk.Result.ERROR_OUT_OF_DATE_KHR:
+					panic("ood")
+				case vk.Result.SUCCESS:
+				case:
+					fmt.panicf("could not acquire next swap image %d", result)
+			}
+		}
 		// TODO(jan): Handle resize
 
 		// NOTE(jan): Record command buffer.
@@ -971,13 +952,23 @@ main :: proc() {
 			pWaitSemaphores = &cmd_buffer_done,
 			pImageIndices = &swap_image_index,
 		}
-		check(
-			vk.QueuePresentKHR(vulkan.gfx_queue, &present),
-			"could not present",
-		)
-
-		// NOTE(jan): Wait to be done.
-		// PERF(jan): This might be slow.
-		vk.QueueWaitIdle(vulkan.gfx_queue)
+		result := vk.QueuePresentKHR(vulkan.gfx_queue, &present);
+		#partial switch result {
+			case vk.Result.ERROR_DEVICE_LOST:
+				panic("device lost while presenting")
+			case vk.Result.ERROR_SURFACE_LOST_KHR:
+				panic("surface lost while presenting")
+			case vk.Result.ERROR_OUT_OF_DATE_KHR:
+				panic("swapchain out of date")
+			case vk.Result.SUBOPTIMAL_KHR:
+				log.warnf("suboptimal presentation surface")
+				fallthrough
+			case vk.Result.SUCCESS:
+				// NOTE(jan): Wait to be done.
+				// PERF(jan): This might be slow.
+				vk.QueueWaitIdle(vulkan.gfx_queue)
+			case:
+				panic("unknown error while presenting")
+		}
 	}
 }
