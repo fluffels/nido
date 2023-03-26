@@ -891,15 +891,6 @@ main :: proc() {
 			}
 		}
 
-		begin := vk.CommandBufferBeginInfo {
-			sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
-			flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
-		}
-		check(
-			vk.BeginCommandBuffer(cmd, &begin),
-			"could not begin cmd buffer",
-		)
-
 		// NOTE(jan): Acquire next swap image.
 		swap_image_index: u32;
 		check(
@@ -916,6 +907,15 @@ main :: proc() {
 		// TODO(jan): Handle resize
 
 		// NOTE(jan): Record command buffer.
+		begin := vk.CommandBufferBeginInfo {
+			sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
+			flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
+		}
+		check(
+			vk.BeginCommandBuffer(cmd, &begin),
+			"could not begin cmd buffer",
+		)
+
 		// clear_color := vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}}
 		clears := [?]vk.ClearValue {
 			vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}},
