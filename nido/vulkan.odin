@@ -17,6 +17,7 @@ VulkanSwap :: struct {
     format: vk.Format,
     color_space: vk.ColorSpaceKHR,
     present_mode: vk.PresentModeKHR,
+    views: [dynamic]vk.ImageView,
 }
 
 // NOTE(jan): Global Vulkan-related state goes in one of these.
@@ -37,6 +38,7 @@ Vulkan :: struct {
     compute_queue_family: u32,
 
     swap: VulkanSwap,
+    framebuffers: [dynamic]vk.Framebuffer,
 
     memories: vk.PhysicalDeviceMemoryProperties,
 }
@@ -68,6 +70,40 @@ vulkanize_strings :: proc(from: [dynamic]string) -> (to: [^]cstring) {
     return to
 }
 
+framebuffer_create :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
+	log.infof("Creating framebuffers...")
+
+    for view, i in vulkan.swap.views {
+        create := vk.FramebufferCreateInfo {
+            sType = vk.StructureType.FRAMEBUFFER_CREATE_INFO,
+            attachmentCount = 1,
+            pAttachments = raw_data(vulkan.swap.views[i:]),
+            renderPass = render_pass,
+            height = vulkan.swap.extent.height,
+            width = vulkan.swap.extent.width,
+            layers = 1,
+        }
+        handle: vk.Framebuffer
+        check(
+            vk.CreateFramebuffer(vulkan.device, &create, nil, &handle),
+            "couldn't create framebuffer",
+        )
+        append(&vulkan.framebuffers, handle)
+        log.infof("\t\u2713 for swap chain image #%d", i)
+    }
+
+    log.infof("Created framebuffers.")
+}
+
+framebuffer_destroy :: proc(vulkan: ^Vulkan) {
+    for framebuffer in vulkan.framebuffers {
+        vk.DestroyFramebuffer(vulkan.device, framebuffer, nil)
+    }
+    clear(&vulkan.framebuffers);
+    
+    log.infof("Destroyed framebuffers.")
+}
+
 swap_create :: proc(vulkan: ^Vulkan) {
     create := vk.SwapchainCreateInfoKHR {
         sType = vk.StructureType.SWAPCHAIN_CREATE_INFO_KHR,
@@ -90,16 +126,36 @@ swap_create :: proc(vulkan: ^Vulkan) {
         "could not create swapchain",
     )
     log.infof("Created swapchain.")
+
+    count: u32;
+    check(
+        vk.GetSwapchainImagesKHR(vulkan.device, vulkan.swap.handle, &count, nil),
+        "could not count swapchain images",
+    )
+
+    images := make([^]vk.Image, count, context.temp_allocator)
+    check(
+        vk.GetSwapchainImagesKHR(vulkan.device, vulkan.swap.handle, &count, images),
+        "could not fetch swapchain images",
+    )
+
+    for i in 0..<count {
+        view := view_create(
+            vulkan^,
+            images[i],
+            vk.ImageViewType.D2,
+            vulkan.swap.format,
+            { vk.ImageAspectFlags.COLOR },
+        ) or_else panic("couldn't create swapchain views")
+        append(&vulkan.swap.views, view)
+    }
 }
 
 swap_destroy :: proc(vulkan: ^Vulkan) {
     vk.DestroySwapchainKHR(vulkan.device, vulkan.swap.handle, nil)
-}
+    clear(&vulkan.swap.views)
 
-swap_resize :: proc(vulkan: ^Vulkan) {
-    swap_update_capabilities(vulkan)
-    swap_update_extent(vulkan)
-    swap_destroy(vulkan)
+    log.infof("Destroyed swapchain.")
 }
 
 swap_update_capabilities :: proc(vulkan: ^Vulkan) {
@@ -145,4 +201,11 @@ view_create :: proc(
     ok = code == vk.Result.SUCCESS
 
     return view, ok
+}
+
+vulkan_make :: proc() -> Vulkan {
+    result: Vulkan
+    result.swap.views = make([dynamic]vk.ImageView)
+    result.framebuffers = make([dynamic]vk.Framebuffer)
+    return result;
 }

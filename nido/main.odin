@@ -190,7 +190,7 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create Vulkan instance.
-	vulkan: Vulkan
+	vulkan: Vulkan = vulkan_make()
 	{
 		app := vk.ApplicationInfo {
 			sType=vk.StructureType.APPLICATION_INFO,
@@ -472,9 +472,6 @@ main :: proc() {
 				}
 			}
 		}
-
-		// NOTE(jan): Create swap chain.
-		swap_create(&vulkan)
 	}
 
 	// NOTE(jan): Create a render pass.
@@ -753,50 +750,8 @@ main :: proc() {
 		}
 	}
 
-	// NOTE(jan): Create framebuffers.
-	framebuffers := make([dynamic]vk.Framebuffer, context.temp_allocator)
-	log.infof("Creating framebuffers...")
-	{
-		count: u32;
-		check(
-			vk.GetSwapchainImagesKHR(vulkan.device, vulkan.swap.handle, &count, nil),
-			"could not count swapchain images",
-		)
-
-		images := make([^]vk.Image, count, context.temp_allocator)
-		check(
-			vk.GetSwapchainImagesKHR(vulkan.device, vulkan.swap.handle, &count, images),
-			"could not fetch swapchain images",
-		)
-
-		views := make([^]vk.ImageView, count, context.temp_allocator)
-		for i in 0..<count {
-			views[i] = view_create(
-				vulkan,
-				images[i],
-				vk.ImageViewType.D2,
-				vulkan.swap.format,
-				{ vk.ImageAspectFlags.COLOR },
-			) or_else panic("couldn't create swapchain views")
-
-			create := vk.FramebufferCreateInfo {
-				sType = vk.StructureType.FRAMEBUFFER_CREATE_INFO,
-				attachmentCount = 1,
-				pAttachments = &views[i],
-				renderPass = render_pass,
-				height = vulkan.swap.extent.height,
-				width = vulkan.swap.extent.width,
-				layers = 1,
-			}
-			handle: vk.Framebuffer
-			check(
-				vk.CreateFramebuffer(vulkan.device, &create, nil, &handle),
-				"couldn't create framebuffer",
-			)
-			append(&framebuffers, handle)
-			log.infof("\t\u2713 for swap chain image #%d", i)
-		}
-	}
+	swap_create(&vulkan)
+	framebuffer_create(&vulkan, render_pass)
 
 	image_ready, cmd_buffer_done : vk.Semaphore
 	{
@@ -852,7 +807,8 @@ main :: proc() {
 	// TODO(jan): test freeing
 	// free_all(context.temp_allocator)
 	done := false;
-	for (!done) {
+	do_resize := false;
+	new_frame: for (!done) {
 		// NOTE(jan): Handle events.
 		sdl2.PumpEvents();
 		for event: sdl2.Event; sdl2.PollEvent(&event); {
@@ -865,6 +821,18 @@ main :: proc() {
 				case sdl2.EventType.QUIT:
 					done = true;
 			}
+		}
+
+		// NOTE(jan): Resize framebuffers and swap chain.
+		if (do_resize) {
+			framebuffer_destroy(&vulkan)
+			swap_destroy(&vulkan)
+
+			swap_update_capabilities(&vulkan)
+			swap_update_extent(&vulkan)
+
+			swap_create(&vulkan)
+			framebuffer_create(&vulkan, render_pass)
 		}
 
 		// NOTE(jan): Acquire next swap image.
@@ -880,9 +848,11 @@ main :: proc() {
 			)
 			#partial switch result {
 				case vk.Result.SUBOPTIMAL_KHR:
-					panic("suboptimal")
+					do_resize = true
+					continue new_frame;
 				case vk.Result.ERROR_OUT_OF_DATE_KHR:
-					panic("ood")
+					do_resize = true
+					continue new_frame;
 				case vk.Result.SUCCESS:
 				case:
 					fmt.panicf("could not acquire next swap image %d", result)
@@ -909,7 +879,7 @@ main :: proc() {
 			sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
 			clearValueCount = u32(len(clears)),
 			pClearValues = raw_data(&clears),
-			framebuffer = framebuffers[swap_image_index],
+			framebuffer = vulkan.framebuffers[swap_image_index],
 			renderArea = vk.Rect2D {
 				extent = vulkan.swap.extent,
 				offset = {0, 0},
@@ -954,21 +924,21 @@ main :: proc() {
 		}
 		result := vk.QueuePresentKHR(vulkan.gfx_queue, &present);
 		#partial switch result {
+			case vk.Result.SUCCESS:
 			case vk.Result.ERROR_DEVICE_LOST:
 				panic("device lost while presenting")
 			case vk.Result.ERROR_SURFACE_LOST_KHR:
 				panic("surface lost while presenting")
 			case vk.Result.ERROR_OUT_OF_DATE_KHR:
-				panic("swapchain out of date")
+				do_resize = true
 			case vk.Result.SUBOPTIMAL_KHR:
-				log.warnf("suboptimal presentation surface")
-				fallthrough
-			case vk.Result.SUCCESS:
-				// NOTE(jan): Wait to be done.
-				// PERF(jan): This might be slow.
-				vk.QueueWaitIdle(vulkan.gfx_queue)
+				do_resize = true
 			case:
 				panic("unknown error while presenting")
 		}
+
+		// NOTE(jan): Wait to be done.
+		// PERF(jan): This might be slow.
+		vk.QueueWaitIdle(vulkan.gfx_queue)
 	}
 }
