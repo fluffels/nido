@@ -478,7 +478,7 @@ main :: proc() {
 			}
 		}
 
-		// NOTE(jan): Creat swap chain.
+		// NOTE(jan): Create swap chain.
 		{
 			create := vk.SwapchainCreateInfoKHR {
 				sType = vk.StructureType.SWAPCHAIN_CREATE_INFO_KHR,
