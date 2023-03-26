@@ -525,7 +525,7 @@ main :: proc() {
 		})
 		append(&color_refs, vk.AttachmentReference {
 			attachment = u32(len(attachments)) - 1,
-			layout = vk.ImageLayout.PRESENT_SRC_KHR,
+			layout = vk.ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
 		})
 
 		append(&subpasses, vk.SubpassDescription {
