@@ -704,7 +704,6 @@ main :: proc() {
 			"could not begin cmd buffer",
 		)
 
-		// clear_color := vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}}
 		clears := [?]vk.ClearValue {
 			vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}},
 		}
