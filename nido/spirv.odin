@@ -1,5 +1,6 @@
 package nido
 
+import "core:fmt"
 import "core:log"
 import "core:strings"
 
@@ -55,6 +56,12 @@ VariableDescription :: struct {
     type: TypeDescription,
 }
 
+UniformDescription :: struct {
+    binding: u32,
+    descriptor_set: u32,
+    description: VariableDescription,
+}
+
 ShaderType :: enum {
     Vertex,
     Fragment,
@@ -65,7 +72,7 @@ ShaderDescription :: struct {
     type: ShaderType,
     inputs: [dynamic]VariableDescription,
     outputs: [dynamic]VariableDescription,
-    uniforms: [dynamic]VariableDescription,
+    uniforms: [dynamic]UniformDescription,
 }
 
 ShaderModuleDescription :: struct {
@@ -189,6 +196,7 @@ SpirvPointer :: struct {
 SpirvVar :: struct {
     id: u32,
     type_id: u32,
+    descriptor_set: u32,
     storage_class: SpirvStorageClass,
 }
 
@@ -216,7 +224,10 @@ OpCode :: enum u32 {
 }
 
 @(private)
-DecorationLocation :: 30
+DecorationCode :: enum u32 {
+    Binding = 33,
+    DescriptorSet = 34,
+}
 
 @(private)
 MagicHeader :: 0x07230203
@@ -377,11 +388,13 @@ parse :: proc(
 ) {
     ok = false
 
-    entry_points := make([dynamic]SpirvEntryPoint,    context.temp_allocator)
-    types        := make(map[u32]SpirvType       , 1, context.temp_allocator)
-    names        := make(map[u32]string          , 1, context.temp_allocator)
-    vars         := make(map[u32]SpirvVar        , 1, context.temp_allocator)
-    pointers     := make(map[u32]SpirvPointer    , 1, context.temp_allocator)
+    bindings        := make(map[u32]u32             , 1, context.temp_allocator)
+    descriptor_sets := make(map[u32]u32             , 1, context.temp_allocator)
+    entry_points    := make([dynamic]SpirvEntryPoint,    context.temp_allocator)
+    types           := make(map[u32]SpirvType       , 1, context.temp_allocator)
+    names           := make(map[u32]string          , 1, context.temp_allocator)
+    vars            := make(map[u32]SpirvVar        , 1, context.temp_allocator)
+    pointers        := make(map[u32]SpirvPointer    , 1, context.temp_allocator)
 
     state := State {
         endianness = Endianness.Big,
@@ -420,7 +433,6 @@ parse :: proc(
         word_count: u32 = op_code >> 16
 
         #partial switch op_code_enumerant {
-            // NOTE(jan): (Debug info) name for an id
             case OpCode.Name:
                 target_id := getw(&state)
 
@@ -443,36 +455,30 @@ parse :: proc(
                 }
 
                 append(&entry_points, entry)
-            // NOTE(jan): Declares the void type.
             case OpCode.TypeVoid:
                 type: SpirvVoid
                 type.id = getw(&state)
                 types[type.id] = type
-            // NOTE(jan): Declares a new bool type.
             case OpCode.TypeBool:
                 type: SpirvBool
                 type.id = getw(&state)
                 types[type.id] = type
-            // NOTE(jan): Declares a new int type.
             case OpCode.TypeInt:
                 type: SpirvInt
                 type.id = getw(&state)
                 type.width = getw(&state)
                 type.signed = getw(&state)
-            // NOTE(jan): Declares a new float type.
             case OpCode.TypeFloat:
                 type: SpirvFloat
                 type.id = getw(&state);
                 type.width = getw(&state);
                 types[type.id] = type
-            // NOTE(jan): Declares a new vector type.
             case OpCode.TypeVector:
                 type: SpirvVec
                 type.id = getw(&state)
                 type.component_type_id = getw(&state)
                 type.component_count = getw(&state)
                 types[type.id] = type
-            // NOTE(jan): Declares a new matrix type.
             case OpCode.TypeMatrix:
                 type: SpirvMatrix
                 type.id = getw(&state)
@@ -514,7 +520,6 @@ parse :: proc(
 
                 types[type.id] = type
             }
-            // NOTE(jan): Declares a variable
             case OpCode.Variable:
                 var: SpirvVar
                 var.type_id = getw(&state)
@@ -523,6 +528,17 @@ parse :: proc(
                 words_left := word_count - 4
                 if words_left > 0 do advance_words(&state, int(words_left))
                 vars[var.id] = var
+            case OpCode.Decorate:
+                var_id := getw(&state)
+                decoration_code := DecorationCode(getw(&state))
+                switch decoration_code {
+                    case DecorationCode.Binding:
+                        bindings[var_id] = getw(&state)
+                    case DecorationCode.DescriptorSet:
+                        descriptor_sets[var_id] = getw(&state)
+                    case:
+                        for i in 3..<word_count do getw(&state)
+                }
             // NOTE(jan): Unhandled opcode.
             case:
                 advance_words(&state, int(word_count-1))
@@ -535,7 +551,7 @@ parse :: proc(
             name = strings.clone(entry.name),
             inputs = make([dynamic]VariableDescription),
             outputs = make([dynamic]VariableDescription),
-            uniforms = make([dynamic]VariableDescription),
+            uniforms = make([dynamic]UniformDescription),
         }
 
         for var_id in entry.interface_ids {
@@ -559,7 +575,13 @@ parse :: proc(
                     // TODO(jan) what even is this
                     fallthrough
                 case SpirvStorageClass.Uniform:
-                    append(&shader.uniforms, desc)
+                    binding := bindings[var_id] or_else fmt.panicf("no binding for var %d", var_id)
+                    descriptor_set := bindings[var_id] or_else fmt.panicf("no set for var %d", var_id)
+                    append(&shader.uniforms, UniformDescription {
+                        binding = binding,
+                        descriptor_set = descriptor_set,
+                        description = desc,
+                    })
             }
         }
 
