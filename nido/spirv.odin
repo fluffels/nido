@@ -305,7 +305,6 @@ fill_type_description :: proc(
     types: map[u32]SpirvType,
     description: ^TypeDescription,
 ) {
-    log.infof("fill %d", type_id)
     type := types[type_id]
     switch t in type {
         case SpirvVoid:
@@ -449,34 +448,29 @@ parse :: proc(
                 type: SpirvVoid
                 type.id = getw(&state)
                 types[type.id] = type
-                log.infof("void %d", type.id)
             // NOTE(jan): Declares a new bool type.
             case OpCode.TypeBool:
                 type: SpirvBool
                 type.id = getw(&state)
                 types[type.id] = type
-                log.infof("bool %d", type.id)
             // NOTE(jan): Declares a new int type.
             case OpCode.TypeInt:
                 type: SpirvInt
                 type.id = getw(&state)
                 type.width = getw(&state)
                 type.signed = getw(&state)
-                log.infof("int %d %d %d", type.id, type.width, type.signed)
             // NOTE(jan): Declares a new float type.
             case OpCode.TypeFloat:
                 type: SpirvFloat
                 type.id = getw(&state);
                 type.width = getw(&state);
                 types[type.id] = type
-                log.infof("float %d %d", type.id, type.width)
             // NOTE(jan): Declares a new vector type.
             case OpCode.TypeVector:
                 type: SpirvVec
                 type.id = getw(&state)
                 type.component_type_id = getw(&state)
                 type.component_count = getw(&state)
-                log.infof("vector %d %d %d", type.id, type.component_type_id, type.component_count)
                 types[type.id] = type
             // NOTE(jan): Declares a new matrix type.
             case OpCode.TypeMatrix:
@@ -484,7 +478,6 @@ parse :: proc(
                 type.id = getw(&state)
                 type.column_type_id = getw(&state)
                 type.column_count = getw(&state)
-                log.infof("matrix %d %d %d", type.id, type.column_type_id, type.column_count)
                 types[type.id] = type
             case OpCode.TypeArray:
                 type: SpirvArray
@@ -502,13 +495,11 @@ parse :: proc(
                 }
 
                 types[type.id] = type
-                log.infof("struct %d", type.id)
             case OpCode.TypePointer: {
                 pointer: SpirvPointer
                 pointer.id = getw(&state)
                 pointer.storage_class = SpirvStorageClass(getw(&state))
                 pointer.type_id = getw(&state)
-                log.infof("pointer %d %d %d", pointer.id, pointer.storage_class, pointer.type_id)
                 pointers[pointer.id] = pointer
             }
             case OpCode.TypeFunction: {
@@ -521,7 +512,6 @@ parse :: proc(
                     append(&type.parameter_type_ids, getw(&state))
                 }
 
-                log.infof("function %d %d %d", type.id, type.return_type_id, len(type.parameter_type_ids))
                 types[type.id] = type
             }
             // NOTE(jan): Declares a variable

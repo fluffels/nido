@@ -532,6 +532,9 @@ main :: proc() {
 		log.infof("Created render pass.")
 	}
 
+	// TODO(jan): Allocate all this to a separate allocator so it can easily be free'd if 
+	// we need to redo shader modules or something?
+
 	// NOTE(jan): Create shader modules.
 	vulkan_create_shader_modules(&vulkan)
 	// TODO(jan): Create render passes separately and reference them in the pipeline meta.

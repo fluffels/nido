@@ -3,32 +3,13 @@ package nido
 import "core:fmt"
 import "core:log"
 import "core:os"
+import path "core:path/filepath"
 import "core:strings"
 import vk "vendor:vulkan"
 
 VulkanModuleMetadata :: struct {
     name: string,
     path: string,
-}
-
-// TODO(jan): build this by walking dir
-vulkan_modules := [?]VulkanModuleMetadata {
-    {
-        "xyzw.vert",
-        "shaders/xyzw.vert.spv",
-    },
-    {
-        "magenta.frag",
-        "shaders/magenta.frag.spv",
-    },
-    {
-        "ortho_xy_uv_rgba.vert",
-        "shaders/ortho_xy_uv_rgba.vert.spv",
-    },
-    {
-        "text.frag",
-        "shaders/text.frag.spv",
-    },
 }
 
 VulkanPipelineMetadata :: struct {
@@ -40,8 +21,8 @@ vulkan_pipelines := [?]VulkanPipelineMetadata {
     {
         "stbtt",
         {
-            "ortho_xy_uv_rgba.vert",
-            "text.frag",
+            "ortho_xy_uv_rgba",
+            "text",
         },
     },
 }
@@ -60,9 +41,21 @@ VulkanPipeline :: struct {
 }
 
 vulkan_create_shader_modules :: proc(vulkan: ^Vulkan) {
-    vulkan.modules = make(map[string]VulkanModule, len(vulkan_modules))
+    shader_pattern := path.join({".", "shaders", "*.spv"}, context.temp_allocator)
+    module_paths := path.glob(shader_pattern) or_else panic("can't list module source files")
 
-    for meta in vulkan_modules {
+    vulkan.modules = make(map[string]VulkanModule, len(module_paths))
+
+    for module_path in module_paths {
+        meta := VulkanModuleMetadata {
+            name = path.short_stem(module_path),
+            path = module_path,
+        }
+
+        if meta.name in vulkan.modules {
+            fmt.panicf("duplicate module named '%s'", meta.name)
+        }
+
         module := VulkanModule {
             meta = meta,
         }
@@ -92,6 +85,10 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
     vulkan.pipelines = make(map[string]VulkanPipeline, len(vulkan_pipelines))
 
     for meta in vulkan_pipelines {
+        if meta.name in vulkan.modules {
+            fmt.panicf("duplicate pipeline named '%s'", meta.name)
+        }
+
         log.infof("Creating pipeline '%s'...", meta.name)
 
         pipeline := VulkanPipeline {
