@@ -4,12 +4,6 @@ import "core:log"
 import "core:strings"
 import vk "vendor:vulkan"
 
-VulkanModule :: struct {
-    description: ShaderModuleDescription,
-    handle: vk.ShaderModule,
-    path: string,
-}
-
 VulkanSwap :: struct {
     handle: vk.SwapchainKHR,
     capabilities: vk.SurfaceCapabilitiesKHR,
@@ -41,6 +35,9 @@ Vulkan :: struct {
 
     swap: VulkanSwap,
     framebuffers: [dynamic]vk.Framebuffer,
+
+    modules: map[string]VulkanModule,
+    pipelines: map[string]VulkanPipeline,
 }
 
 odinize_string :: proc(from: []u8) -> (to: string) {
@@ -167,203 +164,6 @@ swap_update_capabilities :: proc(vulkan: ^Vulkan) {
 
 swap_update_extent :: proc(vulkan: ^Vulkan) {
     vulkan.swap.extent = vulkan.swap.capabilities.currentExtent
-}
-
-pipeline_create :: proc(vulkan: ^Vulkan, modules: [dynamic]VulkanModule, render_pass: vk.RenderPass) -> vk.Pipeline {
-    log.infof("Creating pipeline...")
-
-    stages := make([dynamic]vk.PipelineShaderStageCreateInfo, context.temp_allocator)
-    for module in modules {
-        for shader in module.description.shaders {
-            log.infof("\t... found a %s shader", shader.type)
-            stage_flag: vk.ShaderStageFlag
-            switch shader.type {
-                case ShaderType.Vertex:
-                    stage_flag = vk.ShaderStageFlag.VERTEX
-                case ShaderType.Fragment:
-                    stage_flag = vk.ShaderStageFlag.FRAGMENT
-                case:
-                    log.info("\t\t... \u274C which is currently unsupported, skipping")
-            }
-            append(&stages, vk.PipelineShaderStageCreateInfo {
-                sType = vk.StructureType.PIPELINE_SHADER_STAGE_CREATE_INFO,
-                module = module.handle,
-                pName = strings.clone_to_cstring(shader.name, context.temp_allocator),
-                stage = { stage_flag },
-            })
-        }
-    }
-
-    descriptor_layout: vk.DescriptorSetLayout
-    {
-        bindings := make([dynamic]vk.DescriptorSetLayoutBinding, context.temp_allocator)
-        // TODO(jan): Fill this from descriptions.
-        flags := make([dynamic]vk.DescriptorBindingFlags, context.temp_allocator)
-        // TODO(jan): Fill this from descriptions.
-
-        create := vk.DescriptorSetLayoutCreateInfo {
-            sType = vk.StructureType.DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            bindingCount = u32(len(bindings)),
-            pBindings = raw_data(bindings),
-            pNext = &vk.DescriptorSetLayoutBindingFlagsCreateInfo {
-                sType = vk.StructureType.DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
-                bindingCount = u32(len(bindings)),
-                pBindingFlags = raw_data(flags),
-            },
-        }
-
-        check(
-            vk.CreateDescriptorSetLayout(vulkan.device, &create, nil, &descriptor_layout),
-            "could not create descriptor set layout",
-        )
-        log.info("Created descriptor set layout.")
-    }
-
-    pool: vk.DescriptorPool
-    {
-        // TODO(jan): Create descriptor pool.
-        // sizes := make([dynamic]vk.DescriptorPoolSize, context.temp_allocator)
-        pool = 0;
-    }
-
-    descriptor_set: vk.DescriptorSet
-    {
-        // TODO(jan): Create descriptor set.
-        descriptor_set = 0;
-    }
-
-    pipeline_layout: vk.PipelineLayout
-    {
-        // TODO(jan): Create push constant ranges from description.
-        create := vk.PipelineLayoutCreateInfo {
-            sType = vk.StructureType.PIPELINE_LAYOUT_CREATE_INFO,
-            setLayoutCount = 1,
-            pSetLayouts = &descriptor_layout,
-        }
-
-        check(
-            vk.CreatePipelineLayout(vulkan.device, &create, nil, &pipeline_layout),
-            "couldn't create pipeline layout",
-        )
-        log.infof("Created pipeline layout.")
-    }
-
-    create := vk.GraphicsPipelineCreateInfo {
-        sType = vk.StructureType.GRAPHICS_PIPELINE_CREATE_INFO,
-        stageCount = u32(len(stages)),
-        pStages = raw_data(stages),
-        renderPass = render_pass,
-        layout = pipeline_layout,
-        subpass = 0,
-        pVertexInputState = &vk.PipelineVertexInputStateCreateInfo {
-            sType = vk.StructureType.PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            vertexBindingDescriptionCount = 1,
-            pVertexBindingDescriptions = &vk.VertexInputBindingDescription {
-                binding = 0,
-                // TODO(jan): Read from description.
-                stride = size_of(f32) * 4,
-                // TODO(jan): Read from description.
-                inputRate = vk.VertexInputRate.VERTEX,
-            },
-            vertexAttributeDescriptionCount = 1,
-            pVertexAttributeDescriptions = &vk.VertexInputAttributeDescription {
-                // TODO(jan): Read from description.
-                location = 0,
-                // TODO(jan): Read from description.
-                binding = 0,
-                // TODO(jan): Read from description.
-                format = vk.Format.R32G32B32A32_SFLOAT,
-                // TODO(jan): Read from description.
-                offset = 0,
-            },
-        },
-        pInputAssemblyState = &vk.PipelineInputAssemblyStateCreateInfo {
-            sType = vk.StructureType.PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            // TODO(jan): Read from metadata.
-            topology = vk.PrimitiveTopology.TRIANGLE_LIST,
-            primitiveRestartEnable = false,
-        },
-        pViewportState = &vk.PipelineViewportStateCreateInfo {
-            sType = vk.StructureType.PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            viewportCount = 1,
-            pViewports = &vk.Viewport {
-                height = f32(vulkan.swap.extent.height),
-                width = f32(vulkan.swap.extent.width),
-                minDepth = 0,
-                maxDepth = 1,
-                x = 0,
-                y = 0,
-            },
-            scissorCount = 1,
-            pScissors = &vk.Rect2D {
-                offset = {
-                    x = 0,
-                    y = 0,
-                },
-                extent = vulkan.swap.extent,
-            },
-        },
-        pRasterizationState = &vk.PipelineRasterizationStateCreateInfo {
-            sType = vk.StructureType.PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-            frontFace = vk.FrontFace.CLOCKWISE,
-            cullMode = vk.CullModeFlags_NONE,
-            lineWidth = 1,
-            polygonMode = vk.PolygonMode.FILL,
-            rasterizerDiscardEnable = false,
-            depthClampEnable = false,
-            depthBiasEnable = false,
-        },
-        pMultisampleState = &vk.PipelineMultisampleStateCreateInfo {
-            sType = vk.StructureType.PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            sampleShadingEnable = false,
-            // TODO(jan): multi sampling
-            minSampleShading = 1,
-            pSampleMask = nil,
-            alphaToCoverageEnable = false,
-            alphaToOneEnable = false,
-            // TODO(jan): multi sampling
-            rasterizationSamples = { vk.SampleCountFlag._1 },
-        },
-        pDepthStencilState = &vk.PipelineDepthStencilStateCreateInfo {
-            sType = vk.StructureType.PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            // TODO(jan): enable
-            depthTestEnable = false,
-            // TODO(jan): enable
-            depthWriteEnable = false,
-            depthCompareOp = vk.CompareOp.LESS,
-            depthBoundsTestEnable = false,
-        },
-        pColorBlendState = &vk.PipelineColorBlendStateCreateInfo {
-            sType = vk.StructureType.PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-            logicOpEnable = false,
-            logicOp = vk.LogicOp.COPY,
-            attachmentCount = 1,
-            pAttachments = &vk.PipelineColorBlendAttachmentState {
-                colorWriteMask = {
-                    vk.ColorComponentFlag.R,
-                    vk.ColorComponentFlag.G,
-                    vk.ColorComponentFlag.B,
-                    vk.ColorComponentFlag.A,
-                },
-                blendEnable = true,
-                srcColorBlendFactor = vk.BlendFactor.SRC_ALPHA,
-                dstColorBlendFactor = vk.BlendFactor.ONE_MINUS_SRC_ALPHA,
-                colorBlendOp = vk.BlendOp.ADD,
-                srcAlphaBlendFactor = vk.BlendFactor.ONE,
-                dstAlphaBlendFactor = vk.BlendFactor.ZERO,
-                alphaBlendOp = vk.BlendOp.ADD,
-            },
-            blendConstants = [4]f32 {0, 0, 0, 0},
-        },
-    }
-
-    pipeline: vk.Pipeline
-    check(
-        vk.CreateGraphicsPipelines(vulkan.device, 0, 1, &create, nil, &pipeline),
-        "coult not create pipeline",
-    )
-    log.infof("Pipeline created.")
-    return pipeline
 }
 
 view_create :: proc(

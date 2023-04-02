@@ -533,40 +533,9 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create shader modules.
-	modules := make([dynamic]VulkanModule, context.temp_allocator)
-	{
-		paths := [?]string {
-			"./shaders/xyzw.vert.spv",
-			"./shaders/magenta.frag.spv",
-		}
-		
-		for path in paths {
-			module := VulkanModule {
-				path = path,
-			}
-
-			log.infof("Loading shader module '%s':", module.path)
-
-			bytes: []u8 = os.read_entire_file_from_filename(module.path, context.temp_allocator) or_else panic("can't read shader")
-			words := cast(^u32)(raw_data(bytes[:]))
-			module.description = parse(bytes) or_else panic("can't describe shader module")
-
-			create := vk.ShaderModuleCreateInfo {
-				sType = vk.StructureType.SHADER_MODULE_CREATE_INFO,
-				codeSize = len(bytes),
-				pCode = words,
-			}
-			check(
-				vk.CreateShaderModule(vulkan.device, &create, nil, &module.handle),
-				"could not create shader module",
-			)
-			log.infof("\t... module created.")
-
-			append(&modules, module)
-		}
-	}
-
-	pipeline: vk.Pipeline = pipeline_create(&vulkan, modules, render_pass)
+	vulkan_create_shader_modules(&vulkan)
+	// TODO(jan): Create render passes separately and reference them in the pipeline meta.
+	vulkan_create_pipelines(&vulkan, render_pass)
 
 	swap_create(&vulkan)
 	framebuffer_create(&vulkan, render_pass)
@@ -644,12 +613,12 @@ main :: proc() {
 		if (do_resize) {
 			framebuffer_destroy(&vulkan)
 			swap_destroy(&vulkan)
-			vk.DestroyPipeline(vulkan.device, pipeline, nil)
+			vulkan_destroy_pipelines(&vulkan)
 
 			swap_update_capabilities(&vulkan)
 			swap_update_extent(&vulkan)
 
-			pipeline = pipeline_create(&vulkan, modules, render_pass)
+			vulkan_create_pipelines(&vulkan, render_pass)
 			swap_create(&vulkan)
 			framebuffer_create(&vulkan, render_pass)
 		}
@@ -721,6 +690,9 @@ main :: proc() {
 		}
 
 		vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
+
+		assert("stbtt" in vulkan.pipelines)
+		pipeline := vulkan.pipelines["stbtt"].handle
 
 		vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline)
 		// vk.CmdBindDescriptorSets
