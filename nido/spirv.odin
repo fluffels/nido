@@ -56,12 +56,6 @@ VariableDescription :: struct {
     type: TypeDescription,
 }
 
-UniformDescription :: struct {
-    binding: u32,
-    descriptor_set: u32,
-    description: VariableDescription,
-}
-
 ShaderType :: enum {
     Vertex,
     Fragment,
@@ -72,12 +66,13 @@ ShaderDescription :: struct {
     type: ShaderType,
     inputs: [dynamic]VariableDescription,
     outputs: [dynamic]VariableDescription,
-    uniforms: [dynamic]UniformDescription,
 }
 
 ShaderModuleDescription :: struct {
     endianness: Endianness,
     shaders: [dynamic]ShaderDescription,
+    // NOTE(jan): Indexed like [descriptor set, binding]
+    uniforms: [dynamic][dynamic]VariableDescription,
 }
 
 /****************************
@@ -546,12 +541,12 @@ parse :: proc(
     }
 
     description.shaders = make([dynamic]ShaderDescription)
+    description.uniforms = make([dynamic][dynamic]VariableDescription)
     for entry in entry_points {
         shader := ShaderDescription {
             name = strings.clone(entry.name),
             inputs = make([dynamic]VariableDescription),
             outputs = make([dynamic]VariableDescription),
-            uniforms = make([dynamic]UniformDescription),
         }
 
         for var_id in entry.interface_ids {
@@ -575,13 +570,16 @@ parse :: proc(
                     // TODO(jan) what even is this
                     fallthrough
                 case SpirvStorageClass.Uniform:
-                    binding := bindings[var_id] or_else fmt.panicf("no binding for var %d", var_id)
-                    descriptor_set := bindings[var_id] or_else fmt.panicf("no set for var %d", var_id)
-                    append(&shader.uniforms, UniformDescription {
-                        binding = binding,
-                        descriptor_set = descriptor_set,
-                        description = desc,
-                    })
+                    descriptor_set_index := bindings[var_id] or_else fmt.panicf("no set for var %d", var_id)
+                    binding_index := bindings[var_id] or_else fmt.panicf("no binding for var %d", var_id)
+
+                    reserve(&description.uniforms, int(descriptor_set_index) + 1)
+                    if description.uniforms[descriptor_set_index] == nil {
+                        description.uniforms[descriptor_set_index] = make([dynamic]VariableDescription)
+                    }
+                    reserve(&description.uniforms[descriptor_set_index], int(binding_index) + 1)
+
+                    description.uniforms[descriptor_set_index][binding_index] = desc
             }
         }
 

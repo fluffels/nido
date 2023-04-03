@@ -95,9 +95,14 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             meta = meta,
         }
 
-        stages := make([dynamic]vk.PipelineShaderStageCreateInfo, context.temp_allocator)
+        modules := make([dynamic]VulkanModule, len(meta.modules), context.temp_allocator)
         for module_name in meta.modules {
             module := vulkan.modules[module_name] or_else fmt.panicf("no module '%s' is loaded", module_name)
+            append(&modules, module)
+        }
+
+        stages := make([dynamic]vk.PipelineShaderStageCreateInfo, context.temp_allocator)
+        for module in modules {
             for shader in module.description.shaders {
                 log.infof("\t... found a %s shader", shader.type)
                 stage_flag: vk.ShaderStageFlag
@@ -118,29 +123,80 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             }
         }
 
-        descriptor_layout: vk.DescriptorSetLayout
-        {
-            bindings := make([dynamic]vk.DescriptorSetLayoutBinding, context.temp_allocator)
-            // TODO(jan): Fill this from descriptions.
-            flags := make([dynamic]vk.DescriptorBindingFlags, context.temp_allocator)
-            // TODO(jan): Fill this from descriptions.
 
+        // NOTE(jan): A descriptor set's binding can be specified in two modules: E.g. if one module is the vertex shader
+        // and the other is the fragment shader and they both need access to it. In this case, we only set the info for
+        // the binding once, and the second time around we just add a stage flag.
+        descriptor_set_specified := make([dynamic][dynamic]b32                          , context.temp_allocator)
+        descriptor_sets          := make([dynamic][dynamic]vk.DescriptorSetLayoutBinding, context.temp_allocator)
+        for module in modules {
+            // NOTE(jan): Each binding needs to specify which shader stages can access it. Here we look through the module
+            // and pick out each shader stage defined in it, and assume that if the uniform is in the same module as a
+            // stage, then that means it needs to access it. This probably holds if you break up shader stages into separate
+            // modules, but it probably breaks for HLSL etc.
+            stage_flags := vk.ShaderStageFlags { }
+            for shader in module.description.shaders {
+                switch shader.type {
+                    case ShaderType.Vertex:
+                        stage_flags += { vk.ShaderStageFlag.VERTEX }
+                    case ShaderType.Fragment:
+                        stage_flags += { vk.ShaderStageFlag.FRAGMENT }
+                    // TODO(jan): Other stages.
+                }
+            }
+            for descriptor_set, descriptor_set_index in module.description.uniforms {
+                reserve(&descriptor_set_specified, descriptor_set_index + 1)
+                reserve(&descriptor_sets         , descriptor_set_index + 1)
+
+                if (descriptor_set_specified[descriptor_set_index] == nil) do descriptor_set_specified[descriptor_set_index] = make([dynamic]b32, context.temp_allocator)
+                if (descriptor_sets         [descriptor_set_index] == nil) do descriptor_sets         [descriptor_set_index] = make([dynamic]vk.DescriptorSetLayoutBinding, context.temp_allocator)
+                
+                binding_specified := descriptor_set_specified[descriptor_set_index]
+                bindings          := descriptor_sets[descriptor_set_index]
+
+                for binding, binding_index in descriptor_set {
+                    reserve_dynamic_array(&binding_specified, binding_index + 1)
+                    reserve_dynamic_array(&bindings         , binding_index + 1)
+
+                    if (binding_specified[binding_index]) {
+                        // TODO(jan): Check which shader stages in the module actually use the uniform.
+                        bindings[binding_index].stageFlags += stage_flags
+                    } else {
+                        bindings[binding_index] = vk.DescriptorSetLayoutBinding {
+                            binding = u32(binding_index),
+                            // TODO(jan): Allow for arrays of bindings.
+                            descriptorCount = 1,
+                            // TODO(jan): Allow for other types of descriptors.
+                            descriptorType = vk.DescriptorType.SAMPLER,
+                            // NOTE(jan): Not using immutable samplers.
+                            pImmutableSamplers = nil,
+                            // TODO(jan): Check which shader stages in the module actually use the uniform.
+                            stageFlags = stage_flags,
+                        }
+                        binding_specified[binding_index] = true
+                    }
+                }
+            }
+        }
+
+        descriptor_set_layout_handles := make([dynamic]vk.DescriptorSetLayout, len(descriptor_sets), context.temp_allocator)
+        for bindings, descriptor_set_index in descriptor_sets {
             create := vk.DescriptorSetLayoutCreateInfo {
                 sType = vk.StructureType.DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
                 bindingCount = u32(len(bindings)),
                 pBindings = raw_data(bindings),
-                pNext = &vk.DescriptorSetLayoutBindingFlagsCreateInfo {
-                    sType = vk.StructureType.DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
-                    bindingCount = u32(len(bindings)),
-                    pBindingFlags = raw_data(flags),
-                },
+                // pNext = &vk.DescriptorSetLayoutBindingFlagsCreateInfo {
+                //     sType = vk.StructureType.DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+                //     bindingCount = u32(len(flags)),
+                //     pBindingFlags = raw_data(flags),
+                // },
             }
 
             check(
-                vk.CreateDescriptorSetLayout(vulkan.device, &create, nil, &descriptor_layout),
+                vk.CreateDescriptorSetLayout(vulkan.device, &create, nil, &descriptor_set_layout_handles[descriptor_set_index]),
                 "could not create descriptor set layout",
             )
-            log.info("Created descriptor set layout.")
+            log.info("Created descriptor set layout #%d.", descriptor_set_index)
         }
 
         pool: vk.DescriptorPool
@@ -161,8 +217,8 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             // TODO(jan): Create push constant ranges from description.
             create := vk.PipelineLayoutCreateInfo {
                 sType = vk.StructureType.PIPELINE_LAYOUT_CREATE_INFO,
-                setLayoutCount = 1,
-                pSetLayouts = &descriptor_layout,
+                setLayoutCount = u32(len(descriptor_set_layout_handles)),
+                pSetLayouts = raw_data(descriptor_set_layout_handles),
             }
 
             check(
