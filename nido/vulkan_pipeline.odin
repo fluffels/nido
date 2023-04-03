@@ -37,6 +37,9 @@ VulkanPipeline :: struct {
     meta: VulkanPipelineMetadata,
     modules: [dynamic]VulkanModule,
     handle: vk.Pipeline,
+    descriptor_set_layouts: [dynamic]vk.DescriptorSetLayout,
+    descriptor_pool: vk.DescriptorPool,
+    descriptor_set_handles: [dynamic]vk.DescriptorSet,
     render_pass: vk.RenderPass,
 }
 
@@ -179,7 +182,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             }
         }
 
-        descriptor_set_layout_handles := make([dynamic]vk.DescriptorSetLayout, len(descriptor_sets), context.temp_allocator)
+        pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, len(descriptor_sets), context.temp_allocator)
         for bindings, descriptor_set_index in descriptor_sets {
             create := vk.DescriptorSetLayoutCreateInfo {
                 sType = vk.StructureType.DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -193,23 +196,81 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             }
 
             check(
-                vk.CreateDescriptorSetLayout(vulkan.device, &create, nil, &descriptor_set_layout_handles[descriptor_set_index]),
+                vk.CreateDescriptorSetLayout(vulkan.device, &create, nil, &pipeline.descriptor_set_layouts[descriptor_set_index]),
                 "could not create descriptor set layout",
             )
             log.info("Created descriptor set layout #%d.", descriptor_set_index)
         }
 
-        pool: vk.DescriptorPool
-        {
-            // TODO(jan): Create descriptor pool.
-            // sizes := make([dynamic]vk.DescriptorPoolSize, context.temp_allocator)
-            pool = 0;
+        determine_type :: proc(type_description: TypeDescription) -> vk.DescriptorType {
+            switch comp in type_description.component_type {
+                case ScalarDescription:
+                    switch comp.type {
+                        case ScalarType.FLOAT:
+                            return vk.DescriptorType.UNIFORM_BUFFER
+                        case ScalarType.SIGNED_INT:
+                            return vk.DescriptorType.UNIFORM_BUFFER
+                        case ScalarType.UNSIGNED_INT:
+                            return vk.DescriptorType.UNIFORM_BUFFER
+                        case ScalarType.VOID:
+                            return vk.DescriptorType.UNIFORM_BUFFER
+                    }
+                case StructDescription:
+                    return vk.DescriptorType.UNIFORM_BUFFER
+                case ^TypeDescription:
+                    return determine_type(comp^)
+            }
+            panic("cannot determine type")
         }
 
-        descriptor_set: vk.DescriptorSet
+        sizes := make([dynamic]vk.DescriptorPoolSize, context.temp_allocator)
+        for module in modules {
+            for descriptor_set, descriptor_set_index in module.description.uniforms {
+                for binding, binding_index in descriptor_set {
+                    type: vk.DescriptorType = determine_type(binding.type)
+
+                    for candidate, i in sizes {
+                        if candidate.type == type {
+                            sizes[i].descriptorCount += 1
+                            break
+                        }
+                    }
+
+                    append(&sizes, vk.DescriptorPoolSize {
+                        // TODO(jan): Handle arrays.
+                        descriptorCount = 1,
+                        type = type,
+                    })
+                }
+            }
+        }
+        
+        if (len(sizes) > 0) {
+            create := vk.DescriptorPoolCreateInfo {
+                sType = vk.StructureType.DESCRIPTOR_POOL_CREATE_INFO,
+                maxSets = u32(len(descriptor_sets)),
+                poolSizeCount = u32(len(sizes)),
+                pPoolSizes = raw_data(sizes),
+            }
+
+            check(
+                vk.CreateDescriptorPool(vulkan.device, &create, nil, &pipeline.descriptor_pool),
+                "could not allocate descriptor pool",
+            )
+        }
+
+        pipeline.descriptor_set_handles = make([dynamic]vk.DescriptorSet, len(descriptor_sets), context.allocator)
         {
-            // TODO(jan): Create descriptor set.
-            descriptor_set = 0;
+            alloc := vk.DescriptorSetAllocateInfo {
+                sType = vk.StructureType.DESCRIPTOR_SET_ALLOCATE_INFO,
+                descriptorPool = pipeline.descriptor_pool,
+                descriptorSetCount = u32(len(descriptor_sets)),
+                pSetLayouts = raw_data(pipeline.descriptor_set_layouts),
+            }
+            check(
+                vk.AllocateDescriptorSets(vulkan.device, &alloc, raw_data(pipeline.descriptor_set_handles)),
+                "could not allocate descriptor sets",
+            )
         }
 
         pipeline_layout: vk.PipelineLayout
@@ -217,8 +278,8 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             // TODO(jan): Create push constant ranges from description.
             create := vk.PipelineLayoutCreateInfo {
                 sType = vk.StructureType.PIPELINE_LAYOUT_CREATE_INFO,
-                setLayoutCount = u32(len(descriptor_set_layout_handles)),
-                pSetLayouts = raw_data(descriptor_set_layout_handles),
+                setLayoutCount = u32(len(pipeline.descriptor_set_layouts)),
+                pSetLayouts = raw_data(pipeline.descriptor_set_layouts),
             }
 
             check(
@@ -349,7 +410,20 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
 
 vulkan_destroy_pipelines :: proc(vulkan: ^Vulkan) {
     for name, pipeline in vulkan.pipelines {
+        pipeline := vulkan.pipelines[name]
+
+        for descriptor_set_layout in pipeline.descriptor_set_layouts do vk.DestroyDescriptorSetLayout(vulkan.device, descriptor_set_layout, nil)
+        clear(&pipeline.descriptor_set_layouts)
+
+        vk.DestroyDescriptorPool(vulkan.device, pipeline.descriptor_pool, nil)
+        pipeline.descriptor_pool = 0
+
+        vk.FreeDescriptorSets(vulkan.device, pipeline.descriptor_pool, u32(len(pipeline.descriptor_set_handles)), raw_data(pipeline.descriptor_set_handles))
+        clear(&pipeline.descriptor_set_handles)
+
         vk.DestroyPipeline(vulkan.device, pipeline.handle, nil)
+
+        vulkan.pipelines[name] = pipeline
     }
     clear(&vulkan.pipelines)
 }
