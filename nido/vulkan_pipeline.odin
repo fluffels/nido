@@ -219,6 +219,8 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
                     return vk.DescriptorType.UNIFORM_BUFFER
                 case SamplerDescription:
                     return vk.DescriptorType.SAMPLER
+                case SampledImageDescription:
+                    return vk.DescriptorType.SAMPLED_IMAGE
                 case ^TypeDescription:
                     return determine_type(comp^)
             }

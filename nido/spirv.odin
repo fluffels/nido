@@ -41,10 +41,13 @@ StructDescription :: struct {
 
 SamplerDescription :: struct { }
 
+SampledImageDescription :: struct { }
+
 ComponentDescription :: union {
     ScalarDescription,
     StructDescription,
     SamplerDescription,
+    SampledImageDescription,
     ^TypeDescription,
 }
 
@@ -190,6 +193,7 @@ SpirvAccessQualifier :: enum u32 {
     READ_ONLY = 0,
     WRITE_ONLY = 1,
     READ_WRITE = 2,
+    UNSPECIFIED = 3,
 }
 
 @(private)
@@ -259,6 +263,12 @@ SpirvSampler :: struct {
 }
 
 @(private)
+SpirvSampledImage :: struct {
+    id: u32,
+    image_type_id: u32,
+}
+
+@(private)
 SpirvArray :: struct {
     id: u32,
     element_type_id: u32,
@@ -287,6 +297,7 @@ SpirvType :: union {
     SpirvMatrix,
     SpirvImage,
     SpirvSampler,
+    SpirvSampledImage,
     SpirvArray,
     SpirvStruct,
     SpirvFunction,
@@ -323,6 +334,7 @@ OpCode :: enum u32 {
     TypeMatrix = 24,
     TypeImage = 25,
     TypeSampler = 26,
+    TypeSampledImage = 27,
     TypeArray = 28,
     TypeStruct = 30,
     TypePointer = 32,
@@ -462,12 +474,16 @@ fill_type_description :: proc(
             fill_type_description(vector_type_id, types, vector_type)
             description.component_type = vector_type
             description.component_count = int(t.column_count)
+        case SpirvImage:
+            panic("SpirvImage only handled as part of sampler")
         case SpirvSampler:
             description.dimensions = Dimensionality.SCALAR
             description.component_type = SamplerDescription {}
             description.component_count = 1
-        case SpirvImage:
-            panic("SpirvImage only handled as part of sampler")
+        case SpirvSampledImage:
+            description.dimensions = Dimensionality.SCALAR
+            description.component_type = SampledImageDescription {}
+            description.component_count = 1
         case SpirvArray:
             description.dimensions = Dimensionality.ARRAY
             scalar_type_id := t.element_type_id
@@ -610,11 +626,20 @@ parse :: proc(
                 type.multisampled = SpirvMultisampled(getw(&state))
                 type.sampled = SpirvSampled(getw(&state))
                 type.image_format = SpirvImageFormat(getw(&state))
-                type.access_qualifier = SpirvAccessQualifier(getw(&state))
+                if word_count > 9 {
+                    type.access_qualifier = SpirvAccessQualifier(getw(&state))
+                } else {
+                    type.access_qualifier = SpirvAccessQualifier.UNSPECIFIED
+                }
                 types[type.id] = type
             case OpCode.TypeSampler:
                 type: SpirvSampler
                 type.id = getw(&state)
+                types[type.id] = type
+            case OpCode.TypeSampledImage:
+                type: SpirvSampledImage
+                type.id = getw(&state)
+                type.image_type_id = getw(&state)
                 types[type.id] = type
             case OpCode.TypeArray:
                 type: SpirvArray
@@ -684,7 +709,7 @@ parse :: proc(
             case SpirvStorageClass.Output:
             case SpirvStorageClass.UniformConstant:
             case SpirvStorageClass.Uniform:
-                // NOTE(jan): We only case about these for now.
+                // NOTE(jan): We only care about these for now.
             case:
                 continue
         }
