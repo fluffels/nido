@@ -39,10 +39,13 @@ StructDescription :: struct {
     fields: [dynamic]TypeDescription,
 }
 
+SamplerDescription :: struct { }
+
 ComponentDescription :: union {
     ScalarDescription,
-    ^TypeDescription,
     StructDescription,
+    SamplerDescription,
+    ^TypeDescription,
 }
 
 TypeDescription :: struct {
@@ -69,7 +72,6 @@ ShaderDescription :: struct {
 }
 
 ShaderModuleDescription :: struct {
-    endianness: Endianness,
     shaders: [dynamic]ShaderDescription,
     // NOTE(jan): Indexed like [descriptor set, binding]
     uniforms: [dynamic][dynamic]VariableDescription,
@@ -98,6 +100,96 @@ SpirvStorageClass :: enum u32 {
     Output = 3,
     // NOTE(jan): These are ones we need. There are many more.
     // SEE(jan): https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#Storage_Class
+}
+
+@(private)
+SpirvDimensionality :: enum u32 {
+    D1 = 0,
+    D2 = 1,
+    D3 = 2,
+    CUBE = 3,
+    RECT = 4,
+    BUFFER = 5,
+    SUBPASS_DATA = 6,
+}
+
+@(private)
+SpirvDepth :: enum u32 {
+    NO = 0,
+    YES = 1,
+    NO_INDICATION = 2,
+}
+
+@(private)
+SpirvArrayed :: enum u32 {
+    NO = 0,
+    YES = 1,
+}
+
+@(private)
+SpirvMultisampled :: enum u32 {
+    NO = 0,
+    YES = 1,
+}
+
+@(private)
+SpirvSampled :: enum u32 {
+    UNKNOWN = 0,
+    SAMPLING_COMPATIBLE = 1,
+    READ_WRITE_COMPATIBLE = 2,
+}
+
+@(private)
+SpirvImageFormat :: enum u32 {
+    UNKNOWN = 0,
+    RGBA_32F = 1,
+    RGBA_16F = 2,
+    R_32F = 3,
+    RGBA_8 = 4,
+    RGBA_8_SNORM = 5,
+    RG_32F = 6,
+    RG_16F = 7,
+    R11F_G11F_B10F = 8,
+    R_16F = 9,
+    RGBA_16 = 10,
+    RGB_10_A2 = 11,
+    RG_16 = 12,
+    RG_8 = 13,
+    R_16 = 14,
+    R_8 = 15,
+    RGBA_16_SNORM = 16,
+    RG_16_SNORM = 17,
+    RG_8_SNORM = 18,
+    R_16_SNORM = 19,
+    R_8_SNORM = 20,
+    RGBA_32I = 21,
+    RGBA_16I = 22,
+    RGBA_8I = 23,
+    R_32I = 24,
+    RG_32I = 25,
+    RG_16I = 26,
+    RG_8I = 27,
+    R_16I = 28,
+    R_8I = 29,
+    RGBA_32UI = 30,
+    RGBA_16UI = 31,
+    RGBA_8UI = 32,
+    R_32UI = 33,
+    RGB_10_A2_UI = 34,
+    RG_32UI = 35,
+    RG_16UI = 36,
+    RG_8UI = 37,
+    R_16UI = 38,
+    R_8UI = 39,
+    R_64UI = 40,
+    R_64I = 41,
+}
+
+@(private)
+SpirvAccessQualifier :: enum u32 {
+    READ_ONLY = 0,
+    WRITE_ONLY = 1,
+    READ_WRITE = 2,
 }
 
 @(private)
@@ -149,6 +241,24 @@ SpirvMatrix :: struct {
 }
 
 @(private)
+SpirvImage :: struct {
+    id: u32,
+    sampled_type_id: u32,
+    dim: SpirvDimensionality,
+    depth: SpirvDepth,
+    arrayed: SpirvArrayed,
+    multisampled: SpirvMultisampled,
+    sampled: SpirvSampled,
+    image_format: SpirvImageFormat,
+    access_qualifier: SpirvAccessQualifier,
+}
+
+@(private)
+SpirvSampler :: struct {
+    id: u32,
+}
+
+@(private)
 SpirvArray :: struct {
     id: u32,
     element_type_id: u32,
@@ -175,6 +285,8 @@ SpirvType :: union {
     SpirvFloat,
     SpirvVec,
     SpirvMatrix,
+    SpirvImage,
+    SpirvSampler,
     SpirvArray,
     SpirvStruct,
     SpirvFunction,
@@ -209,6 +321,8 @@ OpCode :: enum u32 {
     TypeFloat = 22,
     TypeVector = 23,
     TypeMatrix = 24,
+    TypeImage = 25,
+    TypeSampler = 26,
     TypeArray = 28,
     TypeStruct = 30,
     TypePointer = 32,
@@ -348,6 +462,12 @@ fill_type_description :: proc(
             fill_type_description(vector_type_id, types, vector_type)
             description.component_type = vector_type
             description.component_count = int(t.column_count)
+        case SpirvSampler:
+            description.dimensions = Dimensionality.SCALAR
+            description.component_type = SamplerDescription {}
+            description.component_count = 1
+        case SpirvImage:
+            panic("SpirvImage only handled as part of sampler")
         case SpirvArray:
             description.dimensions = Dimensionality.ARRAY
             scalar_type_id := t.element_type_id
@@ -383,13 +503,13 @@ parse :: proc(
 ) {
     ok = false
 
-    bindings        := make(map[u32]u32             , 1, context.temp_allocator)
-    descriptor_sets := make(map[u32]u32             , 1, context.temp_allocator)
-    entry_points    := make([dynamic]SpirvEntryPoint,    context.temp_allocator)
-    types           := make(map[u32]SpirvType       , 1, context.temp_allocator)
-    names           := make(map[u32]string          , 1, context.temp_allocator)
-    vars            := make(map[u32]SpirvVar        , 1, context.temp_allocator)
-    pointers        := make(map[u32]SpirvPointer    , 1, context.temp_allocator)
+    var_binding        := make(map[u32]u32             , 1, context.temp_allocator)
+    var_descriptor_set := make(map[u32]u32             , 1, context.temp_allocator)
+    entry_points       := make([dynamic]SpirvEntryPoint,    context.temp_allocator)
+    types              := make(map[u32]SpirvType       , 1, context.temp_allocator)
+    names              := make(map[u32]string          , 1, context.temp_allocator)
+    vars               := make(map[u32]SpirvVar        , 1, context.temp_allocator)
+    pointers           := make(map[u32]SpirvPointer    , 1, context.temp_allocator)
 
     state := State {
         endianness = Endianness.Big,
@@ -480,6 +600,22 @@ parse :: proc(
                 type.column_type_id = getw(&state)
                 type.column_count = getw(&state)
                 types[type.id] = type
+            case OpCode.TypeImage:
+                type: SpirvImage
+                type.id = getw(&state)
+                type.sampled_type_id = getw(&state)
+                type.dim = SpirvDimensionality(getw(&state))
+                type.depth = SpirvDepth(getw(&state))
+                type.arrayed = SpirvArrayed(getw(&state))
+                type.multisampled = SpirvMultisampled(getw(&state))
+                type.sampled = SpirvSampled(getw(&state))
+                type.image_format = SpirvImageFormat(getw(&state))
+                type.access_qualifier = SpirvAccessQualifier(getw(&state))
+                types[type.id] = type
+            case OpCode.TypeSampler:
+                type: SpirvSampler
+                type.id = getw(&state)
+                types[type.id] = type
             case OpCode.TypeArray:
                 type: SpirvArray
                 type.id = getw(&state)
@@ -528,9 +664,9 @@ parse :: proc(
                 decoration_code := DecorationCode(getw(&state))
                 switch decoration_code {
                     case DecorationCode.Binding:
-                        bindings[var_id] = getw(&state)
+                        var_binding[var_id] = getw(&state)
                     case DecorationCode.DescriptorSet:
-                        descriptor_sets[var_id] = getw(&state)
+                        var_descriptor_set[var_id] = getw(&state)
                     case:
                         for i in 3..<word_count do getw(&state)
                 }
@@ -540,48 +676,64 @@ parse :: proc(
         }
     }
 
-    description.shaders = make([dynamic]ShaderDescription)
-    description.uniforms = make([dynamic][dynamic]VariableDescription)
-    for entry in entry_points {
-        shader := ShaderDescription {
-            name = strings.clone(entry.name),
-            inputs = make([dynamic]VariableDescription),
-            outputs = make([dynamic]VariableDescription),
+    // NOTE(jan): Prepare variable descriptions.
+    var_id_to_desc := make(map[u32]VariableDescription, len(vars), context.temp_allocator)
+    for var_id, var in vars {
+        switch var.storage_class {
+            case SpirvStorageClass.Input:
+            case SpirvStorageClass.Output:
+            case SpirvStorageClass.UniformConstant:
+            case SpirvStorageClass.Uniform:
+                // NOTE(jan): We only case about these for now.
+            case:
+                continue
         }
 
-        for var_id in entry.interface_ids {
-            desc: VariableDescription
+        desc: VariableDescription
+        desc.name = strings.clone(names[var.id])
 
-            var := vars[var_id]
-            desc.name = strings.clone(names[var.id])
+        pointer_id := var.type_id
+        pointer := pointers[pointer_id]
+        type_id := pointer.type_id
+        type := types[type_id]
+        fill_type_description(type_id, types, &desc.type)
 
-            pointer_id := var.type_id
-            pointer := pointers[pointer_id]
-            type_id := pointer.type_id
-            type := types[type_id]
-            fill_type_description(type_id, types, &desc.type)
+        var_id_to_desc[var_id] = desc
+    }
 
-            switch var.storage_class {
-                case SpirvStorageClass.Input:
-                    append(&shader.inputs, desc)
-                case SpirvStorageClass.Output:
-                    append(&shader.outputs, desc)
-                case SpirvStorageClass.UniformConstant:
-                    // TODO(jan) what even is this
-                    fallthrough
-                case SpirvStorageClass.Uniform:
-                    descriptor_set_index := bindings[var_id] or_else fmt.panicf("no set for var %d", var_id)
-                    binding_index := bindings[var_id] or_else fmt.panicf("no binding for var %d", var_id)
-
-                    reserve(&description.uniforms, int(descriptor_set_index) + 1)
-                    if description.uniforms[descriptor_set_index] == nil {
-                        description.uniforms[descriptor_set_index] = make([dynamic]VariableDescription)
-                    }
-                    reserve(&description.uniforms[descriptor_set_index], int(binding_index) + 1)
-
-                    description.uniforms[descriptor_set_index][binding_index] = desc
-            }
+    // NOTE(jan): Store uniforms.
+    for var_id, var in vars {
+        if (var.storage_class != SpirvStorageClass.UniformConstant) && (var.storage_class != SpirvStorageClass.Uniform) {
+            continue
         }
+
+        desc := var_id_to_desc[var_id]
+
+        descriptor_set_index := var_descriptor_set[var_id] or_else fmt.panicf("no set for var %d", var_id)
+        binding_index := var_binding[var_id] or_else fmt.panicf("no binding for var %d", var_id)
+
+        for len(description.uniforms) < int(descriptor_set_index) + 1 {
+            bindings := make([dynamic]VariableDescription)
+            append(&description.uniforms, bindings)
+        }
+
+        uniform := &description.uniforms[descriptor_set_index]
+        
+        for len(uniform) < int(binding_index) + 1 {
+            append(uniform, VariableDescription{})
+        }
+
+        uniform[binding_index] = desc
+    }
+
+    // NOTE(jan): Extract shaders from entry points.
+    description.shaders = make([dynamic]ShaderDescription, len(entry_points))
+    for entry, i in entry_points {
+        shader := &description.shaders[i]
+
+        shader.name = strings.clone(entry.name)
+        shader.inputs = make([dynamic]VariableDescription)
+        shader.outputs = make([dynamic]VariableDescription)
 
         switch entry.execution_model {
             case SpirvExecutionModel.Vertex:
@@ -596,12 +748,8 @@ parse :: proc(
             case:
                 panic("unhandled shader type")
         }
-
-        append(&description.shaders, shader)
     }
 
     ok = true
-    description.endianness = endianness
-
     return
 }
