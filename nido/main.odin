@@ -593,11 +593,11 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Main loop.
-	// TODO(jan): test freeing
-	// free_all(context.temp_allocator)
 	done := false;
 	do_resize := false;
 	new_frame: for (!done) {
+		free_all(context.temp_allocator)
+
 		// NOTE(jan): Handle events.
 		sdl2.PumpEvents();
 		for event: sdl2.Event; sdl2.PollEvent(&event); {
