@@ -129,8 +129,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
         // NOTE(jan): A descriptor set's binding can be specified in two modules: E.g. if one module is the vertex shader
         // and the other is the fragment shader and they both need access to it. In this case, we only set the info for
         // the binding once, and the second time around we just add a stage flag.
-        descriptor_set_specified := make([dynamic][dynamic]b32                          , context.temp_allocator)
-        descriptor_sets          := make([dynamic][dynamic]vk.DescriptorSetLayoutBinding, context.temp_allocator)
+        descriptor_set_layout_binding_map := make(map[u32]map[u32]vk.DescriptorSetLayoutBinding, 1, context.temp_allocator)
         for module in modules {
             // NOTE(jan): Each binding needs to specify which shader stages can access it. Here we look through the module
             // and pick out each shader stage defined in it, and assume that if the uniform is in the same module as a
@@ -146,31 +145,20 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
                     // TODO(jan): Other stages.
                 }
             }
-            for descriptor_set, descriptor_set_index in module.description.uniforms {
-                for len(descriptor_sets) < int(descriptor_set_index) + 1 {
-                    bindings_specified := make([dynamic]b32, context.temp_allocator)
-                    bindings           := make([dynamic]vk.DescriptorSetLayoutBinding, context.temp_allocator)
-                    append(&descriptor_set_specified, bindings_specified)
-                    append(&descriptor_sets         , bindings)
+            for uniform_index, uniform in module.description.uniforms {
+                if uniform_index not_in descriptor_set_layout_binding_map {
+                    descriptor_set_layout_binding_map[uniform_index] = make(map[u32]vk.DescriptorSetLayoutBinding, 1, context.temp_allocator)
                 }
-                
-                binding_specified := &descriptor_set_specified[descriptor_set_index]
-                bindings          := &descriptor_sets[descriptor_set_index]
+                bindings := &descriptor_set_layout_binding_map[uniform_index]
 
-                for binding, binding_index in descriptor_set {
-                    for len(bindings) < int(binding_index) + 1 {
-                        append(binding_specified, false)
-                        append(bindings         , vk.DescriptorSetLayoutBinding {})
-                    }
+                for binding_index, binding in uniform {
+                    descriptor_layout_binding, exists := bindings[binding_index]
 
-                    binding_specified := &binding_specified[binding_index]
-                    binding           := &bindings         [binding_index]
-
-                    if (binding_specified^) {
+                    if (exists) {
                         // TODO(jan): Check which shader stages in the module actually use the uniform.
-                        binding.stageFlags += stage_flags
+                        descriptor_layout_binding.stageFlags += stage_flags
                     } else {
-                        binding^ = vk.DescriptorSetLayoutBinding {
+                        descriptor_layout_binding = vk.DescriptorSetLayoutBinding {
                             binding = u32(binding_index),
                             // TODO(jan): Allow for arrays of bindings.
                             descriptorCount = 1,
@@ -183,13 +171,19 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
                         }
                     }
 
-                    binding_specified^ = true
+                    bindings[binding_index] = descriptor_layout_binding
                 }
             }
         }
+        descriptor_set_count := u32(len(descriptor_set_layout_binding_map))
 
-        pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, len(descriptor_sets), context.temp_allocator)
-        for bindings, descriptor_set_index in descriptor_sets {
+        pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, descriptor_set_count, context.temp_allocator)
+        for descriptor_set_index, binding_map in descriptor_set_layout_binding_map {
+            bindings := make([dynamic]vk.DescriptorSetLayoutBinding, len(binding_map), context.temp_allocator)
+            for binding_index, binding in binding_map {
+                bindings[binding_index] = binding
+            }
+
             create := vk.DescriptorSetLayoutCreateInfo {
                 sType = vk.StructureType.DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
                 bindingCount = u32(len(bindings)),
@@ -233,8 +227,8 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
 
         sizes := make([dynamic]vk.DescriptorPoolSize, context.temp_allocator)
         for module in modules {
-            for descriptor_set, descriptor_set_index in module.description.uniforms {
-                for binding, binding_index in descriptor_set {
+            for descriptor_set_index, descriptor_set in module.description.uniforms {
+                for binding_index, binding in descriptor_set {
                     type: vk.DescriptorType = determine_type(binding.type)
 
                     for candidate, i in sizes {
@@ -256,7 +250,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
         if (len(sizes) > 0) {
             create := vk.DescriptorPoolCreateInfo {
                 sType = vk.StructureType.DESCRIPTOR_POOL_CREATE_INFO,
-                maxSets = u32(len(descriptor_sets)),
+                maxSets = u32(len(descriptor_set_layout_binding_map)),
                 poolSizeCount = u32(len(sizes)),
                 pPoolSizes = raw_data(sizes),
             }
@@ -267,12 +261,12 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             )
         }
 
-        pipeline.descriptor_set_handles = make([dynamic]vk.DescriptorSet, len(descriptor_sets), context.allocator)
+        pipeline.descriptor_set_handles = make([dynamic]vk.DescriptorSet, descriptor_set_count, context.allocator)
         {
             alloc := vk.DescriptorSetAllocateInfo {
                 sType = vk.StructureType.DESCRIPTOR_SET_ALLOCATE_INFO,
                 descriptorPool = pipeline.descriptor_pool,
-                descriptorSetCount = u32(len(descriptor_sets)),
+                descriptorSetCount = descriptor_set_count,
                 pSetLayouts = raw_data(pipeline.descriptor_set_layouts),
             }
             check(

@@ -74,7 +74,7 @@ ShaderDescription :: struct {
 ShaderModuleDescription :: struct {
     shaders: [dynamic]ShaderDescription,
     // NOTE(jan): Indexed like [descriptor set, binding]
-    uniforms: [dynamic][dynamic]VariableDescription,
+    uniforms: map[u32]map[u32]VariableDescription,
 }
 
 /****************************
@@ -712,17 +712,12 @@ parse :: proc(
         descriptor_set_index := var_descriptor_set[var_id] or_else fmt.panicf("no set for var %d", var_id)
         binding_index := var_binding[var_id] or_else fmt.panicf("no binding for var %d", var_id)
 
-        for len(description.uniforms) < int(descriptor_set_index) + 1 {
-            bindings := make([dynamic]VariableDescription)
-            append(&description.uniforms, bindings)
+        uniforms := &description.uniforms
+        if descriptor_set_index not_in uniforms {
+            uniforms[descriptor_set_index] = make(map[u32]VariableDescription)
         }
-
-        uniform := &description.uniforms[descriptor_set_index]
+        uniform := &uniforms[descriptor_set_index]
         
-        for len(uniform) < int(binding_index) + 1 {
-            append(uniform, VariableDescription{})
-        }
-
         uniform[binding_index] = desc
     }
 
