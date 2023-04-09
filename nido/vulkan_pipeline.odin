@@ -125,32 +125,6 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             }
         }
 
-        // NOTE(jan): Maps a SPIR-V type to a Vulkan descriptor type.
-        determine_type :: proc(type_description: TypeDescription) -> vk.DescriptorType {
-            switch comp in type_description.component_type {
-                case ScalarDescription:
-                    switch comp.type {
-                        case ScalarType.FLOAT:
-                            return vk.DescriptorType.UNIFORM_BUFFER
-                        case ScalarType.SIGNED_INT:
-                            return vk.DescriptorType.UNIFORM_BUFFER
-                        case ScalarType.UNSIGNED_INT:
-                            return vk.DescriptorType.UNIFORM_BUFFER
-                        case ScalarType.VOID:
-                            return vk.DescriptorType.UNIFORM_BUFFER
-                    }
-                case StructDescription:
-                    return vk.DescriptorType.UNIFORM_BUFFER
-                case SamplerDescription:
-                    return vk.DescriptorType.SAMPLER
-                case SampledImageDescription:
-                    return vk.DescriptorType.COMBINED_IMAGE_SAMPLER
-                case ^TypeDescription:
-                    return determine_type(comp^)
-            }
-            panic("cannot determine type")
-        }
-
         // NOTE(jan): A descriptor set's binding can be specified in two modules: E.g. if one module is the vertex shader
         // and the other is the fragment shader and they both need access to it. In this case, we only set the info for
         // the binding once, and the second time around we just add a stage flag.
@@ -171,52 +145,53 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
                     // TODO(jan): Other stages.
                 }
             }
-            for uniform_index, uniform in module.description.uniforms {
-                if uniform_index not_in descriptor_set_layout_binding_map {
-                    descriptor_set_layout_binding_map[uniform_index] = make(map[u32]vk.DescriptorSetLayoutBinding, 1, context.temp_allocator)
+            for uniform in module.description.uniforms {
+                binding_index := uniform.binding
+                descriptor_set_index := uniform.descriptor_set
+
+                if descriptor_set_index not_in descriptor_set_layout_binding_map {
+                    descriptor_set_layout_binding_map[descriptor_set_index] = make(map[u32]vk.DescriptorSetLayoutBinding, 1, context.temp_allocator)
                 }
-                bindings := &descriptor_set_layout_binding_map[uniform_index]
+                bindings := &descriptor_set_layout_binding_map[descriptor_set_index]
 
-                for binding_index, binding in uniform {
-                    type: vk.DescriptorType = determine_type(binding.type)
+                type: vk.DescriptorType = determine_type(uniform.var.type)
 
-                    // NOTE(jan): Figure out the descriptor set layout binding first.
-                    descriptor_layout_binding, exists := bindings[binding_index]
+                // NOTE(jan): Figure out the descriptor set layout binding first.
+                descriptor_layout_binding, exists := bindings[binding_index]
 
-                    if (exists) {
-                        // TODO(jan): Check which shader stages in the module actually use the uniform.
-                        descriptor_layout_binding.stageFlags += stage_flags
-                    } else {
-                        descriptor_layout_binding = vk.DescriptorSetLayoutBinding {
-                            binding = u32(binding_index),
-                            // TODO(jan): Allow for arrays of bindings.
-                            descriptorCount = 1,
-                            descriptorType = type,
-                            // NOTE(jan): Not using immutable samplers.
-                            pImmutableSamplers = nil,
-                            // TODO(jan): Check which shader stages in the module actually use the uniform.
-                            stageFlags = stage_flags,
-                        }
-                    }
-
-                    bindings[binding_index] = descriptor_layout_binding
-
-                    // NOTE(jan): Allocate size in the descriptor pool.
-                    size_found := false
-                    for candidate, i in sizes {
-                        if candidate.type == type {
-                            sizes[i].descriptorCount += 1
-                            size_found = true
-                            break;
-                        }
-                    }
-
-                    if !size_found do append(&sizes, vk.DescriptorPoolSize {
-                        // TODO(jan): Handle arrays.
+                if (exists) {
+                    // TODO(jan): Check which shader stages in the module actually use the uniform.
+                    descriptor_layout_binding.stageFlags += stage_flags
+                } else {
+                    descriptor_layout_binding = vk.DescriptorSetLayoutBinding {
+                        binding = u32(binding_index),
+                        // TODO(jan): Allow for arrays of bindings.
                         descriptorCount = 1,
-                        type = type,
-                    })
+                        descriptorType = type,
+                        // NOTE(jan): Not using immutable samplers.
+                        pImmutableSamplers = nil,
+                        // TODO(jan): Check which shader stages in the module actually use the uniform.
+                        stageFlags = stage_flags,
+                    }
                 }
+
+                bindings[binding_index] = descriptor_layout_binding
+
+                // NOTE(jan): Allocate size in the descriptor pool.
+                size_found := false
+                for candidate, i in sizes {
+                    if candidate.type == type {
+                        sizes[i].descriptorCount += 1
+                        size_found = true
+                        break;
+                    }
+                }
+
+                if !size_found do append(&sizes, vk.DescriptorPoolSize {
+                    // TODO(jan): Handle arrays.
+                    descriptorCount = 1,
+                    type = type,
+                })
             }
         }
         descriptor_set_count := u32(len(descriptor_set_layout_binding_map))
@@ -292,6 +267,39 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             log.infof("Created pipeline layout.")
         }
 
+        // NOTE(jan): We allocate one buffer per vertex attribute for flexibility, hence each attribute
+        // will have its own binding. Therefore, set binding = location.
+        vertex_inputs := make([dynamic]vk.VertexInputBindingDescription, context.temp_allocator)
+        vertex_attributes := make([dynamic]vk.VertexInputAttributeDescription, context.temp_allocator)
+        for module in modules {
+            for shader in module.description.shaders {
+                if shader.type != ShaderType.Vertex do continue
+
+                for input in shader.inputs {
+                    found := false
+
+                    for vertex_input in vertex_inputs do if vertex_input.binding == input.location do panic("duplicate input binding")
+                    for vertex_attribute in vertex_attributes do if vertex_attribute.location == input.location do panic("duplicate input location")
+
+                    input_desc := vk.VertexInputBindingDescription {
+                        binding = input.location,
+                        stride = determine_size(input.var.type),
+                        inputRate = vk.VertexInputRate.VERTEX,
+                    }
+                    append(&vertex_inputs, input_desc)
+
+                    attr_desc := vk.VertexInputAttributeDescription {
+                        binding = input.location,
+                        location = input.location,
+                        format = determine_format(input.var.type),
+                        // NOTE(jan): Zero offset since we aren't interleaving.
+                        offset = 0,
+                    }
+                    append(&vertex_attributes, attr_desc)
+                }
+            }
+        }
+
         create := vk.GraphicsPipelineCreateInfo {
             sType = vk.StructureType.GRAPHICS_PIPELINE_CREATE_INFO,
             stageCount = u32(len(stages)),
@@ -301,25 +309,10 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             subpass = 0,
             pVertexInputState = &vk.PipelineVertexInputStateCreateInfo {
                 sType = vk.StructureType.PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                vertexBindingDescriptionCount = 1,
-                pVertexBindingDescriptions = &vk.VertexInputBindingDescription {
-                    binding = 0,
-                    // TODO(jan): Read from description.
-                    stride = size_of(f32) * 4,
-                    // TODO(jan): Read from description.
-                    inputRate = vk.VertexInputRate.VERTEX,
-                },
-                vertexAttributeDescriptionCount = 1,
-                pVertexAttributeDescriptions = &vk.VertexInputAttributeDescription {
-                    // TODO(jan): Read from description.
-                    location = 0,
-                    // TODO(jan): Read from description.
-                    binding = 0,
-                    // TODO(jan): Read from description.
-                    format = vk.Format.R32G32B32A32_SFLOAT,
-                    // TODO(jan): Read from description.
-                    offset = 0,
-                },
+                vertexBindingDescriptionCount = u32(len(vertex_inputs)),
+                pVertexBindingDescriptions = raw_data(vertex_inputs),
+                vertexAttributeDescriptionCount = u32(len(vertex_attributes)),
+                pVertexAttributeDescriptions = raw_data(vertex_attributes),
             },
             pInputAssemblyState = &vk.PipelineInputAssemblyStateCreateInfo {
                 sType = vk.StructureType.PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,

@@ -3,6 +3,7 @@ package nido
 import "core:fmt"
 import "core:log"
 import "core:strings"
+import vk "vendor:vulkan"
 
 /**********************
  * Types for export . *
@@ -67,17 +68,152 @@ ShaderType :: enum {
     Fragment,
 }
 
+InputDescription :: struct {
+    var: VariableDescription,
+    location: u32,
+}
+
+OutputDescription :: struct {
+    var: VariableDescription,
+    location: u32,
+}
+
+UniformDescription :: struct {
+    var: VariableDescription,
+    descriptor_set: u32,
+    binding: u32,
+}
+
 ShaderDescription :: struct {
     name: string,
     type: ShaderType,
-    inputs: [dynamic]VariableDescription,
-    outputs: [dynamic]VariableDescription,
+    inputs: [dynamic]InputDescription,
+    outputs: [dynamic]OutputDescription,
 }
 
 ShaderModuleDescription :: struct {
     shaders: [dynamic]ShaderDescription,
-    // NOTE(jan): Indexed like [descriptor set, binding]
-    uniforms: map[u32]map[u32]VariableDescription,
+    uniforms: [dynamic]UniformDescription,
+}
+
+// ********************
+// * Helper functions *
+// ********************
+
+// Determines VkFormat of a SPIR-V vertex input attribute.
+determine_format :: proc(type_description: TypeDescription) -> vk.Format {
+    switch comp in type_description.component_type {
+        case ScalarDescription:
+            switch comp.type {
+                case ScalarType.FLOAT: return vk.Format.R32_SFLOAT
+                case ScalarType.SIGNED_INT: return vk.Format.R32_SINT
+                case ScalarType.UNSIGNED_INT: return vk.Format.R32_UINT
+                case ScalarType.VOID: panic("cannot determine format of void")
+            }
+        case ^TypeDescription:
+            switch nested_comp in comp.component_type {
+                case ScalarDescription:
+                    switch nested_comp.type {
+                        case ScalarType.FLOAT:
+                            switch type_description.component_count {
+                                case 1:
+                                    return vk.Format.R32_SFLOAT
+                                case 2:
+                                    return vk.Format.R32G32_SFLOAT
+                                case 3:
+                                    return vk.Format.R32G32B32_SFLOAT
+                                case 4:
+                                    return vk.Format.R32G32B32A32_SFLOAT
+                            }
+                        case ScalarType.SIGNED_INT:
+                            switch type_description.component_count {
+                                case 1:
+                                    return vk.Format.R32_SINT
+                                case 2:
+                                    return vk.Format.R32G32_SINT
+                                case 3:
+                                    return vk.Format.R32G32B32_SINT
+                                case 4:
+                                    return vk.Format.R32G32B32A32_SINT
+                            }
+                        case ScalarType.UNSIGNED_INT:
+                            switch type_description.component_count {
+                                case 1:
+                                    return vk.Format.R32_UINT
+                                case 2:
+                                    return vk.Format.R32G32_UINT
+                                case 3:
+                                    return vk.Format.R32G32B32_UINT
+                                case 4:
+                                    return vk.Format.R32G32B32A32_UINT
+                            }
+                        case ScalarType.VOID:
+                            panic("cannot determine format of void")
+                    }
+                case StructDescription:
+                    panic("cannot determine format of struct")
+                case SamplerDescription:
+                    panic("cannot determine format of sampler")
+                case SampledImageDescription:
+                    panic("cannot determine format of sampled image")
+                case ^TypeDescription:
+                    panic("cannot determine format of matrix")
+            }
+        case StructDescription:
+            panic("cannot determine format of struct")
+        case SamplerDescription:
+            panic("cannot determine format of sampler")
+        case SampledImageDescription:
+            panic("cannot determine format of sampled image")
+    }
+    panic("cannot determine format")
+}
+
+// Determines the size of a SPIR-V type in bytes.
+determine_size :: proc(type_description: TypeDescription) -> u32 {
+    switch comp in type_description.component_type {
+        case ScalarDescription:
+            return u32(type_description.component_count) * u32(comp.width)
+        case StructDescription:
+            size := u32(0)
+            for field in comp.fields {
+                size += determine_size(field)
+            }
+            return size
+        case SamplerDescription:
+            return 0
+        case SampledImageDescription:
+            return 0
+        case ^TypeDescription:
+            return u32(type_description.component_count) * determine_size(comp^)
+    }
+    panic("cannot determine size")
+}
+
+// Maps a SPIR-V type to a Vulkan descriptor type.
+determine_type :: proc(type_description: TypeDescription) -> vk.DescriptorType {
+    switch comp in type_description.component_type {
+        case ScalarDescription:
+            switch comp.type {
+                case ScalarType.FLOAT:
+                    return vk.DescriptorType.UNIFORM_BUFFER
+                case ScalarType.SIGNED_INT:
+                    return vk.DescriptorType.UNIFORM_BUFFER
+                case ScalarType.UNSIGNED_INT:
+                    return vk.DescriptorType.UNIFORM_BUFFER
+                case ScalarType.VOID:
+                    return vk.DescriptorType.UNIFORM_BUFFER
+            }
+        case StructDescription:
+            return vk.DescriptorType.UNIFORM_BUFFER
+        case SamplerDescription:
+            return vk.DescriptorType.SAMPLER
+        case SampledImageDescription:
+            return vk.DescriptorType.COMBINED_IMAGE_SAMPLER
+        case ^TypeDescription:
+            return determine_type(comp^)
+    }
+    panic("cannot determine type")
 }
 
 /****************************
@@ -346,6 +482,7 @@ OpCode :: enum u32 {
 
 @(private)
 DecorationCode :: enum u32 {
+    Location = 30,
     Binding = 33,
     DescriptorSet = 34,
 }
@@ -521,6 +658,7 @@ parse :: proc(
 
     var_binding        := make(map[u32]u32             , 1, context.temp_allocator)
     var_descriptor_set := make(map[u32]u32             , 1, context.temp_allocator)
+    var_location       := make(map[u32]u32             , 1, context.temp_allocator)
     entry_points       := make([dynamic]SpirvEntryPoint,    context.temp_allocator)
     types              := make(map[u32]SpirvType       , 1, context.temp_allocator)
     names              := make(map[u32]string          , 1, context.temp_allocator)
@@ -688,6 +826,8 @@ parse :: proc(
                 var_id := getw(&state)
                 decoration_code := DecorationCode(getw(&state))
                 switch decoration_code {
+                    case DecorationCode.Location:
+                        var_location[var_id] = getw(&state)
                     case DecorationCode.Binding:
                         var_binding[var_id] = getw(&state)
                     case DecorationCode.DescriptorSet:
@@ -733,17 +873,14 @@ parse :: proc(
         }
 
         desc := var_id_to_desc[var_id]
-
         descriptor_set_index := var_descriptor_set[var_id] or_else fmt.panicf("no set for var %d", var_id)
         binding_index := var_binding[var_id] or_else fmt.panicf("no binding for var %d", var_id)
 
-        uniforms := &description.uniforms
-        if descriptor_set_index not_in uniforms {
-            uniforms[descriptor_set_index] = make(map[u32]VariableDescription)
-        }
-        uniform := &uniforms[descriptor_set_index]
-        
-        uniform[binding_index] = desc
+        append(&description.uniforms, UniformDescription {
+            var = desc,
+            descriptor_set = descriptor_set_index,
+            binding = binding_index,
+        })
     }
 
     // NOTE(jan): Extract shaders from entry points.
@@ -752,8 +889,8 @@ parse :: proc(
         shader := &description.shaders[i]
 
         shader.name = strings.clone(entry.name)
-        shader.inputs = make([dynamic]VariableDescription)
-        shader.outputs = make([dynamic]VariableDescription)
+        shader.inputs = make([dynamic]InputDescription)
+        shader.outputs = make([dynamic]OutputDescription)
 
         switch entry.execution_model {
             case SpirvExecutionModel.Vertex:
@@ -767,6 +904,34 @@ parse :: proc(
             case SpirvExecutionModel.TesselationEvaluation: fallthrough
             case:
                 panic("unhandled shader type")
+        }
+
+        for var_id in entry.interface_ids {
+            var := vars[var_id]
+            desc := var_id_to_desc[var_id]
+            
+            // NOTE(jan): SPIR-V sometimes generates outputs with no location.
+            // These are presumably some internal GLSL thing.
+            if var_id not_in var_location do continue
+            location := var_location[var_id]
+
+            switch var.storage_class {
+                case SpirvStorageClass.Input:
+                    append(&shader.inputs, InputDescription {
+                        var = desc,
+                        location = location,
+                    })
+                case SpirvStorageClass.Output:
+                    append(&shader.outputs, OutputDescription {
+                        var = desc,
+                        location = location,
+                    })
+                case SpirvStorageClass.UniformConstant: fallthrough
+                case SpirvStorageClass.Uniform:
+                    panic("uniform specified in entry interface")
+                case:
+                    panic("unhandled storage class")
+            }
         }
     }
 
