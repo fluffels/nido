@@ -62,7 +62,11 @@ vulkan_swap_create :: proc(vulkan: ^Vulkan) {
 
 vulkan_swap_destroy :: proc(vulkan: ^Vulkan) {
     vk.DestroySwapchainKHR(vulkan.device, vulkan.swap.handle, nil)
-    clear(&vulkan.swap.views)
+
+    for view in vulkan.swap.views {
+        vk.DestroyImageView(vulkan.device, view, nil)
+    }
+    clear(&vulkan.swap.views)   
 
     log.infof("Destroyed swapchain.")
 }

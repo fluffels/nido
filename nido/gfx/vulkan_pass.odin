@@ -16,7 +16,11 @@ vulkan_pass_create :: proc(
 ) -> (
 	vulkan_pass: VulkanPass,
 ) {
-    vulkan_pass.pipeline_metadata = pipeline_metadata
+	allocator := vulkan.resize_allocator
+    vulkan_pass = VulkanPass {
+		pipeline_metadata = pipeline_metadata,
+		framebuffers = make([dynamic]vk.Framebuffer, allocator),
+	}
 
 	// NOTE(jan): Create a render pass.
 	{

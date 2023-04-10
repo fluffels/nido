@@ -1,5 +1,30 @@
 package gfx
 
+V2 :: struct {
+    x: f32,
+    y: f32,
+}
+
+V3 :: struct {
+    x: f32,
+    y: f32,
+    z: f32,
+}
+
+V4 :: struct {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+}
+
+AABox :: struct {
+    left: f32,
+    right: f32,
+    top: f32,
+    bottom: f32,
+}
+
 mat4x4 :: [16]f32
 
 // Set matrix to the identity matrix.

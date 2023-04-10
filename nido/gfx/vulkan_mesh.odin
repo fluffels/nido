@@ -3,100 +3,98 @@ package gfx
 import "core:mem"
 import vk "vendor:vulkan"
 
+VertexAttributeDescription :: struct {
+    component_count: u32,
+}
+
+VertexDescription :: struct {
+    name: string,
+    attributes: []VertexAttributeDescription,
+}
+
 VulkanMesh :: struct {
+    description: VertexDescription,
+    
     vertex_count: u32,
-    index_count: u32,
 
-    positions: [dynamic]f32,
-    position_buffer: VulkanBuffer,
-
-    uv: [dynamic]f32,
-    uv_buffer: VulkanBuffer,
-
-    rgba: [dynamic]f32,
-    rgba_buffer: VulkanBuffer,
+    attributes: [dynamic][dynamic]f32,
+    attribute_buffers: [dynamic]VulkanBuffer,
 
     indices: [dynamic]u32,
     index_buffer: VulkanBuffer,
 }
 
-V2 :: struct {
-    x: f32,
-    y: f32,
+vulkan_mesh_create :: proc(desc: VertexDescription) -> (mesh: VulkanMesh) {
+    mesh.description = desc
+
+    mesh.attribute_buffers = make([dynamic]VulkanBuffer)
+
+    mesh.attributes = make([dynamic][dynamic]f32, len(desc.attributes))
+    for i in 0..<len(desc.attributes) {
+        mesh.attributes[i] = make([dynamic]f32)
+    }
+
+    mesh.indices = make([dynamic]u32)
+
+    return
 }
 
-AABox :: struct {
-    left: f32,
-    right: f32,
-    top: f32,
-    bottom: f32,
-}
-
-vulkan_mesh_push_v2 :: proc(
+vulkan_mesh_push_vertices :: proc(
     mesh: ^VulkanMesh,
-    v2: V2,
+    v: [][][]f32,
 ) {
-    append(&mesh.positions, v2.x);
-    append(&mesh.positions, v2.y);
-
-    append(&mesh.uv, 1);
-    append(&mesh.uv, 1);
-
-    append(&mesh.rgba, 0);
-    append(&mesh.rgba, 1);
-    append(&mesh.rgba, 1);
-    append(&mesh.rgba, 1);
+    for i in 0..<len(v) {
+        for j in 0..<len(v[i]) {
+            for k in 0..<len(v[i][j]) {
+                append(&mesh.attributes[j], v[i][j][k])
+            }
+        }
+    }
+    mesh.vertex_count += u32(len(v))
 }
 
-vulkan_mesh_push_aabox :: proc(
+vulkan_mesh_push_vertex :: proc(
     mesh: ^VulkanMesh,
-    box: AABox,
+    v: [][]f32,
 ) {
-    base := mesh.vertex_count
+    for i in 0..<len(v) {
+        for j in 0..<len(v[i]) {
+            append(&mesh.attributes[i], v[i][j])
+        }
+    }
+    mesh.vertex_count += 1
+}
 
-    vulkan_mesh_push_v2(mesh, V2 {x = box.left , y = box.top   })
-    vulkan_mesh_push_v2(mesh, V2 {x = box.right, y = box.top   })
-    vulkan_mesh_push_v2(mesh, V2 {x = box.right, y = box.bottom})
-    vulkan_mesh_push_v2(mesh, V2 {x = box.left,  y = box.bottom})
+vulkan_mesh_bind :: proc(
+    cmd: vk.CommandBuffer,
+    mesh: ^VulkanMesh,
+) {
+    offsets := [1]vk.DeviceSize {0}
+    for i in 0..<len(mesh.attribute_buffers) {
+        buffer := mesh.attribute_buffers[i]
+        vk.CmdBindVertexBuffers(cmd, u32(i), 1, &buffer.handle, raw_data(offsets[:]))
+    }
 
-    append(&mesh.indices, base)
-    append(&mesh.indices, base + 1)
-    append(&mesh.indices, base + 2)
-    append(&mesh.indices, base + 2)
-    append(&mesh.indices, base + 3)
-    append(&mesh.indices, base)
-
-    mesh.vertex_count += 4
-    mesh.index_count += 6
+    if (mesh.index_buffer.handle != 0) {
+        vk.CmdBindIndexBuffer(cmd, mesh.index_buffer.handle, 0, vk.IndexType.UINT32)
+    }
 }
 
 vulkan_mesh_upload :: proc(
     vulkan: Vulkan,
     mesh: ^VulkanMesh,
 ) {
-    position_buffer_size := u64(len(mesh.positions) * size_of(f32))
-    mesh.position_buffer = vulkan_buffer_create_vertex(vulkan, position_buffer_size)
+    for attribute_desc, i in mesh.description.attributes {
+        data := mesh.attributes[i]
+        size := u64(len(data)) * u64(attribute_desc.component_count) * size_of(f32)
 
-    memory: rawptr = vulkan_memory_map(vulkan, mesh.position_buffer.memory)
-        mem.copy_non_overlapping(memory, raw_data(mesh.positions), int(position_buffer_size))
-    vulkan_memory_unmap(vulkan, mesh.position_buffer.memory)
+        buffer := vulkan_buffer_create_vertex(vulkan, size)
 
-    if (len(mesh.uv) > 0) {
-        size := u64(len(mesh.uv) * size_of(u32))
-        mesh.uv_buffer = vulkan_buffer_create_vertex(vulkan, size)
+        memory: rawptr = vulkan_memory_map(vulkan, buffer.memory)
+            mem.copy_non_overlapping(memory, raw_data(data), int(size))
+        vulkan_memory_unmap(vulkan, buffer.memory)
 
-        memory: rawptr = vulkan_memory_map(vulkan, mesh.uv_buffer.memory)
-            mem.copy_non_overlapping(memory, raw_data(mesh.uv), int(size))
-        vulkan_memory_unmap(vulkan, mesh.uv_buffer.memory)
-    }
-
-    if (len(mesh.rgba) > 0) {
-        size := u64(len(mesh.rgba) * size_of(u32))
-        mesh.rgba_buffer = vulkan_buffer_create_vertex(vulkan, size)
-
-        memory: rawptr = vulkan_memory_map(vulkan, mesh.rgba_buffer.memory)
-            mem.copy_non_overlapping(memory, raw_data(mesh.rgba), int(size))
-        vulkan_memory_unmap(vulkan, mesh.rgba_buffer.memory)
+        append(&mesh.attribute_buffers, buffer)
     }
 
     if (len(mesh.indices) > 0) {
@@ -113,8 +111,13 @@ vulkan_mesh_destroy :: proc(
     vulkan: Vulkan,
     mesh: ^VulkanMesh,
 ) {
-    vulkan_buffer_destroy(vulkan, mesh.position_buffer)
-    vulkan_buffer_destroy(vulkan, mesh.uv_buffer)
-    vulkan_buffer_destroy(vulkan, mesh.rgba_buffer)
-    vulkan_buffer_destroy(vulkan, mesh.index_buffer)
+    for buffer in mesh.attribute_buffers {
+        if (buffer.handle != 0) {
+            vulkan_buffer_destroy(vulkan, buffer)
+        }
+    }
+
+    if (mesh.index_buffer.handle != 0) {
+        vulkan_buffer_destroy(vulkan, mesh.index_buffer)
+    }
 }

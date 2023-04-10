@@ -14,7 +14,7 @@ register :: proc (registry: ^Registry, program: programs.Program) -> () {
 }
 
 make :: proc () -> (registry: Registry) {
-    register(&registry, demo.make())
+    register(&registry, demo.make_program())
 
     registry.current_program_name = "demo"
 

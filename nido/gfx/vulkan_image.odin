@@ -7,6 +7,7 @@ VulkanImage :: struct {
     handle: vk.Image,
     memory: vk.DeviceMemory,
     view: vk.ImageView,
+    extent: vk.Extent2D,
 }
 
 vulkan_image_create :: proc(
@@ -84,6 +85,8 @@ vulkan_image_create :: proc(
             layerCount = vk.REMAINING_ARRAY_LAYERS,
         },
     }, nil, &image.view)
+
+    image.extent = extent
 
     return
 }
@@ -276,7 +279,6 @@ vulkan_image_copy_from_buffer :: proc(
 vulkan_image_update_texture :: proc(
     vulkan: ^Vulkan,
     cmd: vk.CommandBuffer,
-    extent: vk.Extent2D,
     data: []u8,
     image: VulkanImage,
 ) {
@@ -287,7 +289,7 @@ vulkan_image_update_texture :: proc(
         mem.copy_non_overlapping(dst, raw_data(data), len(data))
     vulkan_memory_unmap(vulkan^, staging.memory)
 
-    vulkan_image_copy_from_buffer(vulkan^, cmd, extent, staging, image)
+    vulkan_image_copy_from_buffer(vulkan^, cmd, image.extent, staging, image)
 
     append(&vulkan.temp_buffers, staging)
 
@@ -297,7 +299,6 @@ vulkan_image_update_texture :: proc(
 vulkan_image_upload_texture :: proc(
     vulkan: ^Vulkan,
     cmd: vk.CommandBuffer,
-    extent: vk.Extent2D,
     format: vk.Format,
     data: []u8,
 ) -> (image: VulkanImage) {
@@ -305,7 +306,7 @@ vulkan_image_upload_texture :: proc(
         vulkan^,
         vk.ImageType.D2,
         vk.ImageViewType.D2,
-        extent,
+        image.extent,
         1,
         vulkan.gfx_queue_family,
         format,
@@ -319,7 +320,7 @@ vulkan_image_upload_texture :: proc(
         false,
     )
 
-    vulkan_image_update_texture(vulkan, cmd, extent, data, image)
+    vulkan_image_update_texture(vulkan, cmd, data, image)
 
     return
 }

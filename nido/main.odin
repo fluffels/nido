@@ -6,6 +6,7 @@ import "core:log"
 import "core:math"
 import "core:math/bits"
 import "core:mem"
+import "core:mem/virtual"
 import "core:os"
 import "core:slice"
 import "core:strings"
@@ -16,11 +17,6 @@ import vk "vendor:vulkan"
 import "gfx"
 import "programs"
 import "registry"
-
-Uniforms :: struct {
-	mvp: gfx.mat4x4,
-	ortho: gfx.mat4x4,
-}
 
 vulkan_debug :: proc "stdcall" (
 	flags: vk.DebugReportFlagsEXT,
@@ -495,6 +491,7 @@ main :: proc() {
                           64)
 	vulkan.resize_allocator = mem.dynamic_pool_allocator(&vulkan.resize_pool)
 
+	// NOTE(jan): Create semaphores used to control presentation.
 	image_ready, cmd_buffer_done : vk.Semaphore
 	{
 		create := vk.SemaphoreCreateInfo {
@@ -511,97 +508,21 @@ main :: proc() {
 	}
 	log.infof("Semaphores created.")
 
-	cmd_pool: vk.CommandPool
-	{
-		create := vk.CommandPoolCreateInfo {
-			sType = vk.StructureType.COMMAND_POOL_CREATE_INFO,
-			// TODO(jan): If we re-record each frame...
-			flags = {
-				// vk.CommandPoolCreateFlag.TRANSIENT,
-				vk.CommandPoolCreateFlag.RESET_COMMAND_BUFFER,
-			},
-			queueFamilyIndex = vulkan.gfx_queue_family,
-		}
-		gfx.check(
-			vk.CreateCommandPool(vulkan.device, &create, nil, &cmd_pool),
-			"could not create command pool",
-		)
-		log.infof("Created command pool.")
-	}
+	// NOTE(jan): Create command pools and per-frame buffer.
+	transient_cmd_pool := gfx.vulkan_cmd_create_transient_pool(vulkan)
+	cmd_pool := gfx.vulkan_cmd_create_per_frame_pool(vulkan)
+	cmd      := gfx.vulkan_cmd_allocate_buffer(vulkan, cmd_pool)
 
-	cmd: vk.CommandBuffer
-	{
-		info := vk.CommandBufferAllocateInfo {
-			sType = vk.StructureType.COMMAND_BUFFER_ALLOCATE_INFO,
-			commandBufferCount = 1,
-			commandPool = cmd_pool,
-			level = vk.CommandBufferLevel.PRIMARY,
-		}
-		gfx.check(
-			vk.AllocateCommandBuffers(vulkan.device, &info, &cmd),
-			"could not allocate cmd buffer",
-		)
-		log.info("Created command buffer.")
-	}
-
-	transient_cmd_pool: vk.CommandPool
-	{
-		create := vk.CommandPoolCreateInfo {
-			sType = vk.StructureType.COMMAND_POOL_CREATE_INFO,
-			flags = {
-				vk.CommandPoolCreateFlag.TRANSIENT,
-			},
-			queueFamilyIndex = vulkan.gfx_queue_family,
-		}
-		gfx.check(
-			vk.CreateCommandPool(vulkan.device, &create, nil, &transient_cmd_pool),
-			"could not create transient command pool",
-		)
-		log.infof("Created transient command pool.")
-	}
-
-	vulkan_pass := gfx.vulkan_pass_create(
-		&vulkan,
-		[]gfx.VulkanPipelineMetadata {
-			{
-				"stbtt",
-				{
-					"ortho_xy_uv_rgba",
-					"text",
-				},
-			},
-		},
-	)
-
-	linear_sampler := gfx.vulkan_sampler_create(vulkan)
-
-	font_sprite_sheet_data := make([]u8, 512 * 512)
-	mem.set(raw_data(font_sprite_sheet_data), 255, 512 * 512)
-	font_sprite_sheet := gfx.vulkan_image_create_2d_monochrome_texture(vulkan, vk.Extent2D { 512, 512 })
-
+	// NOTE(jan): Initialize registry of programs.
 	registry := registry.make()
 	program := registry.programs[registry.current_program_name]
 
-	// NOTE(jan): Upload mesh.
-	mesh := gfx.VulkanMesh {
-		positions = make([dynamic]f32, context.temp_allocator),
-		uv = make([dynamic]f32, context.temp_allocator),
-		rgba = make([dynamic]f32, context.temp_allocator),
-		indices = make([dynamic]u32, context.temp_allocator),
-	}
-	screen := gfx.AABox {
-		left = -1,
-		right = 1,
-		top = 1,
-		bottom = -1,
-	}
-	gfx.vulkan_mesh_push_aabox(&mesh, screen)
-	gfx.vulkan_mesh_upload(vulkan, &mesh)
-
-	uniforms: Uniforms
-	gfx.identity(&uniforms.mvp)
-	gfx.identity(&uniforms.ortho)
-	uniform_buffer := gfx.vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
+	// NOTE(jan): Create arena for the program and initialize the program.
+	program_allocator: virtual.Arena
+	alloc_error := virtual.arena_init_growing(&program_allocator)
+	if alloc_error != virtual.Allocator_Error.None do panic("could not initialize program allocator")
+	programs.initialize(&program, &vulkan, context.allocator)
+	programs.create_passes(&program, &vulkan)
 
 	// NOTE(jan): Main loop.
 	done := false;
@@ -627,7 +548,7 @@ main :: proc() {
 
 		// NOTE(jan): Resize framebuffers and swap chain.
 		if (do_resize) {
-			gfx.vulkan_pass_destroy(&vulkan, &vulkan_pass)
+			programs.destroy_passes(&program, &vulkan)
 
 			free_all(vulkan.resize_allocator)
 
@@ -636,82 +557,13 @@ main :: proc() {
 			gfx.vulkan_swap_update_extent(&vulkan)
 			gfx.vulkan_swap_create(&vulkan)
 
-			vulkan_pass = gfx.vulkan_pass_create(
-				&vulkan,
-				[]gfx.VulkanPipelineMetadata {
-					{
-						"stbtt",
-						{
-							"ortho_xy_uv_rgba",
-							"text",
-						},
-					},
-				},
-			)
+			programs.create_passes(&program, &vulkan)
 		}
 
-		program.handler(&program.state, &vulkan)
-
-		assert("stbtt" in vulkan_pass.pipelines)
-		pipeline := vulkan_pass.pipelines["stbtt"]
-
-		// NOTE(jan): Update uniforms.
-		gfx.vulkan_memory_copy(vulkan, uniform_buffer, &uniforms, size_of(uniforms))
-		gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, uniform_buffer);
-
-		// NOTE(jan): Update sampler.
-		{
-			transient_cmd: vk.CommandBuffer
-			info := vk.CommandBufferAllocateInfo {
-				sType = vk.StructureType.COMMAND_BUFFER_ALLOCATE_INFO,
-				commandBufferCount = 1,
-				commandPool = transient_cmd_pool,
-				level = vk.CommandBufferLevel.PRIMARY,
-			}
-			gfx.check(
-				vk.AllocateCommandBuffers(vulkan.device, &info, &transient_cmd),
-				"could not allocate cmd buffer",
-			)
-
-			gfx.check(
-				vk.BeginCommandBuffer(transient_cmd, &vk.CommandBufferBeginInfo {
-					sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
-					flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
-				}),
-				"could not begin transient command buffer",
-			)
-
-			gfx.vulkan_image_update_texture(
-				&vulkan,
-				transient_cmd,
-				vk.Extent2D { 512, 512 },
-				font_sprite_sheet_data,
-				font_sprite_sheet,
-			)
-			gfx.vulkan_descriptor_update_combined_image_sampler(
-				vulkan,
-				pipeline.descriptor_sets[0],
-				1,
-				[]gfx.VulkanImage { font_sprite_sheet },
-				linear_sampler,
-			)
-
-			vk.EndCommandBuffer(transient_cmd)
-
-			gfx.check(
-				vk.QueueSubmit(
-					vulkan.gfx_queue,
-					1,
-					&vk.SubmitInfo {
-						sType = vk.StructureType.SUBMIT_INFO,
-						commandBufferCount = 1,
-						pCommandBuffers = &transient_cmd,
-					},
-					0,
-				),
-				"could not submit transient command buffer",
-			)
-		}
+		// NOTE(jan): Allocate a transient command buffer for before-frame actions like updating uniforms.
+		transient_cmd := gfx.vulkan_cmd_allocate_and_begin_transient(vulkan, transient_cmd_pool)
+		programs.prepare_frame(&program, &vulkan, transient_cmd)
+		gfx.vulkan_cmd_end_and_submit(vulkan, &transient_cmd)
 
 		// NOTE(jan): Acquire next swap image.
 		swap_image_index: u32;
@@ -747,47 +599,9 @@ main :: proc() {
 			"could not begin cmd buffer",
 		)
 
-		clears := [?]vk.ClearValue {
-			vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}},
-		}
+		programs.draw_frame(&program, &vulkan, cmd, swap_image_index)
 
-		pass := vk.RenderPassBeginInfo {
-			sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
-			clearValueCount = u32(len(clears)),
-			pClearValues = raw_data(&clears),
-			framebuffer = vulkan_pass.framebuffers[swap_image_index],
-			renderArea = vk.Rect2D {
-				extent = vulkan.swap.extent,
-				offset = {0, 0},
-			},
-			renderPass = vulkan_pass.render_pass,
-		}
-
-		vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
-		
-		vk.CmdBindDescriptorSets(
-			cmd,
-			vk.PipelineBindPoint.GRAPHICS,
-			pipeline.layout,
-			0, u32(len(pipeline.descriptor_sets)),
-			raw_data(pipeline.descriptor_sets),
-			0, nil,
-		)
-
-		vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-		// vk.CmdBindDescriptorSets
-		offsets := [1]vk.DeviceSize {0}
-		vk.CmdBindVertexBuffers(cmd, 0, 1, &mesh.position_buffer.handle, raw_data(offsets[:]))
-		vk.CmdBindVertexBuffers(cmd, 1, 1, &mesh.uv_buffer.handle, raw_data(offsets[:]))
-		vk.CmdBindVertexBuffers(cmd, 2, 1, &mesh.rgba_buffer.handle, raw_data(offsets[:]))
-		vk.CmdBindIndexBuffer(cmd, mesh.index_buffer.handle, 0, vk.IndexType.UINT32)
-		vk.CmdDrawIndexed(cmd, u32(len(mesh.indices)), 1, 0, 0, 0)
-
-		vk.CmdEndRenderPass(cmd)
-		gfx.check(
-			vk.EndCommandBuffer(cmd),
-			"could not end command buffer",
-		)
+		vk.EndCommandBuffer(cmd)
 
 		// NOTE(jan): Submit command buffer.
 		submit := vk.SubmitInfo {

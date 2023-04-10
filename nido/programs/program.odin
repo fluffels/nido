@@ -1,13 +1,89 @@
 package programs
 
+import "core:mem"
+import vk "vendor:vulkan"
+
 import gfx "../gfx"
 
-ProgramState :: struct { }
+Initialize :: struct {
+    vulkan: ^gfx.Vulkan,
+    allocator: mem.Allocator,
+}
 
-ProgramProc :: #type proc (state: ^ProgramState, vulkan: ^gfx.Vulkan)
+CreatePasses :: struct {
+    vulkan: ^gfx.Vulkan,
+}
+
+DestroyPasses :: struct {
+    vulkan: ^gfx.Vulkan,
+}
+
+PrepareFrame :: struct {
+    vulkan: ^gfx.Vulkan,
+    cmd: vk.CommandBuffer,
+}
+
+DrawFrame :: struct {
+    vulkan: ^gfx.Vulkan,
+    cmd: vk.CommandBuffer,
+    image_index: u32,
+}
+
+CleanupFrame :: struct {
+}
+
+Request :: union {
+    Initialize,
+    CreatePasses,
+    DestroyPasses,
+    PrepareFrame,
+    DrawFrame,
+    CleanupFrame,
+}
 
 Program :: struct {
     name: string,
     handler: ProgramProc,
-    state: ProgramState,
+    state: rawptr,
+}
+
+ProgramProc :: #type proc (program: ^Program, request: Request)
+
+initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, allocator: mem.Allocator) {
+    request := Initialize {
+        vulkan = vulkan,
+        allocator = allocator,
+    }
+    program.handler(program, request)
+}
+
+create_passes :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+    request := CreatePasses {
+        vulkan = vulkan,
+    }
+    program.handler(program, request)
+}
+
+destroy_passes :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+    request := DestroyPasses {
+        vulkan = vulkan,
+    }
+    program.handler(program, request)
+}
+
+prepare_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer) {
+    request := PrepareFrame {
+        vulkan = vulkan,
+        cmd = cmd,
+    }
+    program.handler(program, request)
+}
+
+draw_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer, image_index: u32) {
+    request := DrawFrame {
+        vulkan = vulkan,
+        cmd = cmd,
+        image_index = image_index,
+    }
+    program.handler(program, request)
 }
