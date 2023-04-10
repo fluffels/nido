@@ -115,6 +115,24 @@ vulkan_buffer_create_staging :: proc(
     return buffer
 }
 
+vulkan_buffer_create_uniform :: proc(
+    vulkan: Vulkan,
+    size: u64,
+) -> (buffer: VulkanBuffer) {
+    usage := vk.BufferUsageFlags {
+        vk.BufferUsageFlag.UNIFORM_BUFFER,
+    }
+    buffer = vulkan_buffer_create(vulkan, vulkan.gfx_queue_family, usage, size)
+
+    flags := vk.MemoryPropertyFlags {
+        vk.MemoryPropertyFlag.HOST_VISIBLE,
+        vk.MemoryPropertyFlag.HOST_COHERENT,
+    }
+    vulkan_buffer_allocate(vulkan, flags, &buffer)
+
+    return buffer
+}
+
 vulkan_buffer_destroy :: proc(
     vulkan: Vulkan,
     buffer: VulkanBuffer,

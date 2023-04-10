@@ -13,6 +13,11 @@ import "core:runtime"
 import "vendor:sdl2"
 import vk "vendor:vulkan"
 
+Uniforms :: struct {
+	mvp: mat4x4,
+	ortho: mat4x4,
+}
+
 check :: proc(result: vk.Result, error: string) {
 	if (result != vk.Result.SUCCESS) {
 		panic(error)
@@ -599,6 +604,10 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Main loop.
+	uniforms: Uniforms
+	identity(&uniforms.mvp)
+	identity(&uniforms.ortho)
+
 	done := false;
 	do_resize := false;
 	new_frame: for (!done) {
@@ -635,6 +644,8 @@ main :: proc() {
 		}
 
 		// NOTE(jan): Update uniforms.
+		// PERF(jan): Allocating each frame is slow.
+		uniform_buffer := vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
 
 		// NOTE(jan): Upload mesh.
 		mesh := VulkanMesh {
