@@ -1,6 +1,7 @@
 package demo
 
 import "core:log"
+import "core:math"
 import "core:mem"
 
 import vk "vendor:vulkan"
@@ -29,10 +30,10 @@ DemoState :: struct {
 
 PIPELINES := []gfx.VulkanPipelineMetadata {
     {
-        "stbtt",
+        "textured",
         {
-            "ortho_xy_uv_rgba",
-            "text",
+            "ortho_xy_uv",
+            "sampler",
         },
     },
 }
@@ -45,9 +46,6 @@ VERTEX_DESCRIPTION := gfx.VertexDescription {
         },
         {
             component_count = 2,
-        },
-        {
-            component_count = 4,
         },
     },
 }
@@ -64,14 +62,20 @@ init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^
 	gfx.identity(&new_state.uniforms.ortho)
 	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
 
-    // NOTE(jan): Sampler for font texture.
+    // NOTE(jan): Sampler for textures.
 	new_state.linear_sampler = gfx.vulkan_sampler_create(vulkan)
 
-    // NOTE(jan): Glyph map.
+    // NOTE(jan): Texture.
     extent := vk.Extent2D { 512, 512 }
     size := extent.height * extent.width
 	new_state.font_bitmap = make([]u8, size)
-	mem.set(raw_data(new_state.font_bitmap), 255, int(size))
+    for i in 0..<extent.height {
+        for j in 0..<extent.width {
+            s := (1 + math.cos_f32(f32(j) / 10)) / 2
+            value := u8(s * 255)
+            new_state.font_bitmap[i * extent.width + j] = value
+        }
+    }
 	new_state.font_sprite_sheet = gfx.vulkan_image_create_2d_monochrome_texture(vulkan, extent)
 
 	// NOTE(jan): Upload mesh.
@@ -80,22 +84,18 @@ init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^
         {
             {-1, -1},
             {0, 0},
-            {0, 1, 1, 1},
         },
         {
             {1, -1},
             {1, 0},
-            {0, 1, 1, 1},
         },
         {
             {1, 1},
             {1, 1},
-            {0, 1, 1, 1},
         },
         {
             {-1, 1},
             {0, 1},
-            {0, 1, 1, 1},
         },
     }
     append(&new_state.mesh.indices, 0)
@@ -122,8 +122,8 @@ prepare_frame :: proc (state: ^DemoState, request: programs.PrepareFrame) {
     cmd := request.cmd
     vulkan := request.vulkan^
 
-    assert("stbtt" in state.vulkan_pass.pipelines)
-    pipeline := state.vulkan_pass.pipelines["stbtt"]
+    assert("textured" in state.vulkan_pass.pipelines)
+    pipeline := state.vulkan_pass.pipelines["textured"]
 
     // NOTE(jan): Update uniforms.
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
@@ -150,8 +150,8 @@ draw_frame :: proc (state: ^DemoState, request: programs.DrawFrame) {
     vulkan := request.vulkan
     vulkan_pass := state.vulkan_pass
 
-    assert("stbtt" in vulkan_pass.pipelines)
-    pipeline := vulkan_pass.pipelines["stbtt"]
+    assert("textured" in vulkan_pass.pipelines)
+    pipeline := vulkan_pass.pipelines["textured"]
 
     clears := [?]vk.ClearValue {
         vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}},
@@ -189,6 +189,18 @@ draw_frame :: proc (state: ^DemoState, request: programs.DrawFrame) {
     vk.CmdEndRenderPass(cmd)
 }
 
+cleanup_frame :: proc (state: ^DemoState, request: programs.CleanupFrame) { }
+
+cleanup :: proc (state: ^DemoState, request: programs.Cleanup) {
+    vulkan := request.vulkan^
+
+    gfx.vulkan_image_destroy(vulkan, state.font_sprite_sheet)
+    gfx.vulkan_sampler_destroy(vulkan, state.linear_sampler)
+    gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
+    gfx.vulkan_buffer_destroy(vulkan, state.uniform_buffer)
+    gfx.vulkan_pass_destroy(&vulkan, &state.vulkan_pass)
+}
+
 handler :: proc (program: ^programs.Program, request: programs.Request) {
     state := (^DemoState)(program.state)
 
@@ -204,7 +216,9 @@ handler :: proc (program: ^programs.Program, request: programs.Request) {
         case programs.DrawFrame:
             draw_frame(state, r)
         case programs.CleanupFrame:
-            log.infof("demo cleanup frame")
+            cleanup_frame(state, r)
+        case programs.Cleanup:
+            cleanup(state, r)
         case:
             panic("unhandled request")
     }

@@ -30,6 +30,12 @@ DrawFrame :: struct {
 }
 
 CleanupFrame :: struct {
+    vulkan: ^gfx.Vulkan,
+}
+
+Cleanup :: struct {
+    vulkan: ^gfx.Vulkan,
+    allocator: mem.Allocator,
 }
 
 Request :: union {
@@ -39,6 +45,7 @@ Request :: union {
     PrepareFrame,
     DrawFrame,
     CleanupFrame,
+    Cleanup,
 }
 
 Program :: struct {
@@ -84,6 +91,21 @@ draw_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffe
         vulkan = vulkan,
         cmd = cmd,
         image_index = image_index,
+    }
+    program.handler(program, request)
+}
+
+cleanup_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+    request := CleanupFrame {
+        vulkan = vulkan,
+    }
+    program.handler(program, request)
+}
+
+cleanup :: proc (program: ^Program, vulkan: ^gfx.Vulkan, allocator: mem.Allocator) {
+    request := Cleanup {
+        vulkan = vulkan,
+        allocator = allocator,
     }
     program.handler(program, request)
 }

@@ -649,6 +649,8 @@ main :: proc() {
 		// PERF(jan): This might be slow.
 		vk.QueueWaitIdle(vulkan.gfx_queue)
 
+		programs.cleanup_frame(&program, &vulkan)
+
 		for buffer in vulkan.temp_buffers {
 			gfx.vulkan_buffer_destroy(vulkan, buffer)
 		}
