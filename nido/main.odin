@@ -18,12 +18,6 @@ Uniforms :: struct {
 	ortho: mat4x4,
 }
 
-check :: proc(result: vk.Result, error: string) {
-	if (result != vk.Result.SUCCESS) {
-		panic(error)
-	}
-}
-
 vulkan_debug :: proc "stdcall" (
 	flags: vk.DebugReportFlagsEXT,
 	object_type: vk.DebugReportObjectTypeEXT,
@@ -419,8 +413,8 @@ main :: proc() {
 
 	// NOTE(jan): Get swap formats.
 	{
-		swap_update_capabilities(&vulkan)
-		swap_update_extent(&vulkan)
+		vulkan_swap_update_capabilities(&vulkan)
+		vulkan_swap_update_extent(&vulkan)
 
 		if vk.ImageUsageFlag.COLOR_ATTACHMENT not_in vulkan.swap.capabilities.supportedUsageFlags {
 			panic("surface does not support color attachment")
@@ -551,8 +545,8 @@ main :: proc() {
 	// TODO(jan): Create render passes separately and reference them in the pipeline meta.
 	vulkan_create_pipelines(&vulkan, render_pass)
 
-	swap_create(&vulkan)
-	framebuffer_create(&vulkan, render_pass)
+	vulkan_swap_create(&vulkan)
+	vulkan_framebuffer_create(&vulkan, render_pass)
 
 	image_ready, cmd_buffer_done : vk.Semaphore
 	{
@@ -670,18 +664,18 @@ main :: proc() {
 
 		// NOTE(jan): Resize framebuffers and swap chain.
 		if (do_resize) {
-			framebuffer_destroy(&vulkan)
-			swap_destroy(&vulkan)
+			vulkan_framebuffer_destroy(&vulkan)
+			vulkan_swap_destroy(&vulkan)
 			vulkan_destroy_pipelines(&vulkan)
 
 			free_all(vulkan.resize_allocator)
 
-			swap_update_capabilities(&vulkan)
-			swap_update_extent(&vulkan)
+			vulkan_swap_update_capabilities(&vulkan)
+			vulkan_swap_update_extent(&vulkan)
 
 			vulkan_create_pipelines(&vulkan, render_pass)
-			swap_create(&vulkan)
-			framebuffer_create(&vulkan, render_pass)
+			vulkan_swap_create(&vulkan)
+			vulkan_framebuffer_create(&vulkan, render_pass)
 		}
 
 		assert("stbtt" in vulkan.pipelines)
