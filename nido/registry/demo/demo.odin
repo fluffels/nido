@@ -71,10 +71,7 @@ init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^
     extent := vk.Extent2D { 512, 512 }
     size := extent.height * extent.width
 	new_state.font_bitmap = make([]u8, size)
-	// mem.set(raw_data(new_state.font_bitmap), 255, int(size))
-    for i in 0..<512*512 {
-        new_state.font_bitmap[i] = 255
-    }
+	mem.set(raw_data(new_state.font_bitmap), 255, int(size))
 	new_state.font_sprite_sheet = gfx.vulkan_image_create_2d_monochrome_texture(vulkan, extent)
 
 	// NOTE(jan): Upload mesh.
