@@ -643,10 +643,6 @@ main :: proc() {
 			framebuffer_create(&vulkan, render_pass)
 		}
 
-		// NOTE(jan): Update uniforms.
-		// PERF(jan): Allocating each frame is slow.
-		uniform_buffer := vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
-
 		// NOTE(jan): Upload mesh.
 		mesh := VulkanMesh {
 			vertices = make([dynamic]f32, context.temp_allocator),
@@ -714,9 +710,24 @@ main :: proc() {
 		vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
 
 		assert("stbtt" in vulkan.pipelines)
-		pipeline := vulkan.pipelines["stbtt"].handle
+		pipeline := vulkan.pipelines["stbtt"]
 
-		vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline)
+		// NOTE(jan): Update uniforms.
+		// PERF(jan): Allocating each frame is slow.
+		uniform_buffer := vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
+		vulkan_memory_copy(vulkan, uniform_buffer, &uniforms, size_of(uniforms))
+		vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, uniform_buffer);
+		
+		vk.CmdBindDescriptorSets(
+			cmd,
+			vk.PipelineBindPoint.GRAPHICS,
+			pipeline.layout,
+			0, u32(len(pipeline.descriptor_sets)),
+			raw_data(pipeline.descriptor_sets),
+			0, nil,
+		)
+
+		vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
 		// vk.CmdBindDescriptorSets
 		offsets := [1]vk.DeviceSize {0}
 		vk.CmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.handle, raw_data(offsets[:]))

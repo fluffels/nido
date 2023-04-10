@@ -40,7 +40,8 @@ VulkanPipeline :: struct {
     handle: vk.Pipeline,
     descriptor_set_layouts: [dynamic]vk.DescriptorSetLayout,
     descriptor_pool: vk.DescriptorPool,
-    descriptor_set_handles: [dynamic]vk.DescriptorSet,
+    descriptor_sets: [dynamic]vk.DescriptorSet,
+    layout: vk.PipelineLayout,
     render_pass: vk.RenderPass,
 }
 
@@ -241,7 +242,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             )
         }
 
-        pipeline.descriptor_set_handles = make([dynamic]vk.DescriptorSet, descriptor_set_count, allocator)
+        pipeline.descriptor_sets = make([dynamic]vk.DescriptorSet, descriptor_set_count, allocator)
         {
             alloc := vk.DescriptorSetAllocateInfo {
                 sType = vk.StructureType.DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -250,12 +251,11 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
                 pSetLayouts = raw_data(pipeline.descriptor_set_layouts),
             }
             check(
-                vk.AllocateDescriptorSets(vulkan.device, &alloc, raw_data(pipeline.descriptor_set_handles)),
+                vk.AllocateDescriptorSets(vulkan.device, &alloc, raw_data(pipeline.descriptor_sets)),
                 "could not allocate descriptor sets",
             )
         }
 
-        pipeline_layout: vk.PipelineLayout
         {
             // TODO(jan): Create push constant ranges from description.
             create := vk.PipelineLayoutCreateInfo {
@@ -265,7 +265,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             }
 
             check(
-                vk.CreatePipelineLayout(vulkan.device, &create, nil, &pipeline_layout),
+                vk.CreatePipelineLayout(vulkan.device, &create, nil, &pipeline.layout),
                 "couldn't create pipeline layout",
             )
             log.infof("Created pipeline layout.")
@@ -309,7 +309,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             stageCount = u32(len(stages)),
             pStages = raw_data(stages),
             renderPass = render_pass,
-            layout = pipeline_layout,
+            layout = pipeline.layout,
             subpass = 0,
             pVertexInputState = &vk.PipelineVertexInputStateCreateInfo {
                 sType = vk.StructureType.PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -415,8 +415,8 @@ vulkan_destroy_pipelines :: proc(vulkan: ^Vulkan) {
         for descriptor_set_layout in pipeline.descriptor_set_layouts do vk.DestroyDescriptorSetLayout(vulkan.device, descriptor_set_layout, nil)
         clear(&pipeline.descriptor_set_layouts)
 
-        vk.FreeDescriptorSets(vulkan.device, pipeline.descriptor_pool, u32(len(pipeline.descriptor_set_handles)), raw_data(pipeline.descriptor_set_handles))
-        clear(&pipeline.descriptor_set_handles)
+        vk.FreeDescriptorSets(vulkan.device, pipeline.descriptor_pool, u32(len(pipeline.descriptor_sets)), raw_data(pipeline.descriptor_sets))
+        clear(&pipeline.descriptor_sets)
 
         vk.DestroyDescriptorPool(vulkan.device, pipeline.descriptor_pool, nil)
         pipeline.descriptor_pool = 0

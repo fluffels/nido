@@ -1,5 +1,6 @@
 package nido
 
+import "core:mem"
 import vk "vendor:vulkan"
 
 vulkan_memory_type_index :: proc(
@@ -42,4 +43,15 @@ vulkan_memory_unmap :: proc(
     memory: vk.DeviceMemory,
 ) {
     vk.UnmapMemory(vulkan.device, memory)
+}
+
+vulkan_memory_copy :: proc(
+    vulkan: Vulkan,
+    buffer: VulkanBuffer,
+    data: rawptr,
+    size: int,
+) {
+    dst := vulkan_memory_map(vulkan, buffer.memory)
+    mem.copy_non_overlapping(dst, data, size)
+    vulkan_memory_unmap(vulkan, buffer.memory)
 }
