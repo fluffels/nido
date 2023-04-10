@@ -97,6 +97,30 @@ vulkan_image_destroy :: proc(
     vk.DestroyImage(vulkan.device, image.handle, nil)
 }
 
+vulkan_image_create_2d_monochrome_texture :: proc(
+    vulkan: Vulkan,
+    extent: vk.Extent2D,
+) -> (image: VulkanImage) {
+    image = vulkan_image_create(
+        vulkan,
+        vk.ImageType.D2,
+        vk.ImageViewType.D2,
+        extent,
+        1,
+        vulkan.gfx_queue_family,
+        vk.Format.R8_UNORM,
+        { 
+            vk.ImageUsageFlag.TRANSFER_DST,
+            vk.ImageUsageFlag.SAMPLED,
+        },
+        { vk.ImageAspectFlag.COLOR },
+        {},
+        vk.SampleCountFlag._1,
+        false,
+    )
+    return
+}
+
 vulkan_image_create_color_buffer :: proc(
     vulkan: Vulkan,
     extent: vk.Extent2D,
@@ -158,7 +182,10 @@ vulkan_image_create_prepass :: proc(
         1,
         vulkan.gfx_queue_family,
         format,
-        { vk.ImageUsageFlag.COLOR_ATTACHMENT | vk.ImageUsageFlag.SAMPLED },
+        {
+            vk.ImageUsageFlag.COLOR_ATTACHMENT,
+             vk.ImageUsageFlag.SAMPLED,
+        },
         { vk.ImageAspectFlag.COLOR },
         {},
         vk.SampleCountFlag._1,
@@ -212,7 +239,7 @@ vulkan_image_copy_from_buffer :: proc(
                 aspectMask = { vk.ImageAspectFlag.COLOR },
                 mipLevel = 0,
                 baseArrayLayer = 0,
-                layerCount = vk.REMAINING_MIP_LEVELS,
+                layerCount = 1,
             },
             imageOffset = vk.Offset3D { x = 0, y = 0, z = 0 },
             imageExtent = vk.Extent3D { width = extent.width, height = extent.height, depth = 1 },
@@ -246,38 +273,53 @@ vulkan_image_copy_from_buffer :: proc(
     )
 }
 
+vulkan_image_update_texture :: proc(
+    vulkan: ^Vulkan,
+    cmd: vk.CommandBuffer,
+    extent: vk.Extent2D,
+    data: []u8,
+    image: VulkanImage,
+) {
+    length := u64(len(data))
+    staging: VulkanBuffer = vulkan_buffer_create_staging(vulkan^, length)
+
+    dst := vulkan_memory_map(vulkan^, staging.memory)
+        mem.copy_non_overlapping(dst, raw_data(data), len(data))
+    vulkan_memory_unmap(vulkan^, staging.memory)
+
+    vulkan_image_copy_from_buffer(vulkan^, cmd, extent, staging, image)
+
+    append(&vulkan.temp_buffers, staging)
+
+    return
+}
+
 vulkan_image_upload_texture :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     cmd: vk.CommandBuffer,
     extent: vk.Extent2D,
     format: vk.Format,
     data: []u8,
 ) -> (image: VulkanImage) {
     image = vulkan_image_create(
-        vulkan,
+        vulkan^,
         vk.ImageType.D2,
         vk.ImageViewType.D2,
         extent,
         1,
         vulkan.gfx_queue_family,
         format,
-        { vk.ImageUsageFlag.TRANSFER_DST | vk.ImageUsageFlag.SAMPLED },
+        {
+            vk.ImageUsageFlag.TRANSFER_DST,
+            vk.ImageUsageFlag.SAMPLED,
+        },
         { vk.ImageAspectFlag.COLOR },
         {},
         vk.SampleCountFlag._1,
         false,
     )
 
-    length := u64(len(data))
-    staging: VulkanBuffer = vulkan_buffer_create_staging(vulkan, length)
-
-    dst := vulkan_memory_map(vulkan, staging.memory)
-        mem.copy_non_overlapping(dst, raw_data(data), len(data))
-    vulkan_memory_unmap(vulkan, staging.memory)
-
-    vulkan_image_copy_from_buffer(vulkan, cmd, extent, staging, image)
-
-    vulkan_buffer_destroy(vulkan, staging)
+    vulkan_image_update_texture(vulkan, cmd, extent, data, image)
 
     return
 }

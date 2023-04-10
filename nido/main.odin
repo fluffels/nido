@@ -603,15 +603,56 @@ main :: proc() {
 		log.info("Created command buffer.")
 	}
 
-	// NOTE(jan): Main loop.
+	transient_cmd_pool: vk.CommandPool
+	{
+		create := vk.CommandPoolCreateInfo {
+			sType = vk.StructureType.COMMAND_POOL_CREATE_INFO,
+			flags = {
+				vk.CommandPoolCreateFlag.TRANSIENT,
+			},
+			queueFamilyIndex = vulkan.gfx_queue_family,
+		}
+		check(
+			vk.CreateCommandPool(vulkan.device, &create, nil, &transient_cmd_pool),
+			"could not create transient command pool",
+		)
+		log.infof("Created transient command pool.")
+	}
+
+	linear_sampler := vulkan_sampler_create(vulkan)
+
+	font_sprite_sheet_data := make([]u8, 512 * 512)
+	mem.set(raw_data(font_sprite_sheet_data), 255, 512 * 512)
+	font_sprite_sheet := vulkan_image_create_2d_monochrome_texture(vulkan, vk.Extent2D { 512, 512 })
+
+	// NOTE(jan): Upload mesh.
+	mesh := VulkanMesh {
+		positions = make([dynamic]f32, context.temp_allocator),
+		uv = make([dynamic]f32, context.temp_allocator),
+		rgba = make([dynamic]f32, context.temp_allocator),
+		indices = make([dynamic]u32, context.temp_allocator),
+	}
+	screen := AABox {
+		left = -1,
+		right = 1,
+		top = 1,
+		bottom = -1,
+	}
+	vulkan_mesh_push_aabox(&mesh, screen)
+	vulkan_mesh_upload(vulkan, &mesh)
+
 	uniforms: Uniforms
 	identity(&uniforms.mvp)
 	identity(&uniforms.ortho)
+	uniform_buffer := vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
 
+	// NOTE(jan): Main loop.
 	done := false;
 	do_resize := false;
 	new_frame: for (!done) {
 		free_all(context.temp_allocator)
+
+		vulkan.temp_buffers = make([dynamic]VulkanBuffer, context.temp_allocator)
 
 		// NOTE(jan): Handle events.
 		sdl2.PumpEvents();
@@ -643,19 +684,66 @@ main :: proc() {
 			framebuffer_create(&vulkan, render_pass)
 		}
 
-		// NOTE(jan): Upload mesh.
-		mesh := VulkanMesh {
-			vertices = make([dynamic]f32, context.temp_allocator),
-			indices = make([dynamic]u32, context.temp_allocator),
+		assert("stbtt" in vulkan.pipelines)
+		pipeline := vulkan.pipelines["stbtt"]
+
+		// NOTE(jan): Update uniforms.
+		vulkan_memory_copy(vulkan, uniform_buffer, &uniforms, size_of(uniforms))
+		vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, uniform_buffer);
+
+		// NOTE(jan): Update sampler.
+		{
+			transient_cmd: vk.CommandBuffer
+			info := vk.CommandBufferAllocateInfo {
+				sType = vk.StructureType.COMMAND_BUFFER_ALLOCATE_INFO,
+				commandBufferCount = 1,
+				commandPool = transient_cmd_pool,
+				level = vk.CommandBufferLevel.PRIMARY,
+			}
+			check(
+				vk.AllocateCommandBuffers(vulkan.device, &info, &transient_cmd),
+				"could not allocate cmd buffer",
+			)
+
+			check(
+				vk.BeginCommandBuffer(transient_cmd, &vk.CommandBufferBeginInfo {
+					sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
+					flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
+				}),
+				"could not begin transient command buffer",
+			)
+
+			vulkan_image_update_texture(
+				&vulkan,
+				transient_cmd,
+				vk.Extent2D { 512, 512 },
+				font_sprite_sheet_data,
+				font_sprite_sheet,
+			)
+			vulkan_descriptor_update_combined_image_sampler(
+				vulkan,
+				pipeline.descriptor_sets[0],
+				1,
+				[]VulkanImage { font_sprite_sheet },
+				linear_sampler,
+			)
+
+			vk.EndCommandBuffer(transient_cmd)
+
+			check(
+				vk.QueueSubmit(
+					vulkan.gfx_queue,
+					1,
+					&vk.SubmitInfo {
+						sType = vk.StructureType.SUBMIT_INFO,
+						commandBufferCount = 1,
+						pCommandBuffers = &transient_cmd,
+					},
+					0,
+				),
+				"could not submit transient command buffer",
+			)
 		}
-		screen : = AABox {
-			left = -1,
-			right = 1,
-			top = 1,
-			bottom = -1,
-		}
-		vulkan_mesh_push_aabox(&mesh, screen)
-		vulkan_mesh_upload(vulkan, &mesh)
 
 		// NOTE(jan): Acquire next swap image.
 		swap_image_index: u32;
@@ -708,15 +796,6 @@ main :: proc() {
 		}
 
 		vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
-
-		assert("stbtt" in vulkan.pipelines)
-		pipeline := vulkan.pipelines["stbtt"]
-
-		// NOTE(jan): Update uniforms.
-		// PERF(jan): Allocating each frame is slow.
-		uniform_buffer := vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
-		vulkan_memory_copy(vulkan, uniform_buffer, &uniforms, size_of(uniforms))
-		vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, uniform_buffer);
 		
 		vk.CmdBindDescriptorSets(
 			cmd,
@@ -730,7 +809,9 @@ main :: proc() {
 		vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
 		// vk.CmdBindDescriptorSets
 		offsets := [1]vk.DeviceSize {0}
-		vk.CmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.handle, raw_data(offsets[:]))
+		vk.CmdBindVertexBuffers(cmd, 0, 1, &mesh.position_buffer.handle, raw_data(offsets[:]))
+		vk.CmdBindVertexBuffers(cmd, 1, 1, &mesh.uv_buffer.handle, raw_data(offsets[:]))
+		vk.CmdBindVertexBuffers(cmd, 2, 1, &mesh.rgba_buffer.handle, raw_data(offsets[:]))
 		vk.CmdBindIndexBuffer(cmd, mesh.index_buffer.handle, 0, vk.IndexType.UINT32)
 		vk.CmdDrawIndexed(cmd, u32(len(mesh.indices)), 1, 0, 0, 0)
 
@@ -785,5 +866,9 @@ main :: proc() {
 		// NOTE(jan): Wait to be done.
 		// PERF(jan): This might be slow.
 		vk.QueueWaitIdle(vulkan.gfx_queue)
+
+		for buffer in vulkan.temp_buffers {
+			vulkan_buffer_destroy(vulkan, buffer)
+		}
 	}
 }

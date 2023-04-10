@@ -43,6 +43,9 @@ Vulkan :: struct {
 	// NOTE(jan): Contains objects allocated between window resizes, i.e. swapchains, pipelines, etc.
 	resize_pool: mem.Dynamic_Pool,
 	resize_allocator: mem.Allocator,
+
+    // NOTE(jan): To be free'd at the bottom of each frame.
+    temp_buffers: [dynamic]VulkanBuffer,
 }
 
 odinize_string :: proc(from: []u8) -> (to: string) {
