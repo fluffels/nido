@@ -189,7 +189,7 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create Vulkan instance.
-	vulkan: Vulkan = vulkan_make()
+	vulkan: Vulkan
 	{
 		app := vk.ApplicationInfo {
 			sType=vk.StructureType.APPLICATION_INFO,
@@ -476,65 +476,13 @@ main :: proc() {
 		}
 	}
 
-	// NOTE(jan): Create a render pass.
-	render_pass: vk.RenderPass
-	{
-		attachments  := make([dynamic]vk.AttachmentDescription, context.temp_allocator)
-		color_refs   := make([dynamic]vk.AttachmentReference  , context.temp_allocator)
-		subpasses    := make([dynamic]vk.SubpassDescription   , context.temp_allocator)
-		dependencies := make([dynamic]vk.SubpassDependency    , context.temp_allocator)
-
-		append(&attachments, vk.AttachmentDescription {
-			format = vulkan.swap.format,
-			// TODO(jan): multi sampling
-			samples = { vk.SampleCountFlag._1 },
-			loadOp = vk.AttachmentLoadOp.CLEAR,
-			storeOp = vk.AttachmentStoreOp.STORE,
-			stencilLoadOp = vk.AttachmentLoadOp.DONT_CARE,
-			stencilStoreOp = vk.AttachmentStoreOp.DONT_CARE,
-			initialLayout = vk.ImageLayout.UNDEFINED,
-			finalLayout = vk.ImageLayout.PRESENT_SRC_KHR,
-		})
-		append(&color_refs, vk.AttachmentReference {
-			attachment = u32(len(attachments)) - 1,
-			layout = vk.ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-		})
-
-		append(&subpasses, vk.SubpassDescription {
-			pipelineBindPoint = vk.PipelineBindPoint.GRAPHICS,
-			colorAttachmentCount = u32(len(color_refs)),
-			pColorAttachments = raw_data(color_refs),
-		})
-
-		append(&dependencies, vk.SubpassDependency {
-			srcSubpass = vk.SUBPASS_EXTERNAL,
-			dstSubpass = 0,
-			srcStageMask = { vk.PipelineStageFlag.COLOR_ATTACHMENT_OUTPUT },
-			dstStageMask = { vk.PipelineStageFlag.COLOR_ATTACHMENT_OUTPUT },
-			srcAccessMask = { },
-			dstAccessMask = { vk.AccessFlag.COLOR_ATTACHMENT_WRITE },
-		})
-
-		create := vk.RenderPassCreateInfo {
-			sType = vk.StructureType.RENDER_PASS_CREATE_INFO,
-			attachmentCount = u32(len(attachments)),
-			pAttachments = raw_data(attachments),
-			subpassCount = u32(len(subpasses)),
-			pSubpasses = raw_data(subpasses),
-			dependencyCount = u32(len(dependencies)),
-			pDependencies = raw_data(dependencies),
-		}
-		check(
-			vk.CreateRenderPass(vulkan.device, &create, nil, &render_pass),
-			"could not create render pass",
-		)
-		log.infof("Created render pass.")
-	}
+	vulkan_swap_create(&vulkan)
 
 	// NOTE(jan): Create shader modules.
 	// Shader modules live for the entire lifetime.
 	vulkan_create_shader_modules(&vulkan)
 
+	// Pipelines live between window resizes.
 	mem.dynamic_pool_init(&vulkan.resize_pool,
                           context.allocator,
                           context.allocator,
@@ -542,11 +490,6 @@ main :: proc() {
                           mem.DYNAMIC_POOL_OUT_OF_BAND_SIZE_DEFAULT,
                           64)
 	vulkan.resize_allocator = mem.dynamic_pool_allocator(&vulkan.resize_pool)
-	// TODO(jan): Create render passes separately and reference them in the pipeline meta.
-	vulkan_create_pipelines(&vulkan, render_pass)
-
-	vulkan_swap_create(&vulkan)
-	vulkan_framebuffer_create(&vulkan, render_pass)
 
 	image_ready, cmd_buffer_done : vk.Semaphore
 	{
@@ -613,6 +556,19 @@ main :: proc() {
 		log.infof("Created transient command pool.")
 	}
 
+	vulkan_pass := vulkan_pass_create(
+		&vulkan,
+		[]VulkanPipelineMetadata {
+			{
+				"stbtt",
+				{
+					"ortho_xy_uv_rgba",
+					"text",
+				},
+			},
+		},
+	)
+
 	linear_sampler := vulkan_sampler_create(vulkan)
 
 	font_sprite_sheet_data := make([]u8, 512 * 512)
@@ -664,22 +620,31 @@ main :: proc() {
 
 		// NOTE(jan): Resize framebuffers and swap chain.
 		if (do_resize) {
-			vulkan_framebuffer_destroy(&vulkan)
-			vulkan_swap_destroy(&vulkan)
-			vulkan_destroy_pipelines(&vulkan)
+			vulkan_pass_destroy(&vulkan, &vulkan_pass)
 
 			free_all(vulkan.resize_allocator)
 
+			vulkan_swap_destroy(&vulkan)
 			vulkan_swap_update_capabilities(&vulkan)
 			vulkan_swap_update_extent(&vulkan)
-
-			vulkan_create_pipelines(&vulkan, render_pass)
 			vulkan_swap_create(&vulkan)
-			vulkan_framebuffer_create(&vulkan, render_pass)
+
+			vulkan_pass = vulkan_pass_create(
+				&vulkan,
+				[]VulkanPipelineMetadata {
+					{
+						"stbtt",
+						{
+							"ortho_xy_uv_rgba",
+							"text",
+						},
+					},
+				},
+			)
 		}
 
-		assert("stbtt" in vulkan.pipelines)
-		pipeline := vulkan.pipelines["stbtt"]
+		assert("stbtt" in vulkan_pass.pipelines)
+		pipeline := vulkan_pass.pipelines["stbtt"]
 
 		// NOTE(jan): Update uniforms.
 		vulkan_memory_copy(vulkan, uniform_buffer, &uniforms, size_of(uniforms))
@@ -781,12 +746,12 @@ main :: proc() {
 			sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
 			clearValueCount = u32(len(clears)),
 			pClearValues = raw_data(&clears),
-			framebuffer = vulkan.framebuffers[swap_image_index],
+			framebuffer = vulkan_pass.framebuffers[swap_image_index],
 			renderArea = vk.Rect2D {
 				extent = vulkan.swap.extent,
 				offset = {0, 0},
 			},
-			renderPass = render_pass,
+			renderPass = vulkan_pass.render_pass,
 		}
 
 		vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)

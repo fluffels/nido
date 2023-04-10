@@ -18,16 +18,6 @@ VulkanPipelineMetadata :: struct {
     modules: []string,
 }
 
-vulkan_pipelines := [?]VulkanPipelineMetadata {
-    {
-        "stbtt",
-        {
-            "ortho_xy_uv_rgba",
-            "text",
-        },
-    },
-}
-
 VulkanModule :: struct {
     meta: VulkanModuleMetadata,
     description: ShaderModuleDescription,
@@ -36,7 +26,6 @@ VulkanModule :: struct {
 
 VulkanPipeline :: struct {
     meta: VulkanPipelineMetadata,
-    modules: [dynamic]VulkanModule,
     handle: vk.Pipeline,
     descriptor_set_layouts: [dynamic]vk.DescriptorSetLayout,
     descriptor_pool: vk.DescriptorPool,
@@ -86,14 +75,20 @@ vulkan_create_shader_modules :: proc(vulkan: ^Vulkan) {
     }
 }
 
-vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
+vulkan_pipelines_create :: proc(
+    vulkan: ^Vulkan,
+    metadata: []VulkanPipelineMetadata,
+    render_pass: vk.RenderPass,
+) -> (
+    pipelines: map[string]VulkanPipeline,
+) {
     allocator: mem.Allocator = vulkan.resize_allocator
     temp_allocator: mem.Allocator = context.temp_allocator
 
-    vulkan.pipelines = make(map[string]VulkanPipeline, len(vulkan_pipelines), allocator)
+    pipelines = make(map[string]VulkanPipeline, 1, allocator)
 
-    for meta in vulkan_pipelines {
-        if meta.name in vulkan.pipelines {
+    for meta in metadata {
+        if meta.name in pipelines {
             fmt.panicf("duplicate pipeline named '%s'", meta.name)
         }
 
@@ -404,26 +399,21 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
         )
         log.infof("Pipeline created.")
 
-        vulkan.pipelines[meta.name] = pipeline
+        pipelines[meta.name] = pipeline
     }
+
+    return
 }
 
-vulkan_destroy_pipelines :: proc(vulkan: ^Vulkan) {
-    for name, pipeline in vulkan.pipelines {
-        pipeline := vulkan.pipelines[name]
+vulkan_pipeline_destroy :: proc(vulkan: ^Vulkan, pipeline: ^VulkanPipeline) {
+    for descriptor_set_layout in pipeline.descriptor_set_layouts do vk.DestroyDescriptorSetLayout(vulkan.device, descriptor_set_layout, nil)
+    clear(&pipeline.descriptor_set_layouts)
 
-        for descriptor_set_layout in pipeline.descriptor_set_layouts do vk.DestroyDescriptorSetLayout(vulkan.device, descriptor_set_layout, nil)
-        clear(&pipeline.descriptor_set_layouts)
+    vk.DestroyPipelineLayout(vulkan.device, pipeline.layout, nil)
 
-        vk.FreeDescriptorSets(vulkan.device, pipeline.descriptor_pool, u32(len(pipeline.descriptor_sets)), raw_data(pipeline.descriptor_sets))
-        clear(&pipeline.descriptor_sets)
+    vk.DestroyDescriptorPool(vulkan.device, pipeline.descriptor_pool, nil)
+    clear(&pipeline.descriptor_sets)
+    pipeline.descriptor_pool = 0
 
-        vk.DestroyDescriptorPool(vulkan.device, pipeline.descriptor_pool, nil)
-        pipeline.descriptor_pool = 0
-
-        vk.DestroyPipeline(vulkan.device, pipeline.handle, nil)
-
-        vulkan.pipelines[name] = pipeline
-    }
-    clear(&vulkan.pipelines)
+    vk.DestroyPipeline(vulkan.device, pipeline.handle, nil)
 }

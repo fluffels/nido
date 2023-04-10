@@ -24,10 +24,8 @@ Vulkan :: struct {
     compute_queue_family: u32,
 
     swap: VulkanSwap,
-    framebuffers: [dynamic]vk.Framebuffer,
 
     modules: map[string]VulkanModule,
-    pipelines: map[string]VulkanPipeline,
 
 	// NOTE(jan): Contains objects allocated between window resizes, i.e. swapchains, pipelines, etc.
 	resize_pool: mem.Dynamic_Pool,
@@ -35,11 +33,4 @@ Vulkan :: struct {
 
     // NOTE(jan): To be free'd at the bottom of each frame.
     temp_buffers: [dynamic]VulkanBuffer,
-}
-
-vulkan_make :: proc() -> Vulkan {
-    result: Vulkan
-    result.swap.views = make([dynamic]vk.ImageView)
-    result.framebuffers = make([dynamic]vk.Framebuffer)
-    return result;
 }

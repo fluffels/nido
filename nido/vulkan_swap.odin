@@ -13,40 +13,6 @@ VulkanSwap :: struct {
     views: [dynamic]vk.ImageView,
 }
 
-vulkan_framebuffer_create :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
-	log.infof("Creating framebuffers...")
-
-    for view, i in vulkan.swap.views {
-        create := vk.FramebufferCreateInfo {
-            sType = vk.StructureType.FRAMEBUFFER_CREATE_INFO,
-            attachmentCount = 1,
-            pAttachments = raw_data(vulkan.swap.views[i:]),
-            renderPass = render_pass,
-            height = vulkan.swap.extent.height,
-            width = vulkan.swap.extent.width,
-            layers = 1,
-        }
-        handle: vk.Framebuffer
-        check(
-            vk.CreateFramebuffer(vulkan.device, &create, nil, &handle),
-            "couldn't create framebuffer",
-        )
-        append(&vulkan.framebuffers, handle)
-        log.infof("\t\u2713 for swap chain image #%d", i)
-    }
-
-    log.infof("Created framebuffers.")
-}
-
-vulkan_framebuffer_destroy :: proc(vulkan: ^Vulkan) {
-    for framebuffer in vulkan.framebuffers {
-        vk.DestroyFramebuffer(vulkan.device, framebuffer, nil)
-    }
-    clear(&vulkan.framebuffers);
-    
-    log.infof("Destroyed framebuffers.")
-}
-
 vulkan_swap_create :: proc(vulkan: ^Vulkan) {
     create := vk.SwapchainCreateInfoKHR {
         sType = vk.StructureType.SWAPCHAIN_CREATE_INFO_KHR,
