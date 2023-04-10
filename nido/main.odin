@@ -532,11 +532,17 @@ main :: proc() {
 		log.infof("Created render pass.")
 	}
 
-	// TODO(jan): Allocate all this to a separate allocator so it can easily be free'd if 
-	// we need to redo shader modules or something?
-
 	// NOTE(jan): Create shader modules.
+	// Shader modules live for the entire lifetime.
 	vulkan_create_shader_modules(&vulkan)
+
+	mem.dynamic_pool_init(&vulkan.resize_pool,
+                          context.allocator,
+                          context.allocator,
+                          mem.DYNAMIC_POOL_BLOCK_SIZE_DEFAULT,
+                          mem.DYNAMIC_POOL_OUT_OF_BAND_SIZE_DEFAULT,
+                          64)
+	vulkan.resize_allocator = mem.dynamic_pool_allocator(&vulkan.resize_pool)
 	// TODO(jan): Create render passes separately and reference them in the pipeline meta.
 	vulkan_create_pipelines(&vulkan, render_pass)
 
@@ -617,6 +623,8 @@ main :: proc() {
 			framebuffer_destroy(&vulkan)
 			swap_destroy(&vulkan)
 			vulkan_destroy_pipelines(&vulkan)
+
+			free_all(vulkan.resize_allocator)
 
 			swap_update_capabilities(&vulkan)
 			swap_update_extent(&vulkan)

@@ -1,6 +1,7 @@
 package nido
 
 import "core:log"
+import "core:mem"
 import "core:strings"
 import vk "vendor:vulkan"
 
@@ -38,6 +39,10 @@ Vulkan :: struct {
 
     modules: map[string]VulkanModule,
     pipelines: map[string]VulkanPipeline,
+
+	// NOTE(jan): Contains objects allocated between window resizes, i.e. swapchains, pipelines, etc.
+	resize_pool: mem.Dynamic_Pool,
+	resize_allocator: mem.Allocator,
 }
 
 odinize_string :: proc(from: []u8) -> (to: string) {

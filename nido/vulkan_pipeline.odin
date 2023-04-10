@@ -2,6 +2,7 @@ package nido
 
 import "core:fmt"
 import "core:log"
+import "core:mem"
 import "core:os"
 import path "core:path/filepath"
 import "core:strings"
@@ -85,7 +86,10 @@ vulkan_create_shader_modules :: proc(vulkan: ^Vulkan) {
 }
 
 vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
-    vulkan.pipelines = make(map[string]VulkanPipeline, len(vulkan_pipelines))
+    allocator: mem.Allocator = vulkan.resize_allocator
+    temp_allocator: mem.Allocator = context.temp_allocator
+
+    vulkan.pipelines = make(map[string]VulkanPipeline, len(vulkan_pipelines), allocator)
 
     for meta in vulkan_pipelines {
         if meta.name in vulkan.pipelines {
@@ -98,12 +102,12 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             meta = meta,
         }
 
-        modules := make([dynamic]VulkanModule, len(meta.modules), context.temp_allocator)
+        modules := make([dynamic]VulkanModule, len(meta.modules), temp_allocator)
         for module_name, i in meta.modules {
             modules[i] = vulkan.modules[module_name] or_else fmt.panicf("no module '%s' is loaded", module_name)
         }
 
-        stages := make([dynamic]vk.PipelineShaderStageCreateInfo, context.temp_allocator)
+        stages := make([dynamic]vk.PipelineShaderStageCreateInfo, temp_allocator)
         for module in modules {
             for shader in module.description.shaders {
                 log.infof("\t... found a %s shader", shader.type)
@@ -128,8 +132,8 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
         // NOTE(jan): A descriptor set's binding can be specified in two modules: E.g. if one module is the vertex shader
         // and the other is the fragment shader and they both need access to it. In this case, we only set the info for
         // the binding once, and the second time around we just add a stage flag.
-        descriptor_set_layout_binding_map := make(map[u32]map[u32]vk.DescriptorSetLayoutBinding, 1, context.temp_allocator)
-        sizes := make([dynamic]vk.DescriptorPoolSize, context.temp_allocator)
+        descriptor_set_layout_binding_map := make(map[u32]map[u32]vk.DescriptorSetLayoutBinding, 1, temp_allocator)
+        sizes := make([dynamic]vk.DescriptorPoolSize, temp_allocator)
         for module in modules {
             // NOTE(jan): Each binding needs to specify which shader stages can access it. Here we look through the module
             // and pick out each shader stage defined in it, and assume that if the uniform is in the same module as a
@@ -150,7 +154,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
                 descriptor_set_index := uniform.descriptor_set
 
                 if descriptor_set_index not_in descriptor_set_layout_binding_map {
-                    descriptor_set_layout_binding_map[descriptor_set_index] = make(map[u32]vk.DescriptorSetLayoutBinding, 1, context.temp_allocator)
+                    descriptor_set_layout_binding_map[descriptor_set_index] = make(map[u32]vk.DescriptorSetLayoutBinding, 1, temp_allocator)
                 }
                 bindings := &descriptor_set_layout_binding_map[descriptor_set_index]
 
@@ -196,11 +200,11 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
         }
         descriptor_set_count := u32(len(descriptor_set_layout_binding_map))
 
-        pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, descriptor_set_count, context.temp_allocator)
+        pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, descriptor_set_count, temp_allocator)
         for descriptor_set_index in 0..<descriptor_set_count {
             binding_map := descriptor_set_layout_binding_map[descriptor_set_index]
 
-            bindings := make([dynamic]vk.DescriptorSetLayoutBinding, len(binding_map), context.temp_allocator)
+            bindings := make([dynamic]vk.DescriptorSetLayoutBinding, len(binding_map), temp_allocator)
             for binding_index in u32(0)..<u32(len(binding_map)) {
                 bindings[binding_index] = binding_map[binding_index]
             }
@@ -237,7 +241,7 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
             )
         }
 
-        pipeline.descriptor_set_handles = make([dynamic]vk.DescriptorSet, descriptor_set_count, context.allocator)
+        pipeline.descriptor_set_handles = make([dynamic]vk.DescriptorSet, descriptor_set_count, allocator)
         {
             alloc := vk.DescriptorSetAllocateInfo {
                 sType = vk.StructureType.DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -269,8 +273,8 @@ vulkan_create_pipelines :: proc(vulkan: ^Vulkan, render_pass: vk.RenderPass) {
 
         // NOTE(jan): We allocate one buffer per vertex attribute for flexibility, hence each attribute
         // will have its own binding. Therefore, set binding = location.
-        vertex_inputs := make([dynamic]vk.VertexInputBindingDescription, context.temp_allocator)
-        vertex_attributes := make([dynamic]vk.VertexInputAttributeDescription, context.temp_allocator)
+        vertex_inputs := make([dynamic]vk.VertexInputBindingDescription, temp_allocator)
+        vertex_attributes := make([dynamic]vk.VertexInputAttributeDescription, temp_allocator)
         for module in modules {
             for shader in module.description.shaders {
                 if shader.type != ShaderType.Vertex do continue
@@ -411,11 +415,11 @@ vulkan_destroy_pipelines :: proc(vulkan: ^Vulkan) {
         for descriptor_set_layout in pipeline.descriptor_set_layouts do vk.DestroyDescriptorSetLayout(vulkan.device, descriptor_set_layout, nil)
         clear(&pipeline.descriptor_set_layouts)
 
-        vk.DestroyDescriptorPool(vulkan.device, pipeline.descriptor_pool, nil)
-        pipeline.descriptor_pool = 0
-
         vk.FreeDescriptorSets(vulkan.device, pipeline.descriptor_pool, u32(len(pipeline.descriptor_set_handles)), raw_data(pipeline.descriptor_set_handles))
         clear(&pipeline.descriptor_set_handles)
+
+        vk.DestroyDescriptorPool(vulkan.device, pipeline.descriptor_pool, nil)
+        pipeline.descriptor_pool = 0
 
         vk.DestroyPipeline(vulkan.device, pipeline.handle, nil)
 
