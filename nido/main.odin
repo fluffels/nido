@@ -13,9 +13,13 @@ import "core:runtime"
 import "vendor:sdl2"
 import vk "vendor:vulkan"
 
+import "gfx"
+import "programs"
+import "registry"
+
 Uniforms :: struct {
-	mvp: mat4x4,
-	ortho: mat4x4,
+	mvp: gfx.mat4x4,
+	ortho: gfx.mat4x4,
 }
 
 vulkan_debug :: proc "stdcall" (
@@ -60,7 +64,7 @@ main :: proc() {
 	// NOTE(jan): Check Vulkan version.
 	vk_version: u32 = 0
 	{
-		check(vk.EnumerateInstanceVersion(&vk_version), "Could not fetch VK version")
+		gfx.check(vk.EnumerateInstanceVersion(&vk_version), "Could not fetch VK version")
 
 		major := vk_version >> 22
 		minor := (vk_version >> 12) & 0x3ff;
@@ -82,13 +86,13 @@ main :: proc() {
 		}
 
 		count: u32;
-		check(
+		gfx.check(
 			vk.EnumerateInstanceLayerProperties(&count, nil),
 			"could not count available layers",
 		);
 
 		available_layers := make([^]vk.LayerProperties, count, context.temp_allocator);
-		check(
+		gfx.check(
 			vk.EnumerateInstanceLayerProperties(&count, available_layers),
 			"could not fetch available layers",
 		);
@@ -97,7 +101,7 @@ main :: proc() {
 		available_layer_names := make([dynamic]string, context.temp_allocator)
 		for i in 0..<count {
 			layer := available_layers[i]
-			name := odinize_string(layer.layerName[:])
+			name := gfx.odinize_string(layer.layerName[:])
 			append(&available_layer_names, name)
 			log.infof("\t* %s", name);
 		}
@@ -159,15 +163,15 @@ main :: proc() {
 	// NOTE(jan): Check if all extensions are available.
 	{
 		count: u32 = 0;
-		check(vk.EnumerateInstanceExtensionProperties(nil, &count, nil), "could not fetch vk extensions")
+		gfx.check(vk.EnumerateInstanceExtensionProperties(nil, &count, nil), "could not fetch vk extensions")
 		available_extensions := make([^]vk.ExtensionProperties, count, context.temp_allocator)
 
-		check(vk.EnumerateInstanceExtensionProperties(nil, &count, available_extensions), "can't fetch vk extensions")
+		gfx.check(vk.EnumerateInstanceExtensionProperties(nil, &count, available_extensions), "can't fetch vk extensions")
 
 		available_extension_names := make([dynamic]string, context.temp_allocator)
 		for extension_index in 0..<count {
 			extension := available_extensions[extension_index]
-			name := odinize_string(extension.extensionName[:])
+			name := gfx.odinize_string(extension.extensionName[:])
 			append(&available_extension_names, name)
 		}
 
@@ -189,7 +193,7 @@ main :: proc() {
 	}
 
 	// NOTE(jan): Create Vulkan instance.
-	vulkan: Vulkan
+	vulkan: gfx.Vulkan
 	{
 		app := vk.ApplicationInfo {
 			sType=vk.StructureType.APPLICATION_INFO,
@@ -200,9 +204,9 @@ main :: proc() {
 			sType = vk.StructureType.INSTANCE_CREATE_INFO,
 			pApplicationInfo = &app,
 			enabledExtensionCount = u32(len(required_extensions)),
-			ppEnabledExtensionNames = vulkanize_strings(required_extensions),
+			ppEnabledExtensionNames = gfx.vulkanize_strings(required_extensions),
 			enabledLayerCount = u32(len(required_layers)),
-			ppEnabledLayerNames = vulkanize_strings(required_layers),
+			ppEnabledLayerNames = gfx.vulkanize_strings(required_layers),
 		}
 
 		#partial switch result := vk.CreateInstance(&create, nil, &vulkan.handle); result {
@@ -234,7 +238,7 @@ main :: proc() {
 			pUserData = &debug_context,
 		}
 
-		check(
+		gfx.check(
 			vk.CreateDebugReportCallbackEXT(vulkan.handle, &create, nil, &vulkan.debug_callback),
 			"could not create debug callback",
 		)
@@ -258,13 +262,13 @@ main :: proc() {
 	// NOTE(jan): Pick a GPU
 	{
 		count: u32;
-		check(
+		gfx.check(
 			vk.EnumeratePhysicalDevices(vulkan.handle, &count, nil),
 			"couldn't count gpus",
 		)
 
 		gpus := make([^]vk.PhysicalDevice, count, context.temp_allocator)
-		check(
+		gfx.check(
 			vk.EnumeratePhysicalDevices(vulkan.handle, &count, gpus),
 			"couldn't fetch gpus",
 		)
@@ -275,20 +279,20 @@ main :: proc() {
 			vk.GetPhysicalDeviceProperties(gpu, &props)
 
 			{
-				name := odinize_string(props.deviceName[:])
+				name := gfx.odinize_string(props.deviceName[:])
 				log.infof("GPU #%d \"%s\":", gpu_index, name)
 			}
 
 			// NOTE(jan): Check extensions.
 			{
 				count: u32;
-				check(
+				gfx.check(
 					vk.EnumerateDeviceExtensionProperties(gpu, nil, &count, nil),
 					"could not count device extension properties",
 				)
 
 				extensions := make([^]vk.ExtensionProperties, count, context.temp_allocator)
-				check(
+				gfx.check(
 					vk.EnumerateDeviceExtensionProperties(gpu, nil, &count, extensions),
 					"could not fetch device extension properties",
 				)
@@ -296,7 +300,7 @@ main :: proc() {
 				log.infof("\tAvailable device extensions:")
 				extension_names := make([dynamic]string, context.temp_allocator)
 				for i in 0..<count {
-					name := odinize_string(extensions[i].extensionName[:])
+					name := gfx.odinize_string(extensions[i].extensionName[:])
 					append(&extension_names, name)
 					log.infof("\t\t* %s", name)
 				}
@@ -395,12 +399,12 @@ main :: proc() {
 			sType = vk.StructureType.DEVICE_CREATE_INFO,
 			pNext = &indexing,
 			queueCreateInfoCount = u32(len(queues)),
-			pQueueCreateInfos = vulkanize(queues),
+			pQueueCreateInfos = gfx.vulkanize(queues),
 			enabledExtensionCount = u32(len(required_device_extensions)),
-			ppEnabledExtensionNames = vulkanize_strings(required_device_extensions),
+			ppEnabledExtensionNames = gfx.vulkanize_strings(required_device_extensions),
 		}
 
-		check(
+		gfx.check(
 			vk.CreateDevice(vulkan.gpu, &create, nil, &vulkan.device),
 			"could not create device",
 		)
@@ -413,8 +417,8 @@ main :: proc() {
 
 	// NOTE(jan): Get swap formats.
 	{
-		vulkan_swap_update_capabilities(&vulkan)
-		vulkan_swap_update_extent(&vulkan)
+		gfx.vulkan_swap_update_capabilities(&vulkan)
+		gfx.vulkan_swap_update_extent(&vulkan)
 
 		if vk.ImageUsageFlag.COLOR_ATTACHMENT not_in vulkan.swap.capabilities.supportedUsageFlags {
 			panic("surface does not support color attachment")
@@ -426,13 +430,13 @@ main :: proc() {
 		// NOTE(jan): Find a surface color space & format.
 		{
 			count: u32;
-			check(
+			gfx.check(
 				vk.GetPhysicalDeviceSurfaceFormatsKHR(vulkan.gpu, vulkan.surface, &count, nil),
 				"could not count physical device surface formats",
 			)
 
 			formats := make([^]vk.SurfaceFormatKHR, count, context.temp_allocator)
-			check(
+			gfx.check(
 				vk.GetPhysicalDeviceSurfaceFormatsKHR(vulkan.gpu, vulkan.surface, &count, formats),
 				"could not fetch physical device surface formats",
 			)
@@ -455,13 +459,13 @@ main :: proc() {
 		// NOTE(jan): Pick a present mode.
 		{
 			count: u32;
-			check(
+			gfx.check(
 				vk.GetPhysicalDeviceSurfacePresentModesKHR(vulkan.gpu, vulkan.surface, &count, nil),
 				"could not count present modes",
 			)
 
 			modes := make([^]vk.PresentModeKHR, count, context.temp_allocator)
-			check(
+			gfx.check(
 				vk.GetPhysicalDeviceSurfacePresentModesKHR(vulkan.gpu, vulkan.surface, &count, modes),
 				"could not fetch present modes",
 			)
@@ -476,11 +480,11 @@ main :: proc() {
 		}
 	}
 
-	vulkan_swap_create(&vulkan)
+	gfx.vulkan_swap_create(&vulkan)
 
 	// NOTE(jan): Create shader modules.
 	// Shader modules live for the entire lifetime.
-	vulkan_create_shader_modules(&vulkan)
+	gfx.vulkan_create_shader_modules(&vulkan)
 
 	// Pipelines live between window resizes.
 	mem.dynamic_pool_init(&vulkan.resize_pool,
@@ -496,11 +500,11 @@ main :: proc() {
 		create := vk.SemaphoreCreateInfo {
 			sType = vk.StructureType.SEMAPHORE_CREATE_INFO,
 		}
-		check(
+		gfx.check(
 			vk.CreateSemaphore(vulkan.device, &create, nil, &image_ready),
 			"could not create semaphore",
 		)
-		check(
+		gfx.check(
 			vk.CreateSemaphore(vulkan.device, &create, nil, &cmd_buffer_done),
 			"could not create semaphore",
 		)
@@ -518,7 +522,7 @@ main :: proc() {
 			},
 			queueFamilyIndex = vulkan.gfx_queue_family,
 		}
-		check(
+		gfx.check(
 			vk.CreateCommandPool(vulkan.device, &create, nil, &cmd_pool),
 			"could not create command pool",
 		)
@@ -533,7 +537,7 @@ main :: proc() {
 			commandPool = cmd_pool,
 			level = vk.CommandBufferLevel.PRIMARY,
 		}
-		check(
+		gfx.check(
 			vk.AllocateCommandBuffers(vulkan.device, &info, &cmd),
 			"could not allocate cmd buffer",
 		)
@@ -549,16 +553,16 @@ main :: proc() {
 			},
 			queueFamilyIndex = vulkan.gfx_queue_family,
 		}
-		check(
+		gfx.check(
 			vk.CreateCommandPool(vulkan.device, &create, nil, &transient_cmd_pool),
 			"could not create transient command pool",
 		)
 		log.infof("Created transient command pool.")
 	}
 
-	vulkan_pass := vulkan_pass_create(
+	vulkan_pass := gfx.vulkan_pass_create(
 		&vulkan,
-		[]VulkanPipelineMetadata {
+		[]gfx.VulkanPipelineMetadata {
 			{
 				"stbtt",
 				{
@@ -569,32 +573,35 @@ main :: proc() {
 		},
 	)
 
-	linear_sampler := vulkan_sampler_create(vulkan)
+	linear_sampler := gfx.vulkan_sampler_create(vulkan)
 
 	font_sprite_sheet_data := make([]u8, 512 * 512)
 	mem.set(raw_data(font_sprite_sheet_data), 255, 512 * 512)
-	font_sprite_sheet := vulkan_image_create_2d_monochrome_texture(vulkan, vk.Extent2D { 512, 512 })
+	font_sprite_sheet := gfx.vulkan_image_create_2d_monochrome_texture(vulkan, vk.Extent2D { 512, 512 })
+
+	registry := registry.make()
+	program := registry.programs[registry.current_program_name]
 
 	// NOTE(jan): Upload mesh.
-	mesh := VulkanMesh {
+	mesh := gfx.VulkanMesh {
 		positions = make([dynamic]f32, context.temp_allocator),
 		uv = make([dynamic]f32, context.temp_allocator),
 		rgba = make([dynamic]f32, context.temp_allocator),
 		indices = make([dynamic]u32, context.temp_allocator),
 	}
-	screen := AABox {
+	screen := gfx.AABox {
 		left = -1,
 		right = 1,
 		top = 1,
 		bottom = -1,
 	}
-	vulkan_mesh_push_aabox(&mesh, screen)
-	vulkan_mesh_upload(vulkan, &mesh)
+	gfx.vulkan_mesh_push_aabox(&mesh, screen)
+	gfx.vulkan_mesh_upload(vulkan, &mesh)
 
 	uniforms: Uniforms
-	identity(&uniforms.mvp)
-	identity(&uniforms.ortho)
-	uniform_buffer := vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
+	gfx.identity(&uniforms.mvp)
+	gfx.identity(&uniforms.ortho)
+	uniform_buffer := gfx.vulkan_buffer_create_uniform(vulkan, size_of(uniforms))
 
 	// NOTE(jan): Main loop.
 	done := false;
@@ -602,7 +609,7 @@ main :: proc() {
 	new_frame: for (!done) {
 		free_all(context.temp_allocator)
 
-		vulkan.temp_buffers = make([dynamic]VulkanBuffer, context.temp_allocator)
+		vulkan.temp_buffers = make([dynamic]gfx.VulkanBuffer, context.temp_allocator)
 
 		// NOTE(jan): Handle events.
 		sdl2.PumpEvents();
@@ -620,18 +627,18 @@ main :: proc() {
 
 		// NOTE(jan): Resize framebuffers and swap chain.
 		if (do_resize) {
-			vulkan_pass_destroy(&vulkan, &vulkan_pass)
+			gfx.vulkan_pass_destroy(&vulkan, &vulkan_pass)
 
 			free_all(vulkan.resize_allocator)
 
-			vulkan_swap_destroy(&vulkan)
-			vulkan_swap_update_capabilities(&vulkan)
-			vulkan_swap_update_extent(&vulkan)
-			vulkan_swap_create(&vulkan)
+			gfx.vulkan_swap_destroy(&vulkan)
+			gfx.vulkan_swap_update_capabilities(&vulkan)
+			gfx.vulkan_swap_update_extent(&vulkan)
+			gfx.vulkan_swap_create(&vulkan)
 
-			vulkan_pass = vulkan_pass_create(
+			vulkan_pass = gfx.vulkan_pass_create(
 				&vulkan,
-				[]VulkanPipelineMetadata {
+				[]gfx.VulkanPipelineMetadata {
 					{
 						"stbtt",
 						{
@@ -643,12 +650,14 @@ main :: proc() {
 			)
 		}
 
+		program.handler(&program.state, &vulkan)
+
 		assert("stbtt" in vulkan_pass.pipelines)
 		pipeline := vulkan_pass.pipelines["stbtt"]
 
 		// NOTE(jan): Update uniforms.
-		vulkan_memory_copy(vulkan, uniform_buffer, &uniforms, size_of(uniforms))
-		vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, uniform_buffer);
+		gfx.vulkan_memory_copy(vulkan, uniform_buffer, &uniforms, size_of(uniforms))
+		gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, uniform_buffer);
 
 		// NOTE(jan): Update sampler.
 		{
@@ -659,12 +668,12 @@ main :: proc() {
 				commandPool = transient_cmd_pool,
 				level = vk.CommandBufferLevel.PRIMARY,
 			}
-			check(
+			gfx.check(
 				vk.AllocateCommandBuffers(vulkan.device, &info, &transient_cmd),
 				"could not allocate cmd buffer",
 			)
 
-			check(
+			gfx.check(
 				vk.BeginCommandBuffer(transient_cmd, &vk.CommandBufferBeginInfo {
 					sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
 					flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
@@ -672,24 +681,24 @@ main :: proc() {
 				"could not begin transient command buffer",
 			)
 
-			vulkan_image_update_texture(
+			gfx.vulkan_image_update_texture(
 				&vulkan,
 				transient_cmd,
 				vk.Extent2D { 512, 512 },
 				font_sprite_sheet_data,
 				font_sprite_sheet,
 			)
-			vulkan_descriptor_update_combined_image_sampler(
+			gfx.vulkan_descriptor_update_combined_image_sampler(
 				vulkan,
 				pipeline.descriptor_sets[0],
 				1,
-				[]VulkanImage { font_sprite_sheet },
+				[]gfx.VulkanImage { font_sprite_sheet },
 				linear_sampler,
 			)
 
 			vk.EndCommandBuffer(transient_cmd)
 
-			check(
+			gfx.check(
 				vk.QueueSubmit(
 					vulkan.gfx_queue,
 					1,
@@ -733,7 +742,7 @@ main :: proc() {
 			sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
 			flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
 		}
-		check(
+		gfx.check(
 			vk.BeginCommandBuffer(cmd, &begin),
 			"could not begin cmd buffer",
 		)
@@ -775,7 +784,7 @@ main :: proc() {
 		vk.CmdDrawIndexed(cmd, u32(len(mesh.indices)), 1, 0, 0, 0)
 
 		vk.CmdEndRenderPass(cmd)
-		check(
+		gfx.check(
 			vk.EndCommandBuffer(cmd),
 			"could not end command buffer",
 		)
@@ -793,7 +802,7 @@ main :: proc() {
 			signalSemaphoreCount = 1,
 			pSignalSemaphores = &cmd_buffer_done,
 		}
-		check(
+		gfx.check(
 			vk.QueueSubmit(vulkan.gfx_queue, 1, &submit, 0),
 			"could not submit command buffer",
 		)
@@ -827,7 +836,7 @@ main :: proc() {
 		vk.QueueWaitIdle(vulkan.gfx_queue)
 
 		for buffer in vulkan.temp_buffers {
-			vulkan_buffer_destroy(vulkan, buffer)
+			gfx.vulkan_buffer_destroy(vulkan, buffer)
 		}
 	}
 }
