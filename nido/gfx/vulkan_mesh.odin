@@ -84,6 +84,15 @@ vulkan_mesh_upload :: proc(
     vulkan: ^Vulkan,
     mesh: ^VulkanMesh,
 ) {
+    for buffer, i in mesh.attribute_buffers {
+        if buffer.handle != 0 do vulkan_buffer_destroy(vulkan, &mesh.attribute_buffers[i])
+    }
+    clear(&mesh.attribute_buffers)
+
+    if (mesh.index_buffer.handle != 0) {
+        vulkan_buffer_destroy(vulkan, &mesh.index_buffer)
+    }
+
     for attribute_desc, i in mesh.description.attributes {
         data := mesh.attributes[i]
         size := u64(len(data)) * u64(attribute_desc.component_count) * size_of(f32)
