@@ -2,7 +2,7 @@ package gfx
 
 import vk "vendor:vulkan"
 
-vulkan_sampler_create :: proc(vulkan: Vulkan) -> (sampler: vk.Sampler) {
+vulkan_sampler_create :: proc(vulkan: ^Vulkan) -> (sampler: vk.Sampler) {
     check(
         vk.CreateSampler(
             vulkan.device,
@@ -25,8 +25,8 @@ vulkan_sampler_create :: proc(vulkan: Vulkan) -> (sampler: vk.Sampler) {
     return
 }
 
-vulkan_sampler_destroy :: proc(vulkan: Vulkan, sampler: vk.Sampler) {
-    vk.DestroySampler(vulkan.device, sampler, nil)
+vulkan_sampler_destroy :: proc(vulkan: ^Vulkan, sampler: vk.Sampler) {
+    if sampler != 0 do vk.DestroySampler(vulkan.device, sampler, nil)
 }
 
 

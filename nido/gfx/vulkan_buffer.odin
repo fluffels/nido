@@ -8,7 +8,7 @@ VulkanBuffer :: struct {
 }
 
 vulkan_buffer_allocate :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     memory_flags: vk.MemoryPropertyFlags,
     buffer: ^VulkanBuffer,
 ) {
@@ -35,7 +35,7 @@ vulkan_buffer_allocate :: proc(
 }
 
 vulkan_buffer_create :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     family: u32,
     usage: vk.BufferUsageFlags,
     size: u64,
@@ -60,7 +60,7 @@ vulkan_buffer_create :: proc(
 }
 
 vulkan_buffer_create_index :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     size: u64,
 ) -> (buffer: VulkanBuffer) {
     usage := vk.BufferUsageFlags {
@@ -79,7 +79,7 @@ vulkan_buffer_create_index :: proc(
 }
 
 vulkan_buffer_create_vertex :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     size: u64,
 ) -> (buffer: VulkanBuffer) {
     usage := vk.BufferUsageFlags {
@@ -98,7 +98,7 @@ vulkan_buffer_create_vertex :: proc(
 }
 
 vulkan_buffer_create_staging :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     size: u64,
 ) -> (buffer: VulkanBuffer) {
     usage := vk.BufferUsageFlags {
@@ -116,7 +116,7 @@ vulkan_buffer_create_staging :: proc(
 }
 
 vulkan_buffer_create_uniform :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     size: u64,
 ) -> (buffer: VulkanBuffer) {
     usage := vk.BufferUsageFlags {
@@ -134,9 +134,11 @@ vulkan_buffer_create_uniform :: proc(
 }
 
 vulkan_buffer_destroy :: proc(
-    vulkan: Vulkan,
-    buffer: VulkanBuffer,
+    vulkan: ^Vulkan,
+    buffer: ^VulkanBuffer,
 ) {
     if buffer.memory != 0 do vk.FreeMemory(vulkan.device, buffer.memory, nil)
+    buffer.memory = 0
     if buffer.handle != 0 do vk.DestroyBuffer(vulkan.device, buffer.handle, nil)
+    buffer.handle = 0
 }

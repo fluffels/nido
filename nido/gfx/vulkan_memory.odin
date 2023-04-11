@@ -4,7 +4,7 @@ import "core:mem"
 import vk "vendor:vulkan"
 
 vulkan_memory_type_index :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     requirements: vk.MemoryRequirements,
     extra_flags: vk.MemoryPropertyFlags,
  ) -> (index: u32) {
@@ -26,7 +26,7 @@ vulkan_memory_type_index :: proc(
 }
 
 vulkan_memory_map :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     memory: vk.DeviceMemory,
 ) -> (pointer: rawptr) {
     size := vk.DeviceSize(vk.WHOLE_SIZE)
@@ -39,14 +39,14 @@ vulkan_memory_map :: proc(
 }
 
 vulkan_memory_unmap :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     memory: vk.DeviceMemory,
 ) {
     vk.UnmapMemory(vulkan.device, memory)
 }
 
 vulkan_memory_copy :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     buffer: VulkanBuffer,
     data: rawptr,
     size: int,

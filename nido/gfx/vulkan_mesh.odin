@@ -81,7 +81,7 @@ vulkan_mesh_bind :: proc(
 }
 
 vulkan_mesh_upload :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     mesh: ^VulkanMesh,
 ) {
     for attribute_desc, i in mesh.description.attributes {
@@ -108,16 +108,16 @@ vulkan_mesh_upload :: proc(
 }
 
 vulkan_mesh_destroy :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     mesh: ^VulkanMesh,
 ) {
-    for buffer in mesh.attribute_buffers {
+    for buffer, i in mesh.attribute_buffers {
         if (buffer.handle != 0) {
-            vulkan_buffer_destroy(vulkan, buffer)
+            vulkan_buffer_destroy(vulkan, &mesh.attribute_buffers[i])
         }
     }
 
     if (mesh.index_buffer.handle != 0) {
-        vulkan_buffer_destroy(vulkan, mesh.index_buffer)
+        vulkan_buffer_destroy(vulkan, &mesh.index_buffer)
     }
 }

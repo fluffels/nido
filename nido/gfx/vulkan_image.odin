@@ -11,7 +11,7 @@ VulkanImage :: struct {
 }
 
 vulkan_image_create :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     type: vk.ImageType,
     view_type: vk.ImageViewType,
     extent: vk.Extent2D,
@@ -92,16 +92,19 @@ vulkan_image_create :: proc(
 }
 
 vulkan_image_destroy :: proc(
-    vulkan: Vulkan,
-    image: VulkanImage,
+    vulkan: ^Vulkan,
+    image: ^VulkanImage,
 ) {
-    vk.DestroyImageView(vulkan.device, image.view, nil)
-    vk.FreeMemory(vulkan.device, image.memory, nil)
-    vk.DestroyImage(vulkan.device, image.handle, nil)
+    if image.view != 0 do vk.DestroyImageView(vulkan.device, image.view, nil)
+    image.view = 0
+    if image.memory != 0 do vk.FreeMemory(vulkan.device, image.memory, nil)
+    image.memory = 0
+    if image.handle != 0 do vk.DestroyImage(vulkan.device, image.handle, nil)
+    image.handle = 0
 }
 
 vulkan_image_create_2d_monochrome_texture :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     extent: vk.Extent2D,
 ) -> (image: VulkanImage) {
     image = vulkan_image_create(
@@ -125,7 +128,7 @@ vulkan_image_create_2d_monochrome_texture :: proc(
 }
 
 vulkan_image_create_color_buffer :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     extent: vk.Extent2D,
     format: vk.Format,
     samples: vk.SampleCountFlag,
@@ -152,7 +155,7 @@ vulkan_image_create_color_buffer :: proc(
 }
 
 vulkan_image_create_depth_buffer :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     extent: vk.Extent2D,
     samples: vk.SampleCountFlag,
 ) -> (image: VulkanImage) {
@@ -173,7 +176,7 @@ vulkan_image_create_depth_buffer :: proc(
 }
 
 vulkan_image_create_prepass :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     extent: vk.Extent2D,
     format: vk.Format,
 ) -> (image: VulkanImage) {
@@ -283,11 +286,11 @@ vulkan_image_update_texture :: proc(
     image: VulkanImage,
 ) {
     length := u64(len(data))
-    staging: VulkanBuffer = vulkan_buffer_create_staging(vulkan^, length)
+    staging: VulkanBuffer = vulkan_buffer_create_staging(vulkan, length)
 
-    dst := vulkan_memory_map(vulkan^, staging.memory)
+    dst := vulkan_memory_map(vulkan, staging.memory)
         mem.copy_non_overlapping(dst, raw_data(data), len(data))
-    vulkan_memory_unmap(vulkan^, staging.memory)
+    vulkan_memory_unmap(vulkan, staging.memory)
 
     vulkan_image_copy_from_buffer(vulkan^, cmd, image.extent, staging, image)
 
@@ -303,7 +306,7 @@ vulkan_image_upload_texture :: proc(
     data: []u8,
 ) -> (image: VulkanImage) {
     image = vulkan_image_create(
-        vulkan^,
+        vulkan,
         vk.ImageType.D2,
         vk.ImageViewType.D2,
         image.extent,

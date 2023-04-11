@@ -115,11 +115,9 @@ vulkan_pass_destroy :: proc(vulkan: ^Vulkan, vulkan_pass: ^VulkanPass) {
 	for name, pipeline in vulkan_pass.pipelines {
 		vulkan_pipeline_destroy(vulkan, &vulkan_pass.pipelines[name])
 	}
-
-	vk.DestroyRenderPass(vulkan.device, vulkan_pass.render_pass, nil)
-	for framebuffer in vulkan_pass.framebuffers {
-		vk.DestroyFramebuffer(vulkan.device, framebuffer, nil)
-	}
-
 	clear(&vulkan_pass.pipelines)
+
+	if (vulkan_pass.render_pass != 0) {
+		vk.DestroyRenderPass(vulkan.device, vulkan_pass.render_pass, nil)
+	}
 }

@@ -3,7 +3,7 @@ package gfx
 import vk "vendor:vulkan"
 
 vulkan_descriptor_update_uniform :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     descriptor_set: vk.DescriptorSet,
     binding: u32,
     buffer: VulkanBuffer,
@@ -27,7 +27,7 @@ vulkan_descriptor_update_uniform :: proc(
 }
 
 vulkan_descriptor_update_combined_image_sampler :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     descriptor_set: vk.DescriptorSet,
     binding: u32,
     images: []VulkanImage,
@@ -55,7 +55,7 @@ vulkan_descriptor_update_combined_image_sampler :: proc(
 }
 
 vulkan_descriptor_update_storage_buffer :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     descriptor_set: vk.DescriptorSet,
     binding: u32,
     buffer: VulkanBuffer,
@@ -79,7 +79,7 @@ vulkan_descriptor_update_storage_buffer :: proc(
 }
 
 vulkan_descriptor_update_uniform_texel_buffer :: proc(
-    vulkan: Vulkan,
+    vulkan: ^Vulkan,
     descriptor_set: vk.DescriptorSet,
     binding: u32,
     view: ^vk.BufferView,

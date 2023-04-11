@@ -53,7 +53,7 @@ VERTEX_DESCRIPTION := gfx.VertexDescription {
 init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^DemoState) {
     allocator := request.allocator
     context.allocator = allocator
-    vulkan := request.vulkan^
+    vulkan := request.vulkan
 
     new_state = new(DemoState)
 
@@ -120,7 +120,7 @@ destroy_passes :: proc (state: ^DemoState, request: programs.DestroyPasses) {
 
 prepare_frame :: proc (state: ^DemoState, request: programs.PrepareFrame) {
     cmd := request.cmd
-    vulkan := request.vulkan^
+    vulkan := request.vulkan
 
     assert("textured" in state.vulkan_pass.pipelines)
     pipeline := state.vulkan_pass.pipelines["textured"]
@@ -131,7 +131,7 @@ prepare_frame :: proc (state: ^DemoState, request: programs.PrepareFrame) {
 
     // NOTE(jan): Update sampler.
     gfx.vulkan_image_update_texture(
-        &vulkan,
+        vulkan,
         cmd,
         state.font_bitmap,
         state.font_sprite_sheet,
@@ -192,13 +192,17 @@ draw_frame :: proc (state: ^DemoState, request: programs.DrawFrame) {
 cleanup_frame :: proc (state: ^DemoState, request: programs.CleanupFrame) { }
 
 cleanup :: proc (state: ^DemoState, request: programs.Cleanup) {
-    vulkan := request.vulkan^
+    if state == nil do return
 
-    gfx.vulkan_image_destroy(vulkan, state.font_sprite_sheet)
+    vulkan := request.vulkan
+
     gfx.vulkan_sampler_destroy(vulkan, state.linear_sampler)
+    state.linear_sampler = 0
+
+    gfx.vulkan_image_destroy(vulkan, &state.font_sprite_sheet)
     gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
-    gfx.vulkan_buffer_destroy(vulkan, state.uniform_buffer)
-    gfx.vulkan_pass_destroy(&vulkan, &state.vulkan_pass)
+    gfx.vulkan_buffer_destroy(vulkan, &state.uniform_buffer)
+    gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
 }
 
 handler :: proc (program: ^programs.Program, request: programs.Request) {

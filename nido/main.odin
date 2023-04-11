@@ -514,19 +514,21 @@ main :: proc() {
 	cmd      := gfx.vulkan_cmd_allocate_buffer(vulkan, cmd_pool)
 
 	// NOTE(jan): Initialize registry of programs.
-	registry := registry.make()
-	program := registry.programs[registry.current_program_name]
+	program_registry := registry.make()
+	program := program_registry.programs[program_registry.current_program_index]
 
-	// NOTE(jan): Create arena for the program and initialize the program.
-	program_allocator: virtual.Arena
-	alloc_error := virtual.arena_init_growing(&program_allocator)
+	// NOTE(jan): Create arena for the program.
+	program_arena: virtual.Arena
+	alloc_error := virtual.arena_init_growing(&program_arena)
 	if alloc_error != virtual.Allocator_Error.None do panic("could not initialize program allocator")
-	programs.initialize(&program, &vulkan, context.allocator)
-	programs.create_passes(&program, &vulkan)
+	program_allocator := virtual.arena_allocator(&program_arena)
 
 	// NOTE(jan): Main loop.
 	done := false;
-	do_resize := false;
+	// NOTE(jan): Initialize program first time through.
+	do_init := true
+	// NOTE(jan): Create render passes first time through.
+	do_resize := true;
 	new_frame: for (!done) {
 		free_all(context.temp_allocator)
 
@@ -538,16 +540,33 @@ main :: proc() {
 			#partial switch event.type {
 				case sdl2.EventType.KEYDOWN:
 					event: sdl2.KeyboardEvent = event.key;
-					if (event.keysym.sym == sdl2.Keycode.ESCAPE) {
-						done = true;
+					#partial switch event.keysym.sym {
+						case sdl2.Keycode.ESCAPE: done = true
+						case sdl2.Keycode.TAB:
+							registry.advance_program_index(&program_registry)
+							program = registry.get_current_program(program_registry)
+							do_resize = true
+							do_init = true
 					}
 				case sdl2.EventType.QUIT:
 					done = true;
 			}
 		}
 
+		// NOTE(jan): Initialize current program.
+		if (do_init) {
+			do_init = false
+
+			programs.cleanup(&program, &vulkan, program_allocator)
+			free_all(program_allocator)
+			log.infof("Initializing program %s", program.name);
+			programs.initialize(&program, &vulkan, program_allocator)
+		}
+
 		// NOTE(jan): Resize framebuffers and swap chain.
 		if (do_resize) {
+			do_resize = false
+
 			programs.destroy_passes(&program, &vulkan)
 
 			free_all(vulkan.resize_allocator)
@@ -651,8 +670,9 @@ main :: proc() {
 
 		programs.cleanup_frame(&program, &vulkan)
 
-		for buffer in vulkan.temp_buffers {
-			gfx.vulkan_buffer_destroy(vulkan, buffer)
+		for buffer, i in vulkan.temp_buffers {
+			gfx.vulkan_buffer_destroy(&vulkan, &vulkan.temp_buffers[i])
 		}
+		vk.FreeCommandBuffers(vulkan.device, transient_cmd_pool, 1, &transient_cmd)
 	}
 }

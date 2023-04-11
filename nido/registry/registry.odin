@@ -4,19 +4,27 @@ import "../programs"
 import "demo"
 
 Registry :: struct {
-    current_program_name: string,
-    programs: map[string]programs.Program,
+    current_program_index: int,
+    programs: [dynamic]programs.Program,
 }
 
 @(private)
-register :: proc (registry: ^Registry, program: programs.Program) -> () {
-    registry.programs[program.name] = program
+register :: proc (registry: ^Registry, program: programs.Program) {
+    append(&registry.programs, program)
+}
+
+advance_program_index :: proc (registry: ^Registry) {
+    registry.current_program_index = (registry.current_program_index + 1) % len(registry.programs)
+}
+
+get_current_program :: proc (registry: Registry) -> programs.Program {
+    return registry.programs[registry.current_program_index]
 }
 
 make :: proc () -> (registry: Registry) {
     register(&registry, demo.make_program())
 
-    registry.current_program_name = "demo"
+    registry.current_program_index = 0
 
     return
 }
