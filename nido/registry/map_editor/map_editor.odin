@@ -31,7 +31,9 @@ MapEditorState :: struct {
 
     map_width: int,
     map_height: int,
+    doodads: []int,
     terrain: []int,
+    selected_doodad: int,
     selected_sprite: int,
     tile_width: f32,
     tile_height: f32,
@@ -101,15 +103,19 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
     // NOTE(jan): Map.
     new_state.map_width = 256
     new_state.map_height = 256
+    new_state.doodads = make([]int, new_state.map_width * new_state.map_height)
     new_state.terrain = make([]int, new_state.map_width * new_state.map_height)
     for y in 0..<new_state.map_height {
         for x in 0..<new_state.map_width {
+            new_state.doodads[y * new_state.map_width + x] = -1
             new_state.terrain[y * new_state.map_width + x] = 0
         }
     }
     load_map(new_state)
 
     // NOTE(jan): Misc.
+    new_state.selected_doodad = -1
+    new_state.selected_sprite = -1
     new_state.zoom = 4.0
 
     return
