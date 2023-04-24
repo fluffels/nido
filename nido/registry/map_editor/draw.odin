@@ -90,8 +90,8 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState) {
         x_index := index % 4
         y_index := index / 4
 
-        x0 := tile_selector.left + f32(x_index) * state.sprite_width
-        y0 := tile_selector.top  + f32(y_index) * state.sprite_height
+        x0 := tile_selector.left + f32(x_index) * state.tile_width
+        y0 := tile_selector.top  + f32(y_index) * state.tile_height
 
         push_tile(state, x0, y0, tile)
     }
