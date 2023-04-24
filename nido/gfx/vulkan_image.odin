@@ -103,6 +103,30 @@ vulkan_image_destroy :: proc(
     image.handle = 0
 }
 
+vulkan_image_create_2d_rgba_texture :: proc(
+    vulkan: ^Vulkan,
+    extent: vk.Extent2D,
+) -> (image: VulkanImage) {
+    image = vulkan_image_create(
+        vulkan,
+        vk.ImageType.D2,
+        vk.ImageViewType.D2,
+        extent,
+        1,
+        vulkan.gfx_queue_family,
+        vk.Format.R8G8B8A8_UNORM,
+        { 
+            vk.ImageUsageFlag.TRANSFER_DST,
+            vk.ImageUsageFlag.SAMPLED,
+        },
+        { vk.ImageAspectFlag.COLOR },
+        {},
+        vk.SampleCountFlag._1,
+        false,
+    )
+    return
+}
+
 vulkan_image_create_2d_monochrome_texture :: proc(
     vulkan: ^Vulkan,
     extent: vk.Extent2D,
