@@ -45,6 +45,13 @@ WATER_BOTTOM_LEFT := Animation {
     frame_duration = 100,
 }
 
+CURSOR := Animation {
+    frames = []Frame {
+        {32, 80}, {40, 80}, {48, 80}, {56, 80}, {64, 80}, {72, 80}, {80, 80}, {88, 80},
+    },
+    frame_duration = 100,
+}
+
 SPRITES := []Sprite {
     TERRAIN_SPRITES[0], TERRAIN_SPRITES[1], TERRAIN_SPRITES[2], TERRAIN_SPRITES[3],
     TERRAIN_SPRITES[4], TERRAIN_SPRITES[5], TERRAIN_SPRITES[6], TERRAIN_SPRITES[7],

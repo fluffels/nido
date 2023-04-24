@@ -109,6 +109,10 @@ mouse_down :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
     return mouse.left && (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
 }
 
+mouse_over :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
+    return (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
+}
+
 draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Event, input_state: programs.InputState) {
     max_x := f32(vulkan.swap.extent.width)
     max_y := f32(vulkan.swap.extent.height)
@@ -160,6 +164,9 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
             sprite_box := push_sprite(state, x0, y0, sprite, input_state.ticks)
 
             if mouse_down(sprite_box, input_state.mouse) do state.terrain[y_index * state.map_width + x_index] = state.selected_sprite
+
+            // NOTE(jan): Mouse cursor. 
+            if mouse_over(sprite_box, input_state.mouse) do push_sprite(state, x0, y0, CURSOR, input_state.ticks)
         }
     }
 }
