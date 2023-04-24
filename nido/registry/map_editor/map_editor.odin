@@ -89,7 +89,6 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
     new_state = new(MapEditorState)
 
     // NOTE(jan): Uniforms containing orthographic projection.
-	gfx.ortho(vulkan.swap.extent.width, vulkan.swap.extent.height, &new_state.uniforms.ortho)
 	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
 
     // NOTE(jan): Sampler for textures.
@@ -129,6 +128,7 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
     vulkan := request.vulkan
 
     // NOTE(jan): Update uniforms.
+	gfx.ortho(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
     for _, pipeline in state.vulkan_pass.pipelines {
         // NOTE(jan): Assume that descriptor set 0 is always uniforms.
