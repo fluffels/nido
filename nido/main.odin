@@ -561,6 +561,20 @@ main :: proc() {
 			}
 		}
 
+		// NOTE(jan): Input state.
+		state: programs.InputState
+		{
+			x, y: i32
+			button := sdl2.GetMouseState(&x, &y)
+			state = programs.InputState {
+				mouse = programs.Mouse {
+					x = f32(x),
+					y = f32(y),
+					left = ((button & sdl2.BUTTON_LEFT) != 0),
+				},
+			}
+		}
+
 		// NOTE(jan): Initialize current program.
 		if (do_init) {
 			do_init = false
@@ -589,7 +603,7 @@ main :: proc() {
 
 		// NOTE(jan): Allocate a transient command buffer for before-frame actions like updating uniforms.
 		transient_cmd := gfx.vulkan_cmd_allocate_and_begin_transient(vulkan, transient_cmd_pool)
-		programs.prepare_frame(&program, &vulkan, events[:], transient_cmd)
+		programs.prepare_frame(&program, &vulkan, events[:], state, transient_cmd)
 		gfx.vulkan_cmd_end_and_submit(vulkan, &transient_cmd)
 
 		// NOTE(jan): Acquire next swap image.

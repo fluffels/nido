@@ -92,7 +92,11 @@ clicked :: proc (box: gfx.AABox, events: []programs.Event) -> bool {
     return false
 }
 
-draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Event) {
+mouse_down :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
+    return mouse.left && (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
+}
+
+draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Event, input_state: programs.InputState) {
     max_x := f32(vulkan.swap.extent.width)
     max_y := f32(vulkan.swap.extent.height)
 
@@ -129,7 +133,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
 
             tile_box := push_tile(state, x0, y0, tile)
 
-            if clicked(tile_box, events) do state.terrain[y_index * state.map_width + x_index] = state.selected_tile
+            if mouse_down(tile_box, input_state.mouse) do state.terrain[y_index * state.map_width + x_index] = state.selected_tile
         }
     }
 }

@@ -186,7 +186,7 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
     gfx.vulkan_mesh_reset(&state.colored_mesh)
     gfx.vulkan_mesh_reset(&state.textured_mesh)
 
-    draw(vulkan, state, request.events)
+    draw(vulkan, state, request.events, request.input_state)
 
     gfx.vulkan_mesh_upload(vulkan, &state.colored_mesh)
 	gfx.vulkan_mesh_upload(vulkan, &state.textured_mesh)
