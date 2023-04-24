@@ -35,18 +35,6 @@ MapEditorState :: struct {
     sprite_height: f32,
 }
 
-SpriteDescription :: struct {
-    x: u32,
-    y: u32,
-}
-
-TERRAIN_SPRITES := []SpriteDescription {
-    {
-        0,
-        0,
-    },
-}
-
 PIPELINES := []gfx.VulkanPipelineMetadata {
     {
         "colored",
