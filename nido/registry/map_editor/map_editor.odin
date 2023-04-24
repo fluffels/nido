@@ -21,7 +21,8 @@ MapEditorState :: struct {
 
     linear_sampler: vk.Sampler,
 
-    mesh: gfx.VulkanMesh,
+    colored_mesh: gfx.VulkanMesh,
+    textured_mesh: gfx.VulkanMesh,
 
     uniforms: Uniforms,
     uniform_buffer: gfx.VulkanBuffer,
@@ -48,6 +49,13 @@ TERRAIN_SPRITES := []SpriteDescription {
 
 PIPELINES := []gfx.VulkanPipelineMetadata {
     {
+        "colored",
+        {
+            "ortho_xy_rgba",
+            "color",
+        },
+    },
+    {
         "textured",
         {
             "ortho_xy_uv",
@@ -56,7 +64,19 @@ PIPELINES := []gfx.VulkanPipelineMetadata {
     },
 }
 
-VERTEX_DESCRIPTION := gfx.VertexDescription {
+COLORED_VERTEX := gfx.VertexDescription {
+    name = "map_editor_colored",
+    attributes = []gfx.VertexAttributeDescription {
+        {
+            component_count = 2,
+        },
+        {
+            component_count = 4,
+        },
+    },
+}
+
+TEXTURED_VERTEX := gfx.VertexDescription {
     name = "map_editor_vertex",
     attributes = []gfx.VertexAttributeDescription {
         {
@@ -82,8 +102,9 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
     // NOTE(jan): Sampler for textures.
 	new_state.linear_sampler = gfx.vulkan_sampler_create(vulkan)
     
-    // NOTE(jan): Mesh.
-    new_state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
+    // NOTE(jan): Meshes.
+    new_state.colored_mesh = gfx.vulkan_mesh_create(COLORED_VERTEX)
+    new_state.textured_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
 
     return
 }
@@ -100,12 +121,12 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
 
-    assert("textured" in state.vulkan_pass.pipelines)
-    pipeline := state.vulkan_pass.pipelines["textured"]
-
     // NOTE(jan): Update uniforms.
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
-    gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
+    for _, pipeline in state.vulkan_pass.pipelines {
+        // NOTE(jan): Assume that descriptor set 0 is always uniforms.
+        gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
+    }
 
     // NOTE(jan): Upload texture if necessary.
     if (state.sprite_sheet.handle == 0) {
@@ -146,28 +167,23 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
     }
     
     // NOTE(jan): Update sampler.
+    textured_pipeline := state.vulkan_pass.pipelines["textured"] or_else panic("No textured pipeline")
     gfx.vulkan_descriptor_update_combined_image_sampler(
         vulkan,
-        pipeline.descriptor_sets[0],
+        textured_pipeline.descriptor_sets[0],
         1,
         []gfx.VulkanImage { state.sprite_sheet },
         state.linear_sampler,
     )
 
-	// NOTE(jan): Upload mesh.
-    gfx.vulkan_mesh_reset(&state.mesh)
+	// NOTE(jan): Upload meshes.
+    gfx.vulkan_mesh_reset(&state.colored_mesh)
+    gfx.vulkan_mesh_reset(&state.textured_mesh)
 
-    for y_index in 0..<10 {
-        for x_index in 0..<10 {
-            x0 := f32(x_index) * state.tile_width
-            y0 := f32(y_index) * state.tile_height
-            tile := TERRAIN_SPRITES[0]
+    draw(vulkan, state)
 
-            push_tile(state, x0, y0, tile)
-        }
-    }
-
-	gfx.vulkan_mesh_upload(vulkan, &state.mesh)
+    gfx.vulkan_mesh_upload(vulkan, &state.colored_mesh)
+	gfx.vulkan_mesh_upload(vulkan, &state.textured_mesh)
 }
 
 draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
@@ -175,11 +191,8 @@ draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
     vulkan := request.vulkan
     vulkan_pass := state.vulkan_pass
 
-    assert("textured" in vulkan_pass.pipelines)
-    pipeline := vulkan_pass.pipelines["textured"]
-
     clears := [?]vk.ClearValue {
-        vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}},
+        vk.ClearValue { color = { float32 = gfx.gray }},
     }
 
     pass := vk.RenderPassBeginInfo {
@@ -196,20 +209,39 @@ draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
 
     vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
 
-    vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-    
-    vk.CmdBindDescriptorSets(
-        cmd,
-        vk.PipelineBindPoint.GRAPHICS,
-        pipeline.layout,
-        0, u32(len(pipeline.descriptor_sets)),
-        raw_data(pipeline.descriptor_sets),
-        0, nil,
-    )
+    // NOTE(jan): Draw colored stuff.
+    {
+        assert("colored" in vulkan_pass.pipelines)
+        pipeline := vulkan_pass.pipelines["colored"]
+        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
+        vk.CmdBindDescriptorSets(
+            cmd,
+            vk.PipelineBindPoint.GRAPHICS,
+            pipeline.layout,
+            0, u32(len(pipeline.descriptor_sets)),
+            raw_data(pipeline.descriptor_sets),
+            0, nil,
+        )
+        gfx.vulkan_mesh_bind(cmd, &state.colored_mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(state.colored_mesh.indices)), 1, 0, 0, 0)
+    }
 
-    gfx.vulkan_mesh_bind(cmd, &state.mesh)
-
-    vk.CmdDrawIndexed(cmd, u32(len(state.mesh.indices)), 1, 0, 0, 0)
+    // NOTE(jan): Draw textured stuff.
+    {
+        assert("textured" in vulkan_pass.pipelines)
+        pipeline := vulkan_pass.pipelines["textured"]
+        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
+        vk.CmdBindDescriptorSets(
+            cmd,
+            vk.PipelineBindPoint.GRAPHICS,
+            pipeline.layout,
+            0, u32(len(pipeline.descriptor_sets)),
+            raw_data(pipeline.descriptor_sets),
+            0, nil,
+        )
+        gfx.vulkan_mesh_bind(cmd, &state.textured_mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(state.textured_mesh.indices)), 1, 0, 0, 0)
+    }
 
     vk.CmdEndRenderPass(cmd)
 }
@@ -225,7 +257,8 @@ cleanup :: proc (state: ^MapEditorState, request: programs.Cleanup) {
     state.linear_sampler = 0
 
     gfx.vulkan_image_destroy(vulkan, &state.sprite_sheet)
-    gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
+    gfx.vulkan_mesh_destroy(vulkan, &state.colored_mesh)
+    gfx.vulkan_mesh_destroy(vulkan, &state.textured_mesh)
     gfx.vulkan_buffer_destroy(vulkan, &state.uniform_buffer)
     gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
 }

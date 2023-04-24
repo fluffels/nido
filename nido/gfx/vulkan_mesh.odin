@@ -108,6 +108,8 @@ vulkan_mesh_upload :: proc(
         data := mesh.attributes[i]
         size := u64(len(data)) * u64(attribute_desc.component_count) * size_of(f32)
 
+        if size == 0 do continue
+
         buffer := vulkan_buffer_create_vertex(vulkan, size)
 
         memory: rawptr = vulkan_memory_map(vulkan, buffer.memory)
