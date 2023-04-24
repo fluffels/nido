@@ -698,4 +698,6 @@ main :: proc() {
 		}
 		vk.FreeCommandBuffers(vulkan.device, transient_cmd_pool, 1, &transient_cmd)
 	}
+
+	programs.cleanup(&program, &vulkan, program_allocator)
 }

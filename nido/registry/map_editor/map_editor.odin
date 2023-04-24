@@ -108,6 +108,7 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
             new_state.terrain[y * new_state.map_width + x] = 0
         }
     }
+    load_map(new_state)
 
     // NOTE(jan): Misc.
     new_state.zoom = 4.0
@@ -267,6 +268,8 @@ cleanup :: proc (state: ^MapEditorState, request: programs.Cleanup) {
     gfx.vulkan_mesh_destroy(vulkan, &state.textured_mesh)
     gfx.vulkan_buffer_destroy(vulkan, &state.uniform_buffer)
     gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
+
+    save_map(state)
 }
 
 handler :: proc (program: ^programs.Program, request: programs.Request) {
