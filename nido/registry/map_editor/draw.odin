@@ -79,7 +79,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState) {
 
     // NOTE(jan): UI.
     tile_selector := gfx.AABox {
-        left = max_x - 4 * 8,
+        left = max_x - 4 * state.tile_width,
         top = 0,
         right = max_x,
         bottom = max_y,

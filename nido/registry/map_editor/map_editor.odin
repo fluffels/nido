@@ -19,7 +19,7 @@ Uniforms :: struct {
 MapEditorState :: struct {
     sprite_sheet: gfx.VulkanImage,
 
-    linear_sampler: vk.Sampler,
+    sampler: vk.Sampler,
 
     colored_mesh: gfx.VulkanMesh,
     textured_mesh: gfx.VulkanMesh,
@@ -33,6 +33,7 @@ MapEditorState :: struct {
     tile_height: f32,
     sprite_width: f32,
     sprite_height: f32,
+    zoom: f32,
 }
 
 PIPELINES := []gfx.VulkanPipelineMetadata {
@@ -88,11 +89,13 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
 	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
 
     // NOTE(jan): Sampler for textures.
-	new_state.linear_sampler = gfx.vulkan_sampler_create(vulkan)
+	new_state.sampler = gfx.vulkan_sampler_create_nearest(vulkan)
     
     // NOTE(jan): Meshes.
     new_state.colored_mesh = gfx.vulkan_mesh_create(COLORED_VERTEX)
     new_state.textured_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
+
+    new_state.zoom = 4.0
 
     return
 }
@@ -145,8 +148,8 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
                 )
                 image.image_free(sprite_sheet_pixels)
 
-                state.tile_width = 8.0
-                state.tile_height = 8.0
+                state.tile_width = 8.0 * state.zoom
+                state.tile_height = 8.0 * state.zoom
 
                 state.sprite_width = 8.0 / f32(extent.width)
                 state.sprite_height = 8.0 / f32(extent.height)
@@ -161,7 +164,7 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
         textured_pipeline.descriptor_sets[0],
         1,
         []gfx.VulkanImage { state.sprite_sheet },
-        state.linear_sampler,
+        state.sampler,
     )
 
 	// NOTE(jan): Upload meshes.
@@ -241,8 +244,8 @@ cleanup :: proc (state: ^MapEditorState, request: programs.Cleanup) {
 
     vulkan := request.vulkan
 
-    gfx.vulkan_sampler_destroy(vulkan, state.linear_sampler)
-    state.linear_sampler = 0
+    gfx.vulkan_sampler_destroy(vulkan, state.sampler)
+    state.sampler = 0
 
     gfx.vulkan_image_destroy(vulkan, &state.sprite_sheet)
     gfx.vulkan_mesh_destroy(vulkan, &state.colored_mesh)

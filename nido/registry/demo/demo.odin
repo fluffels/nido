@@ -63,7 +63,7 @@ init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^
 	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
 
     // NOTE(jan): Sampler for textures.
-	new_state.linear_sampler = gfx.vulkan_sampler_create(vulkan)
+	new_state.linear_sampler = gfx.vulkan_sampler_create_linear(vulkan)
 
     // NOTE(jan): Texture.
     extent := vk.Extent2D { 512, 512 }

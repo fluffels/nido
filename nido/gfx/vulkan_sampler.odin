@@ -2,7 +2,30 @@ package gfx
 
 import vk "vendor:vulkan"
 
-vulkan_sampler_create :: proc(vulkan: ^Vulkan) -> (sampler: vk.Sampler) {
+vulkan_sampler_create_nearest :: proc(vulkan: ^Vulkan) -> (sampler: vk.Sampler) {
+    check(
+        vk.CreateSampler(
+            vulkan.device,
+            &vk.SamplerCreateInfo{
+                sType = vk.StructureType.SAMPLER_CREATE_INFO,
+                magFilter = vk.Filter.NEAREST,
+                minFilter = vk.Filter.NEAREST,
+                mipmapMode = vk.SamplerMipmapMode.NEAREST,
+                addressModeU = vk.SamplerAddressMode.REPEAT,
+                addressModeV = vk.SamplerAddressMode.REPEAT,
+                addressModeW = vk.SamplerAddressMode.REPEAT,
+                anisotropyEnable = false,
+                compareEnable = false,
+            },
+            nil,
+            &sampler,
+        ),
+        "could not create sampler",
+    )
+    return
+}
+
+vulkan_sampler_create_linear :: proc(vulkan: ^Vulkan) -> (sampler: vk.Sampler) {
     check(
         vk.CreateSampler(
             vulkan.device,
