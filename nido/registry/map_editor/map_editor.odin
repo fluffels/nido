@@ -27,6 +27,11 @@ MapEditorState :: struct {
     uniform_buffer: gfx.VulkanBuffer,
 
     vulkan_pass: gfx.VulkanPass,
+
+    tile_width: f32,
+    tile_height: f32,
+    sprite_width: f32,
+    sprite_height: f32,
 }
 
 SpriteDescription :: struct {
@@ -130,6 +135,12 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
                     state.sprite_sheet,
                 )
                 image.image_free(sprite_sheet_pixels)
+
+                state.tile_width = 8.0
+                state.tile_height = 8.0
+
+                state.sprite_width = 8.0 / f32(extent.width)
+                state.sprite_height = 8.0 / f32(extent.height)
             }
         }
     }
@@ -146,54 +157,13 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
 	// NOTE(jan): Upload mesh.
     gfx.vulkan_mesh_reset(&state.mesh)
 
-    tile_width : f32 = 8.0
-    tile_height : f32= 8.0
-
-    sprite_width := 8.0 / f32(state.sprite_sheet.extent.width)
-    sprite_height := 8.0 / f32(state.sprite_sheet.extent.height)
-
     for y_index in 0..<10 {
         for x_index in 0..<10 {
-            x0 := f32(x_index) * tile_width
-            x1 := x0 + tile_width
+            x0 := f32(x_index) * state.tile_width
+            y0 := f32(y_index) * state.tile_height
+            tile := TERRAIN_SPRITES[0]
 
-            y0 := f32(y_index) * tile_height
-            y1 := y0 + tile_height
-
-            s0 := f32(TERRAIN_SPRITES[0].x) / f32(state.sprite_sheet.extent.width)
-            s1 := s0 + sprite_width
-
-            t0 := f32(TERRAIN_SPRITES[0].y) / f32(state.sprite_sheet.extent.height)
-            t1 := t0 + sprite_height
-
-            vertices := [][][]f32 {
-                {
-                    {x0, y0},
-                    {s0, t0},
-                },
-                {
-                    {x1, y0},
-                    {s1, t0},
-                },
-                {
-                    {x1, y1},
-                    {s1, t1},
-                },
-                {
-                    {x0, y1},
-                    {s0, t1},
-                },
-            }
-
-            first_index := state.mesh.vertex_count
-            gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
-
-            append(&state.mesh.indices, first_index + 0)
-            append(&state.mesh.indices, first_index + 1)
-            append(&state.mesh.indices, first_index + 2)
-            append(&state.mesh.indices, first_index + 2)
-            append(&state.mesh.indices, first_index + 3)
-            append(&state.mesh.indices, first_index + 0)
+            push_tile(state, x0, y0, tile)
         }
     }
 
