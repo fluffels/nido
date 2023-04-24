@@ -106,7 +106,7 @@ vulkan_mesh_upload :: proc(
 
     for attribute_desc, i in mesh.description.attributes {
         data := mesh.attributes[i]
-        size := u64(len(data)) * u64(attribute_desc.component_count) * size_of(f32)
+        size := u64(len(data)) * size_of(f32)
 
         if size == 0 do continue
 
