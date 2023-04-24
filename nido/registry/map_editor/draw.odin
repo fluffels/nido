@@ -111,7 +111,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
 
     for tile, index in TERRAIN_SPRITES {
         x_index := index % 4
-        y_index := index / 4
+        y_index := index / 4 + 2
 
         x0 := tile_selector.left + f32(x_index) * state.tile_width
         y0 := tile_selector.top  + f32(y_index) * state.tile_height
@@ -121,8 +121,16 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         if clicked(tile_box, events) do state.selected_tile = index
     }
 
+    // NOTE(jan): Selected tile indicator
+    {
+        x := tile_selector.left + state.tile_width * 1.5
+        y := tile_selector.top
+        tile := TERRAIN_SPRITES[state.selected_tile]
+        push_tile(state, x, y, tile)
+    }
+
     // NOTE(jan): Map.
-    x_tiles := int(tile_selector.left / state.tile_width)+1
+    x_tiles := int(tile_selector.left / state.tile_width)
     y_tiles := int(max_y / state.tile_height)
     for y_index in 0..<y_tiles {
         for x_index in 0..<x_tiles {
