@@ -535,9 +535,17 @@ main :: proc() {
 		vulkan.temp_buffers = make([dynamic]gfx.VulkanBuffer, context.temp_allocator)
 
 		// NOTE(jan): Handle events.
+		events := make([dynamic]programs.Event, context.temp_allocator)
+
 		sdl2.PumpEvents();
 		for event: sdl2.Event; sdl2.PollEvent(&event); {
 			#partial switch event.type {
+				case sdl2.EventType.MOUSEBUTTONDOWN:
+					event: sdl2.MouseButtonEvent = event.button;
+					append(&events, programs.Click {
+						x = f32(event.x),
+						y = f32(event.y),
+					})
 				case sdl2.EventType.KEYDOWN:
 					event: sdl2.KeyboardEvent = event.key;
 					#partial switch event.keysym.sym {
@@ -581,7 +589,7 @@ main :: proc() {
 
 		// NOTE(jan): Allocate a transient command buffer for before-frame actions like updating uniforms.
 		transient_cmd := gfx.vulkan_cmd_allocate_and_begin_transient(vulkan, transient_cmd_pool)
-		programs.prepare_frame(&program, &vulkan, transient_cmd)
+		programs.prepare_frame(&program, &vulkan, events[:], transient_cmd)
 		gfx.vulkan_cmd_end_and_submit(vulkan, &transient_cmd)
 
 		// NOTE(jan): Acquire next swap image.

@@ -21,6 +21,7 @@ DestroyPasses :: struct {
 PrepareFrame :: struct {
     vulkan: ^gfx.Vulkan,
     cmd: vk.CommandBuffer,
+    events: []Event,
 }
 
 DrawFrame :: struct {
@@ -78,9 +79,10 @@ destroy_passes :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
     program.handler(program, request)
 }
 
-prepare_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer) {
+prepare_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, events: []Event, cmd: vk.CommandBuffer) {
     request := PrepareFrame {
         vulkan = vulkan,
+        events = events,
         cmd = cmd,
     }
     program.handler(program, request)

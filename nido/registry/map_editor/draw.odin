@@ -1,6 +1,7 @@
 package map_editor
 
 import "../../gfx"
+import "../../programs"
 
 push_box :: proc(state: ^MapEditorState, box: gfx.AABox, color: gfx.Color) {
     vertices := [][][]f32 {
@@ -33,7 +34,7 @@ push_box :: proc(state: ^MapEditorState, box: gfx.AABox, color: gfx.Color) {
     append(&state.colored_mesh.indices, first_index + 0)
 }
 
-push_tile :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: SpriteDescription) {
+push_tile :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: SpriteDescription) -> gfx.AABox {
     x1 := x0 + state.tile_width
     y1 := y0 + state.tile_height
 
@@ -71,9 +72,27 @@ push_tile :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: SpriteDescript
     append(&state.textured_mesh.indices, first_index + 2)
     append(&state.textured_mesh.indices, first_index + 3)
     append(&state.textured_mesh.indices, first_index + 0)
+
+    return gfx.AABox {
+        left = x0,
+        top = y0,
+        right = x1,
+        bottom = y1,
+    }
 }
 
-draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState) {
+clicked :: proc (box: gfx.AABox, events: []programs.Event) -> bool {
+    for event in events {
+        #partial switch e in event {
+            case programs.Click:
+                if (e.x >= box.left) && (e.x <= box.right) && (e.y >= box.top) && (e.y <= box.bottom) do return true
+        }
+    }
+
+    return false
+}
+
+draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Event) {
     max_x := f32(vulkan.swap.extent.width)
     max_y := f32(vulkan.swap.extent.height)
 
@@ -93,7 +112,9 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState) {
         x0 := tile_selector.left + f32(x_index) * state.tile_width
         y0 := tile_selector.top  + f32(y_index) * state.tile_height
 
-        push_tile(state, x0, y0, tile)
+        tile_box := push_tile(state, x0, y0, tile)
+
+        if clicked(tile_box, events) do state.selected_tile = index
     }
 
     // NOTE(jan): Map.

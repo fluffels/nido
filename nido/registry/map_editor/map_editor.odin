@@ -29,6 +29,7 @@ MapEditorState :: struct {
 
     vulkan_pass: gfx.VulkanPass,
 
+    selected_tile: int,
     tile_width: f32,
     tile_height: f32,
     sprite_width: f32,
@@ -171,7 +172,7 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
     gfx.vulkan_mesh_reset(&state.colored_mesh)
     gfx.vulkan_mesh_reset(&state.textured_mesh)
 
-    draw(vulkan, state)
+    draw(vulkan, state, request.events)
 
     gfx.vulkan_mesh_upload(vulkan, &state.colored_mesh)
 	gfx.vulkan_mesh_upload(vulkan, &state.textured_mesh)
