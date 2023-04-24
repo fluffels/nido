@@ -1,5 +1,7 @@
 package map_editor
 
+import "core:math"
+
 import "../../gfx"
 import "../../programs"
 
@@ -94,6 +96,38 @@ push_sprite :: proc(state: ^MapEditorState, x0: f32, y0: f32, sprite: Sprite, ti
     panic("Unknown type")
 }
 
+push_doodad :: proc(state: ^MapEditorState, x0: f32, y0: f32, doodad: Doodad, ticks: u32) -> gfx.AABox {
+    result := gfx.AABox {
+        left = x0,
+        right = x0,
+        top = y0,
+        bottom = y0,
+    }
+
+    switch s in doodad.sprite {
+        case Frame:
+            for y in 0..<doodad.tile_height {
+                for x in 0..<doodad.tile_width {
+                    f := Frame {
+                        x = s.x + u32(x * 8),
+                        y = s.y + u32(y * 8),
+                    }
+                    x := x0 + f32(x) * state.tile_width
+                    y := y0 + f32(y) * state.tile_height
+                    box := push_frame(state, x, y, f)
+                    result.left  = math.min(result.right, box.right)
+                    result.right = math.max(result.right, box.right)
+                    result.top    = math.min(result.top, box.top)
+                    result.bottom = math.max(result.bottom, box.bottom)
+                }
+            }
+        case Animation:
+            panic("Not handled")
+    }
+
+    return result
+}
+
 clicked :: proc (box: gfx.AABox, events: []programs.Event) -> bool {
     for event in events {
         #partial switch e in event {
@@ -140,6 +174,13 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
             if clicked(sprite_box, events) do state.selected_sprite = index
 
             x0 += state.tile_width
+        }
+
+        x0 = tile_selector.left
+        y0 += state.tile_height
+
+        for doodad, index in DOODADS {
+            push_doodad(state, x0, y0, doodad, input_state.ticks)
         }
     }
 
