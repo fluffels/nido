@@ -80,6 +80,17 @@ vulkan_mesh_bind :: proc(
     }
 }
 
+vulkan_mesh_reset :: proc(
+    mesh: ^VulkanMesh,
+) {
+    for i in 0..<len(mesh.attributes) {
+        clear(&mesh.attributes[i])
+    }
+
+    clear(&mesh.indices)
+    mesh.vertex_count = 0
+}
+
 vulkan_mesh_upload :: proc(
     vulkan: ^Vulkan,
     mesh: ^VulkanMesh,
