@@ -29,6 +29,9 @@ MapEditorState :: struct {
 
     vulkan_pass: gfx.VulkanPass,
 
+    map_width: int,
+    map_height: int,
+    terrain: []int,
     selected_tile: int,
     tile_width: f32,
     tile_height: f32,
@@ -96,6 +99,17 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
     new_state.colored_mesh = gfx.vulkan_mesh_create(COLORED_VERTEX)
     new_state.textured_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
 
+    // NOTE(jan): Map.
+    new_state.map_width = 256
+    new_state.map_height = 256
+    new_state.terrain = make([]int, new_state.map_width * new_state.map_height)
+    for y in 0..<new_state.map_height {
+        for x in 0..<new_state.map_width {
+            new_state.terrain[y * new_state.map_width + x] = 0
+        }
+    }
+
+    // NOTE(jan): Misc.
     new_state.zoom = 4.0
 
     return

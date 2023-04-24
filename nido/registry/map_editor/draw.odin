@@ -118,13 +118,18 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
     }
 
     // NOTE(jan): Map.
-    for y_index in 0..<10 {
-        for x_index in 0..<10 {
+    x_tiles := int(tile_selector.left / state.tile_width)+1
+    y_tiles := int(max_y / state.tile_height)
+    for y_index in 0..<y_tiles {
+        for x_index in 0..<x_tiles {
             x0 := f32(x_index) * state.tile_width
             y0 := f32(y_index) * state.tile_height
-            tile := TERRAIN_SPRITES[0]
+            tile_type := state.terrain[y_index * state.map_width + x_index]
+            tile := TERRAIN_SPRITES[tile_type]
 
-            push_tile(state, x0, y0, tile)
+            tile_box := push_tile(state, x0, y0, tile)
+
+            if clicked(tile_box, events) do state.terrain[y_index * state.map_width + x_index] = state.selected_tile
         }
     }
 }
