@@ -34,7 +34,7 @@ push_box :: proc(state: ^MapEditorState, box: gfx.AABox, color: gfx.Color) {
     append(&state.colored_mesh.indices, first_index + 0)
 }
 
-push_tile :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: SpriteDescription) -> gfx.AABox {
+push_frame :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: Frame) -> gfx.AABox {
     x1 := x0 + state.tile_width
     y1 := y0 + state.tile_height
 
@@ -81,6 +81,19 @@ push_tile :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: SpriteDescript
     }
 }
 
+push_sprite :: proc(state: ^MapEditorState, x0: f32, y0: f32, sprite: Sprite, ticks: u32) -> gfx.AABox {
+    switch s in sprite {
+        case Frame:
+            return push_frame(state, x0, y0, s)
+        case Animation:
+            t := ticks / s.frame_duration
+            i := t % u32(len(s.frames))
+            frame := s.frames[i]
+            return push_frame(state, x0, y0, frame)
+    }
+    panic("Unknown type")
+}
+
 clicked :: proc (box: gfx.AABox, events: []programs.Event) -> bool {
     for event in events {
         #partial switch e in event {
@@ -109,24 +122,29 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
     }
     push_box(state, tile_selector, gfx.base03)
 
-    for tile, index in TERRAIN_SPRITES {
-        x_index := index % 4
-        y_index := index / 4 + 2
+    {
+        x0 := tile_selector.left
+        y0 := tile_selector.top
 
-        x0 := tile_selector.left + f32(x_index) * state.tile_width
-        y0 := tile_selector.top  + f32(y_index) * state.tile_height
+        for sprite, index in SPRITES {
+            if index % 4 == 0 {
+                x0 = tile_selector.left
+                y0 += state.tile_height
+            }
 
-        tile_box := push_tile(state, x0, y0, tile)
+            sprite_box := push_sprite(state, x0, y0, sprite, input_state.ticks)
+            if clicked(sprite_box, events) do state.selected_sprite = index
 
-        if clicked(tile_box, events) do state.selected_tile = index
+            x0 += state.tile_width
+        }
     }
 
     // NOTE(jan): Selected tile indicator
     {
         x := tile_selector.left + state.tile_width * 1.5
         y := tile_selector.top
-        tile := TERRAIN_SPRITES[state.selected_tile]
-        push_tile(state, x, y, tile)
+        sprite := SPRITES[state.selected_sprite]
+        push_sprite(state, x, y, sprite, input_state.ticks)
     }
 
     // NOTE(jan): Map.
@@ -136,12 +154,12 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         for x_index in 0..<x_tiles {
             x0 := f32(x_index) * state.tile_width
             y0 := f32(y_index) * state.tile_height
-            tile_type := state.terrain[y_index * state.map_width + x_index]
-            tile := TERRAIN_SPRITES[tile_type]
+            sprite_type := state.terrain[y_index * state.map_width + x_index]
+            sprite := SPRITES[sprite_type]
 
-            tile_box := push_tile(state, x0, y0, tile)
+            sprite_box := push_sprite(state, x0, y0, sprite, input_state.ticks)
 
-            if mouse_down(tile_box, input_state.mouse) do state.terrain[y_index * state.map_width + x_index] = state.selected_tile
+            if mouse_down(sprite_box, input_state.mouse) do state.terrain[y_index * state.map_width + x_index] = state.selected_sprite
         }
     }
 }

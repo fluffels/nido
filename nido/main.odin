@@ -567,6 +567,7 @@ main :: proc() {
 			x, y: i32
 			button := sdl2.GetMouseState(&x, &y)
 			state = programs.InputState {
+				ticks = sdl2.GetTicks(),
 				mouse = programs.Mouse {
 					x = f32(x),
 					y = f32(y),

@@ -32,7 +32,7 @@ MapEditorState :: struct {
     map_width: int,
     map_height: int,
     terrain: []int,
-    selected_tile: int,
+    selected_sprite: int,
     tile_width: f32,
     tile_height: f32,
     sprite_width: f32,

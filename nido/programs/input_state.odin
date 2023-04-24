@@ -7,5 +7,6 @@ Mouse :: struct {
 }
 
 InputState :: struct {
+    ticks: u32,
     mouse: Mouse,
 }
