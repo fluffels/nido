@@ -28,12 +28,15 @@ DemoState :: struct {
     vulkan_pass: gfx.VulkanPass,
 }
 
-PIPELINES := []gfx.VulkanPipelineMetadata {
-    {
-        "textured",
+PASS := gfx.VulkanPassMetadata {
+    enable_depth = false,
+    pipelines = []gfx.VulkanPipelineMetadata {
         {
-            "ortho_xy_uv",
-            "sampler",
+            name = "textured",
+            modules = {
+                "ortho_xy_uv",
+                "sampler",
+            },
         },
     },
 }
@@ -111,7 +114,7 @@ init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^
 }
 
 create_passes :: proc (state: ^DemoState, request: programs.CreatePasses) {
-    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PIPELINES)
+    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
 }
 
 destroy_passes :: proc (state: ^DemoState, request: programs.DestroyPasses) {

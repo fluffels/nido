@@ -50,6 +50,7 @@ identity :: proc (m: ^mat4x4) {
     m[15] = 1
 }
 
+// Orthographics projection.
 ortho :: proc (screen_width: u32, screen_height: u32, m: ^mat4x4) {
     identity(m)
 
@@ -60,4 +61,17 @@ ortho :: proc (screen_width: u32, screen_height: u32, m: ^mat4x4) {
     m[5] = 2 / f32(screen_height)
     m[13] = -1
     m[10] = 0
+}
+
+// Orthographics projection that keeps the Z coordinate.
+ortho_stacked :: proc (screen_width: u32, screen_height: u32, m: ^mat4x4) {
+    identity(m)
+
+    ar := f32(screen_width) / f32(screen_height)
+
+    m[0] = 2 / f32(screen_width)
+    m[12] = -1
+    m[5] = 2 / f32(screen_height)
+    m[13] = -1
+    m[10] = 1
 }

@@ -5,22 +5,22 @@ import "core:math"
 import "../../gfx"
 import "../../programs"
 
-push_box :: proc(state: ^MapEditorState, box: gfx.AABox, color: gfx.Color) {
+push_box :: proc(state: ^MapEditorState, box: gfx.AABox, z: f32, color: gfx.Color) {
     vertices := [][][]f32 {
         {
-            {box.left, box.top},
+            {box.left, box.top, z},
             {color[0], color[1], color[2], color[3]},
         },
         {
-            {box.right, box.top},
+            {box.right, box.top, z},
             {color[0], color[1], color[2], color[3]},
         },
         {
-            {box.right, box.bottom},
+            {box.right, box.bottom, z},
             {color[0], color[1], color[2], color[3]},
         },
         {
-            {box.left, box.bottom},
+            {box.left, box.bottom, z},
             {color[0], color[1], color[2], color[3]},
         },
     }
@@ -36,7 +36,7 @@ push_box :: proc(state: ^MapEditorState, box: gfx.AABox, color: gfx.Color) {
     append(&state.colored_mesh.indices, first_index + 0)
 }
 
-push_frame :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: Frame) -> gfx.AABox {
+push_frame :: proc(state: ^MapEditorState, x0: f32, y0: f32, z: f32, tile: Frame) -> gfx.AABox {
     x1 := x0 + state.tile_width
     y1 := y0 + state.tile_height
 
@@ -48,19 +48,19 @@ push_frame :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: Frame) -> gfx
 
     vertices := [][][]f32 {
         {
-            {x0, y0},
+            {x0, y0, z},
             {s0, t0},
         },
         {
-            {x1, y0},
+            {x1, y0, z},
             {s1, t0},
         },
         {
-            {x1, y1},
+            {x1, y1, z},
             {s1, t1},
         },
         {
-            {x0, y1},
+            {x0, y1, z},
             {s0, t1},
         },
     }
@@ -83,20 +83,20 @@ push_frame :: proc(state: ^MapEditorState, x0: f32, y0: f32, tile: Frame) -> gfx
     }
 }
 
-push_sprite :: proc(state: ^MapEditorState, x0: f32, y0: f32, sprite: Sprite, ticks: u32) -> gfx.AABox {
+push_sprite :: proc(state: ^MapEditorState, x0: f32, y0: f32, z: f32, sprite: Sprite, ticks: u32) -> gfx.AABox {
     switch s in sprite {
         case Frame:
-            return push_frame(state, x0, y0, s)
+            return push_frame(state, x0, y0, z, s)
         case Animation:
             t := ticks / s.frame_duration
             i := t % u32(len(s.frames))
             frame := s.frames[i]
-            return push_frame(state, x0, y0, frame)
+            return push_frame(state, x0, y0, z, frame)
     }
     panic("Unknown type")
 }
 
-push_doodad :: proc(state: ^MapEditorState, x0: f32, y0: f32, doodad: Doodad, ticks: u32) -> gfx.AABox {
+push_doodad :: proc(state: ^MapEditorState, x0: f32, y0: f32, z: f32, doodad: Doodad, ticks: u32) -> gfx.AABox {
     result := gfx.AABox {
         left = x0,
         right = x0,
@@ -114,7 +114,7 @@ push_doodad :: proc(state: ^MapEditorState, x0: f32, y0: f32, doodad: Doodad, ti
                     }
                     x := x0 + f32(x) * state.tile_width
                     y := y0 + f32(y) * state.tile_height
-                    box := push_frame(state, x, y, f)
+                    box := push_frame(state, x, y, z, f)
                     result.left  = math.min(result.left, box.left)
                     result.right = math.max(result.right, box.right)
                     result.top    = math.min(result.top, box.top)
@@ -151,6 +151,11 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
     max_x := f32(vulkan.swap.extent.width)
     max_y := f32(vulkan.swap.extent.height)
 
+    map_layer : f32 = 0.5
+    ui_layer : f32 = 0.4
+    button_layer: f32 = 0.3
+    mouse_layer: f32 = 0.2
+
     // NOTE(jan): UI.
     tile_selector := gfx.AABox {
         left = max_x - 4 * state.tile_width,
@@ -158,7 +163,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         right = max_x,
         bottom = max_y,
     }
-    push_box(state, tile_selector, gfx.base03)
+    push_box(state, tile_selector, ui_layer, gfx.base03)
 
     {
         x0 := tile_selector.left
@@ -170,12 +175,14 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
                 y0 += state.tile_height
             }
 
-            sprite_box := push_sprite(state, x0, y0, sprite, input_state.ticks)
+            sprite_box := push_sprite(state, x0, y0, button_layer, sprite, input_state.ticks)
             if clicked(sprite_box, events) {
                 state.selected_doodad = -1
                 state.selected_sprite = index
             }
 
+            // NOTE(jan): Mouse cursor. 
+            if mouse_over(sprite_box, input_state.mouse) do push_sprite(state, x0, y0, mouse_layer, CURSOR, input_state.ticks)
 
             x0 += state.tile_width
         }
@@ -184,11 +191,14 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         y0 += state.tile_height
 
         for doodad, index in DOODADS {
-            box := push_doodad(state, x0, y0, doodad, input_state.ticks)
+            box := push_doodad(state, x0, y0, button_layer, doodad, input_state.ticks)
             if clicked(box, events) {
                 state.selected_doodad = index
                 state.selected_sprite = -1
             }
+
+            // NOTE(jan): Mouse cursor. 
+            if mouse_over(box, input_state.mouse) do push_sprite(state, x0, y0, mouse_layer, CURSOR, input_state.ticks)
         }
     }
 
@@ -197,21 +207,21 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         x := tile_selector.left + state.tile_width * 1.5
         y := tile_selector.top
         sprite := SPRITES[state.selected_sprite]
-        push_sprite(state, x, y, sprite, input_state.ticks)
+        push_sprite(state, x, y, ui_layer, sprite, input_state.ticks)
     }
 
     // NOTE(jan): Map.
-    x_tiles := int(tile_selector.left / state.tile_width)
-    y_tiles := int(max_y / state.tile_height)
+    x_tiles := int(tile_selector.left / state.tile_width) + 1
+    y_tiles := int(max_y / state.tile_height) + 1
 
     for y_index in 0..<y_tiles {
         for x_index in 0..<x_tiles {
-            x0 := f32(x_index) * state.tile_width
-            y0 := f32(y_index) * state.tile_height
+            x0 := f32(x_index) * state.tile_width - state.scroll_offset[0]
+            y0 := f32(y_index) * state.tile_height - state.scroll_offset[0]
             sprite_type := state.terrain[y_index * state.map_width + x_index]
             sprite := SPRITES[sprite_type]
 
-            sprite_box := push_sprite(state, x0, y0, sprite, input_state.ticks)
+            sprite_box := push_sprite(state, x0, y0, map_layer, sprite, input_state.ticks)
 
             if mouse_down(sprite_box, input_state.mouse) {
                 if state.selected_doodad != -1 {
@@ -222,7 +232,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
             }
 
             // NOTE(jan): Mouse cursor. 
-            if mouse_over(sprite_box, input_state.mouse) do push_sprite(state, x0, y0, CURSOR, input_state.ticks)
+            if mouse_over(sprite_box, input_state.mouse) && !(mouse_over(tile_selector, input_state.mouse)) do push_sprite(state, x0, y0, ui_layer, CURSOR, input_state.ticks)
         }
     }
 
@@ -234,7 +244,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
             doodad_type := state.doodads[y_index * state.map_width + x_index]
             if (doodad_type != -1) {
                 doodad := DOODADS[doodad_type]
-                push_doodad(state, x0, y0, doodad, input_state.ticks)
+                push_doodad(state, x0, y0, map_layer, doodad, input_state.ticks)
             }
         }
     }

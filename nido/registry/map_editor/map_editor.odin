@@ -2,6 +2,7 @@ package map_editor
 
 import "core:log"
 import "core:math"
+import linalg "core:math/linalg"
 import "core:mem"
 import path "core:path/filepath"
 import "core:os"
@@ -29,6 +30,8 @@ MapEditorState :: struct {
 
     vulkan_pass: gfx.VulkanPass,
 
+    scroll_offset: linalg.Vector2f32,
+
     map_width: int,
     map_height: int,
     doodads: []int,
@@ -42,19 +45,22 @@ MapEditorState :: struct {
     zoom: f32,
 }
 
-PIPELINES := []gfx.VulkanPipelineMetadata {
-    {
-        "colored",
-        {
-            "ortho_xy_rgba",
-            "color",
+PASS := gfx.VulkanPassMetadata {
+    enable_depth = true,
+    pipelines = []gfx.VulkanPipelineMetadata {
+        gfx.VulkanPipelineMetadata {
+            name = "colored",
+            modules = {
+                "ortho_xyz_rgba",
+                "color",
+            },
         },
-    },
-    {
-        "textured",
-        {
-            "ortho_xy_uv",
-            "sampler",
+        gfx.VulkanPipelineMetadata {
+            name = "textured",
+            modules = {
+                "ortho_xyz_uv",
+                "sampler",
+            },
         },
     },
 }
@@ -63,9 +69,11 @@ COLORED_VERTEX := gfx.VertexDescription {
     name = "map_editor_colored",
     attributes = []gfx.VertexAttributeDescription {
         {
-            component_count = 2,
+            // NOTE(jan): Screen-space position + z for layering.
+            component_count = 3,
         },
         {
+            // NOTE(jan): RGBA.
             component_count = 4,
         },
     },
@@ -75,9 +83,11 @@ TEXTURED_VERTEX := gfx.VertexDescription {
     name = "map_editor_vertex",
     attributes = []gfx.VertexAttributeDescription {
         {
-            component_count = 2,
+            // NOTE(jan): Screen-space position + z for layering.
+            component_count = 3,
         },
         {
+            // NOTE(jan): Texture coords.
             component_count = 2,
         },
     },
@@ -122,7 +132,7 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
 }
 
 create_passes :: proc (state: ^MapEditorState, request: programs.CreatePasses) {
-    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PIPELINES)
+    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
 }
 
 destroy_passes :: proc (state: ^MapEditorState, request: programs.DestroyPasses) {
@@ -134,7 +144,7 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
     vulkan := request.vulkan
 
     // NOTE(jan): Update uniforms.
-	gfx.ortho(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
+	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
     for _, pipeline in state.vulkan_pass.pipelines {
         // NOTE(jan): Assume that descriptor set 0 is always uniforms.
@@ -175,6 +185,8 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
 
                 state.sprite_width = 8.0 / f32(extent.width)
                 state.sprite_height = 8.0 / f32(extent.height)
+
+                state.scroll_offset = linalg.Vector2f32 { state.tile_width / 2, state.tile_height / 2 }
             }
         }
     }
@@ -206,6 +218,7 @@ draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
 
     clears := [?]vk.ClearValue {
         vk.ClearValue { color = { float32 = gfx.gray }},
+        vk.ClearValue { depthStencil = { depth = 1, stencil = 0 }},
     }
 
     pass := vk.RenderPassBeginInfo {

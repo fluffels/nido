@@ -362,10 +362,8 @@ vulkan_pipelines_create :: proc(
             },
             pDepthStencilState = &vk.PipelineDepthStencilStateCreateInfo {
                 sType = vk.StructureType.PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-                // TODO(jan): enable
-                depthTestEnable = false,
-                // TODO(jan): enable
-                depthWriteEnable = false,
+                depthTestEnable = true,
+                depthWriteEnable = true,
                 depthCompareOp = vk.CompareOp.LESS,
                 depthBoundsTestEnable = false,
             },
