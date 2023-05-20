@@ -76,8 +76,10 @@ vulkan_pass_create :: proc(
 			pipelineBindPoint = vk.PipelineBindPoint.GRAPHICS,
 			colorAttachmentCount = u32(len(color_refs)),
 			pColorAttachments = raw_data(color_refs),
-			pDepthStencilAttachment = raw_data(depth_refs),
 		})
+		if (metadata.enable_depth) {
+			subpasses[0].pDepthStencilAttachment = raw_data(depth_refs)
+		}
 
 		append(&dependencies, vk.SubpassDependency {
 			srcSubpass = vk.SUBPASS_EXTERNAL,
