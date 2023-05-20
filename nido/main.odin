@@ -641,7 +641,7 @@ main :: proc() {
 			"could not begin cmd buffer",
 		)
 
-		programs.draw_frame(&program, &vulkan, cmd, swap_image_index)
+		programs.draw_frame(&program, &vulkan, cmd, swap_image_index, events[:], state)
 
 		vk.EndCommandBuffer(cmd)
 

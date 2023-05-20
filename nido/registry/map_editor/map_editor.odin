@@ -2,6 +2,7 @@ package map_editor
 
 import "core:log"
 import "core:math"
+import linalg "core:math/linalg"
 import "core:mem"
 import path "core:path/filepath"
 import "core:os"
@@ -28,6 +29,8 @@ MapEditorState :: struct {
     uniform_buffer: gfx.VulkanBuffer,
 
     vulkan_pass: gfx.VulkanPass,
+
+    scroll_offset: linalg.Vector2f32,
 
     map_width: int,
     map_height: int,
@@ -175,6 +178,8 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
 
                 state.sprite_width = 8.0 / f32(extent.width)
                 state.sprite_height = 8.0 / f32(extent.height)
+
+                state.scroll_offset = linalg.Vector2f32 { state.tile_width / 2, state.tile_height / 2 }
             }
         }
     }
@@ -188,15 +193,6 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
         []gfx.VulkanImage { state.sprite_sheet },
         state.sampler,
     )
-
-	// NOTE(jan): Upload meshes.
-    gfx.vulkan_mesh_reset(&state.colored_mesh)
-    gfx.vulkan_mesh_reset(&state.textured_mesh)
-
-    draw(vulkan, state, request.events, request.input_state)
-
-    gfx.vulkan_mesh_upload(vulkan, &state.colored_mesh)
-	gfx.vulkan_mesh_upload(vulkan, &state.textured_mesh)
 }
 
 draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
@@ -220,43 +216,15 @@ draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
         renderPass = vulkan_pass.render_pass,
     }
 
+    gfx.vulkan_mesh_reset(&state.colored_mesh)
+    gfx.vulkan_mesh_reset(&state.textured_mesh)
+
     vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
-
-    // NOTE(jan): Draw colored stuff.
-    {
-        assert("colored" in vulkan_pass.pipelines)
-        pipeline := vulkan_pass.pipelines["colored"]
-        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-        vk.CmdBindDescriptorSets(
-            cmd,
-            vk.PipelineBindPoint.GRAPHICS,
-            pipeline.layout,
-            0, u32(len(pipeline.descriptor_sets)),
-            raw_data(pipeline.descriptor_sets),
-            0, nil,
-        )
-        gfx.vulkan_mesh_bind(cmd, &state.colored_mesh)
-        vk.CmdDrawIndexed(cmd, u32(len(state.colored_mesh.indices)), 1, 0, 0, 0)
-    }
-
-    // NOTE(jan): Draw textured stuff.
-    {
-        assert("textured" in vulkan_pass.pipelines)
-        pipeline := vulkan_pass.pipelines["textured"]
-        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-        vk.CmdBindDescriptorSets(
-            cmd,
-            vk.PipelineBindPoint.GRAPHICS,
-            pipeline.layout,
-            0, u32(len(pipeline.descriptor_sets)),
-            raw_data(pipeline.descriptor_sets),
-            0, nil,
-        )
-        gfx.vulkan_mesh_bind(cmd, &state.textured_mesh)
-        vk.CmdDrawIndexed(cmd, u32(len(state.textured_mesh.indices)), 1, 0, 0, 0)
-    }
-
+    draw(cmd, vulkan, state, request.events, request.input_state)
     vk.CmdEndRenderPass(cmd)
+
+    gfx.vulkan_mesh_upload(vulkan, &state.colored_mesh)
+	gfx.vulkan_mesh_upload(vulkan, &state.textured_mesh)
 }
 
 cleanup_frame :: proc (state: ^MapEditorState, request: programs.CleanupFrame) { }

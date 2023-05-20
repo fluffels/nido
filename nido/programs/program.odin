@@ -29,6 +29,8 @@ DrawFrame :: struct {
     vulkan: ^gfx.Vulkan,
     cmd: vk.CommandBuffer,
     image_index: u32,
+    events: []Event,
+    input_state: InputState,
 }
 
 CleanupFrame :: struct {
@@ -90,11 +92,13 @@ prepare_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, events: []Event, 
     program.handler(program, request)
 }
 
-draw_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer, image_index: u32) {
+draw_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer, image_index: u32, events: []Event, state: InputState) {
     request := DrawFrame {
         vulkan = vulkan,
         cmd = cmd,
         image_index = image_index,
+        events = events,
+        input_state = state,
     }
     program.handler(program, request)
 }
