@@ -124,6 +124,8 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
     load_map(new_state)
 
     // NOTE(jan): Misc.
+    new_state.scroll_offset[0] = 0
+    new_state.scroll_offset[1] = 0
     new_state.selected_doodad = -1
     new_state.selected_sprite = -1
     new_state.zoom = 4.0
@@ -185,8 +187,6 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
 
                 state.sprite_width = 8.0 / f32(extent.width)
                 state.sprite_height = 8.0 / f32(extent.height)
-
-                state.scroll_offset = linalg.Vector2f32 { state.tile_width / 2, state.tile_height / 2 }
             }
         }
     }

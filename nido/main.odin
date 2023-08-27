@@ -529,6 +529,9 @@ main :: proc() {
 	do_init := true
 	// NOTE(jan): Create render passes first time through.
 	do_resize := true;
+	// NOTE(jan): Keep track of the last frame's time stamp.
+	last_frame: u32 = 0;
+
 	new_frame: for (!done) {
 		free_all(context.temp_allocator)
 
@@ -566,14 +569,25 @@ main :: proc() {
 		{
 			x, y: i32
 			button := sdl2.GetMouseState(&x, &y)
+			keys := sdl2.GetKeyboardState(nil)
 			state = programs.InputState {
 				ticks = sdl2.GetTicks(),
+				keyboard = programs.Keyboard {
+					left = keys[sdl2.SCANCODE_LEFT] != 0,
+					right = keys[sdl2.SCANCODE_RIGHT] != 0,
+					up = keys[sdl2.SCANCODE_UP] != 0,
+					down = keys[sdl2.SCANCODE_DOWN] != 0,
+				},
 				mouse = programs.Mouse {
 					x = f32(x),
 					y = f32(y),
 					left = ((button & sdl2.BUTTON_LEFT) != 0),
+					middle = ((button & sdl2.BUTTON_MIDDLE) != 0),
+					right = ((button & sdl2.BUTTON_RIGHT) != 0),
 				},
 			}
+			state.slice = state.ticks - last_frame
+			last_frame = state.ticks
 		}
 
 		// NOTE(jan): Initialize current program.

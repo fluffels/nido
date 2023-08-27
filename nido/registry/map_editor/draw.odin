@@ -143,6 +143,10 @@ mouse_down :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
     return mouse.left && (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
 }
 
+mouse_down_right :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
+    return mouse.right && (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
+}
+
 mouse_over :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
     return (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
 }
@@ -211,13 +215,16 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
     }
 
     // NOTE(jan): Map.
-    x_tiles := int(tile_selector.left / state.tile_width) + 1
-    y_tiles := int(max_y / state.tile_height) + 1
+    // PERF(jan): Only draw displayed tiles.
+    // x_tiles := int(tile_selector.left / state.tile_width) + 1
+    // y_tiles := int(max_y / state.tile_height) + 1
+    x_tiles := state.map_width
+    y_tiles := state.map_height
 
     for y_index in 0..<y_tiles {
         for x_index in 0..<x_tiles {
             x0 := f32(x_index) * state.tile_width - state.scroll_offset[0]
-            y0 := f32(y_index) * state.tile_height - state.scroll_offset[0]
+            y0 := f32(y_index) * state.tile_height - state.scroll_offset[1]
             sprite_type := state.terrain[y_index * state.map_width + x_index]
             sprite := SPRITES[sprite_type]
 
@@ -236,6 +243,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         }
     }
 
+    // NOTE(jan): Doodads.
     for y_index in 0..<y_tiles {
         for x_index in 0..<x_tiles {
             x0 := f32(x_index) * state.tile_width
@@ -247,5 +255,20 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
                 push_doodad(state, x0, y0, map_layer, doodad, input_state.ticks)
             }
         }
+    }
+    
+    // NOTE(jan): Map scroll.
+    // TODO(jan): Scale by frame time.
+    time_scale := 1000 * (f32(input_state.slice) / 1000)
+    if (input_state.keyboard.left) do state.scroll_offset[0] -= time_scale
+    if (input_state.keyboard.right) do state.scroll_offset[0] += time_scale
+    if (input_state.keyboard.up) do state.scroll_offset[1] -= time_scale
+    if (input_state.keyboard.down) do state.scroll_offset[1] += time_scale
+
+    map_box := gfx.AABox {
+        left = 0,
+        top = 0,
+        right = tile_selector.left,
+        bottom = max_y,
     }
 }
