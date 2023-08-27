@@ -140,15 +140,19 @@ clicked :: proc (box: gfx.AABox, events: []programs.Event) -> bool {
 }
 
 mouse_down :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
-    return mouse.left && (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
+    return mouse.left && (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
+}
+
+mouse_down_middle :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
+    return mouse.middle && (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
 mouse_down_right :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
-    return mouse.right && (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
+    return mouse.right && (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
 mouse_over :: proc (box: gfx.AABox, mouse: programs.Mouse) -> bool {
-    return (mouse.x >= box.left) && (mouse.x <= box.right) && (mouse.y >= box.top) && (mouse.y <= box.bottom)
+    return (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
 draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Event, input_state: programs.InputState) {
@@ -258,12 +262,13 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
     }
     
     // NOTE(jan): Map scroll.
-    // TODO(jan): Scale by frame time.
-    time_scale := 1000 * (f32(input_state.slice) / 1000)
-    if (input_state.keyboard.left) do state.scroll_offset[0] -= time_scale
-    if (input_state.keyboard.right) do state.scroll_offset[0] += time_scale
-    if (input_state.keyboard.up) do state.scroll_offset[1] -= time_scale
-    if (input_state.keyboard.down) do state.scroll_offset[1] += time_scale
+    // TODO(jan): Figure out why scrolling seems so choppy.
+    time_scale := f32(input_state.slice) / 1000
+    key_scroll_scale := 1000 * time_scale
+    if input_state.keyboard.left do state.scroll_offset[0] -= key_scroll_scale
+    if input_state.keyboard.right do state.scroll_offset[0] += key_scroll_scale
+    if input_state.keyboard.up do state.scroll_offset[1] -= key_scroll_scale
+    if input_state.keyboard.down do state.scroll_offset[1] += key_scroll_scale
 
     map_box := gfx.AABox {
         left = 0,
@@ -271,4 +276,11 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         right = tile_selector.left,
         bottom = max_y,
     }
+
+    if mouse_down_middle(map_box, input_state.mouse) {
+        mouse_scroll_scale := -50 * time_scale
+        state.scroll_offset += input_state.mouse.delta * mouse_scroll_scale
+    }
+
+    // NOTE(jan): Right click.
 }

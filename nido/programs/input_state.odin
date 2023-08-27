@@ -1,8 +1,10 @@
 package programs
 
+import linalg "core:math/linalg"
+
 Mouse :: struct {
-    x: f32,
-    y: f32,
+    pos: linalg.Vector2f32,
+    delta: linalg.Vector2f32,
     left: bool,
     middle: bool,
     right: bool,

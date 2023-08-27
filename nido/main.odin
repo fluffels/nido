@@ -5,6 +5,7 @@ import "core:fmt"
 import "core:log"
 import "core:math"
 import "core:math/bits"
+import linalg "core:math/linalg"
 import "core:mem"
 import "core:mem/virtual"
 import "core:os"
@@ -531,6 +532,7 @@ main :: proc() {
 	do_resize := true;
 	// NOTE(jan): Keep track of the last frame's time stamp.
 	last_frame: u32 = 0;
+	last_frame_mouse: linalg.Vector2f32;
 
 	new_frame: for (!done) {
 		free_all(context.temp_allocator)
@@ -569,6 +571,8 @@ main :: proc() {
 		{
 			x, y: i32
 			button := sdl2.GetMouseState(&x, &y)
+			pos := linalg.Vector2f32 { f32(x), f32(y) }
+			delta := pos - last_frame_mouse
 			keys := sdl2.GetKeyboardState(nil)
 			state = programs.InputState {
 				ticks = sdl2.GetTicks(),
@@ -579,8 +583,8 @@ main :: proc() {
 					down = keys[sdl2.SCANCODE_DOWN] != 0,
 				},
 				mouse = programs.Mouse {
-					x = f32(x),
-					y = f32(y),
+					pos = pos,
+					delta = delta,
 					left = ((button & sdl2.BUTTON_LEFT) != 0),
 					middle = ((button & sdl2.BUTTON_MIDDLE) != 0),
 					right = ((button & sdl2.BUTTON_RIGHT) != 0),
@@ -588,6 +592,7 @@ main :: proc() {
 			}
 			state.slice = state.ticks - last_frame
 			last_frame = state.ticks
+			last_frame_mouse = pos
 		}
 
 		// NOTE(jan): Initialize current program.
