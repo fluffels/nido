@@ -585,9 +585,9 @@ main :: proc() {
 				mouse = programs.Mouse {
 					pos = pos,
 					delta = delta,
-					left = ((button & sdl2.BUTTON_LEFT) != 0),
-					middle = ((button & sdl2.BUTTON_MIDDLE) != 0),
-					right = ((button & sdl2.BUTTON_RIGHT) != 0),
+					left = ((button & sdl2.BUTTON_LMASK) != 0),
+					middle = ((button & sdl2.BUTTON_MMASK) != 0),
+					right = ((button & sdl2.BUTTON_RMASK) != 0),
 				},
 			}
 			state.slice = state.ticks - last_frame

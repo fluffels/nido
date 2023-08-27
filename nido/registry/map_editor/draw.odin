@@ -1,5 +1,6 @@
 package map_editor
 
+import "core:log"
 import "core:math"
 
 import "../../gfx"
@@ -211,6 +212,7 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
     }
 
     // NOTE(jan): Selected tile indicator
+    // TODO(jan): This is broken.
     if state.selected_sprite != -1 {
         x := tile_selector.left + state.tile_width * 1.5
         y := tile_selector.top
@@ -240,6 +242,10 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
                 } else if state.selected_sprite != -1 {
                     state.terrain[y_index * state.map_width + x_index] = state.selected_sprite
                 }
+            }
+
+            if mouse_down_right(sprite_box, input_state.mouse) {
+                state.selected_sprite = sprite_type
             }
 
             // NOTE(jan): Mouse cursor. 
@@ -281,6 +287,4 @@ draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []programs.Ev
         mouse_scroll_scale := -50 * time_scale
         state.scroll_offset += input_state.mouse.delta * mouse_scroll_scale
     }
-
-    // NOTE(jan): Right click.
 }
