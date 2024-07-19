@@ -72,11 +72,13 @@ main :: proc() {
 		if ((major < 1) || (minor < 2) || (patch < 141)) do panic("you need at least Vulkan 1.2.141");
 	}
 
+	// NOTE(jan): Nice-to-have layers.
+	optional_layers := make([dynamic]string, context.temp_allocator);
+	append(&optional_layers, "VK_LAYER_KHRONOS_validation");
+
 	// NOTE(jan): Check if the layers we require are available.
 	required_layers := make([dynamic]string, context.temp_allocator);
 	{
-		append(&required_layers, "VK_LAYER_KHRONOS_validation")
-
 		log.infof("Required layers: ")
 		for layer in required_layers {
 			log.infof("\t* %s", layer);
@@ -103,12 +105,22 @@ main :: proc() {
 			log.infof("\t* %s", name);
 		}
 
-		log.infof("Checking extensions: ")
+		log.infof("Checking required layers: ")
 		for required_layer in required_layers {
 			if slice.contains(available_layer_names[:], required_layer) {
 				log.infof("\t\u2713 %s", required_layer)
 			} else {
-				fmt.panicf("\t\u274C %s", required_layer)
+				log.fatalf("\t\u274C %s", required_layer)
+				fmt.panicf("Layer %s is required.", required_layer)
+			}
+		}
+
+		log.infof("Checking optional layers: ")
+		for optional_layer in optional_layers {
+			if slice.contains(available_layer_names[:], optional_layer) {
+				log.infof("\t\u2713 %s", optional_layer)
+			} else {
+				log.warnf("\t\u274C %s", optional_layer)
 			}
 		}
 	}
@@ -185,7 +197,8 @@ main :: proc() {
 					continue outer_loop
 				}
 			}
-			fmt.panicf("\t\u274C %s", required_extension)
+			log.fatalf("\t\u274C %s", required_extension)
+			fmt.panicf("Extension %s is required.", required_extension)
 		}
 	}
 
