@@ -15,6 +15,7 @@ import "core:runtime"
 import "vendor:sdl2"
 import vk "vendor:vulkan"
 
+import "logext"
 import "gfx"
 import "programs"
 import "registry"
@@ -47,7 +48,8 @@ vulkan_debug :: proc "stdcall" (
 main :: proc() {
 	// NOTE(jan): Set up logging.
 	log_file_handle, log_file_error := os.open("log.txt", os.O_CREATE | os.O_WRONLY | os.O_TRUNC)
-	context.logger = log.create_file_logger(h=log_file_handle, lowest=log.Level.Debug)
+	// context.logger = log.create_file_logger(h=log_file_handle, lowest=log.Level.Debug)
+	context.logger = logext.create_circular_buffer_logger(requested_size=1 * 1024 * 1024, lowest=log.Level.Debug)
 	log.infof("Logging initialized")
 
 	// NOTE(jan): Load Vulkan functions.
