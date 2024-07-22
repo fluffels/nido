@@ -11,12 +11,14 @@ import "../../font"
 import "../../gfx"
 import "../../programs"
 
+import "core:unicode/utf8"
+
 Uniforms :: struct {
-    mvp: gfx.mat4x4,
 	ortho: gfx.mat4x4,
 }
 
 TerminalState :: struct {
+    fonts: [dynamic]font.Font,
     font_bitmap: []u8,
     font_sprite_sheet: gfx.VulkanImage,
 
@@ -68,16 +70,16 @@ init :: proc (
     new_state = new(TerminalState)
 
     // NOTE(jan): Uniforms containing orthographic / perspective projection.
-    gfx.identity(&new_state.uniforms.mvp)
-	gfx.identity(&new_state.uniforms.ortho)
+	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &new_state.uniforms.ortho)
 	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
 
     // NOTE(jan): Font.
-    fonts := font.load_fonts()
-    bitmap, ok := font.pack_fonts_into_texture(fonts)
+    new_state.fonts = font.load_fonts()
+    bitmap, ok := font.pack_fonts_into_texture(new_state.fonts)
     if !ok {
         fmt.panicf("Could not load font bitmap.")
     }
+    // TODO(jan): Ownership?
     new_state.font_bitmap = bitmap[:]
 
     // NOTE(jan): Sampler for textures.
@@ -137,6 +139,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     pipeline := state.vulkan_pass.pipelines["textured"]
 
     // NOTE(jan): Update uniforms.
+	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
     gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
 
@@ -156,6 +159,45 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     )
 
     // NOTE(jan): Update mesh.
+    gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
+    state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
+
+    default_font := font.get_font(state.fonts[:], "default")
+    version := default_font.versions[0]
+
+    message := "Hello, world!"
+    runes := utf8.string_to_runes(message)
+
+    x: f32 = 0
+    y: f32 = 120
+    q, repack := font.get_aligned_quad(default_font, &version, &x, &y, runes[0])
+
+    vertices := [][][]f32 {
+        {
+            {q.x0, q.y0},
+            {q.s0, q.t0},
+        },
+        {
+            {q.x1, q.y0},
+            {q.s1, q.t0},
+        },
+        {
+            {q.x1, q.y1},
+            {q.s1, q.t1},
+        },
+        {
+            {q.x0, q.y1},
+            {q.s0, q.t1},
+        },
+    }
+    append(&state.mesh.indices, 0)
+    append(&state.mesh.indices, 1)
+    append(&state.mesh.indices, 2)
+    append(&state.mesh.indices, 2)
+    append(&state.mesh.indices, 3)
+    append(&state.mesh.indices, 0)
+    gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
+    gfx.vulkan_mesh_upload(vulkan, &state.mesh)
 }
 
 draw_frame :: proc (state: ^TerminalState, request: programs.DrawFrame) {

@@ -2,6 +2,7 @@ package font
 
 import "core:log"
 import "core:os"
+import "core:unicode/utf8"
 
 import stbttf "vendor:stb/truetype"
 
@@ -31,7 +32,7 @@ FONT_METADATA := [?]FontMetadata{
         name = "default",
         path = "./fonts/FiraCode-Bold.ttf",
         // path = "./fonts/AkkuratPro-Regular.ttf",
-        size = 12,
+        size = 30,
         supersample = 2,
         glyphs = DEFAULT_GLYPHS[:],
     },
@@ -56,6 +57,16 @@ Font :: struct {
     info: stbttf.fontinfo,
     codepoints: map[rune]b32,
     versions: [dynamic]FontVersion,
+}
+
+get_font :: proc(
+    fonts: []Font,
+    name: string,
+) -> (
+    font: ^Font,
+) {
+    for &font in fonts do if font.metadata.name == name do return &font
+    return nil
 }
 
 mark_codepoint_for_loading :: proc(
@@ -147,7 +158,7 @@ pack_fonts_into_texture :: proc (
                 )
 
                 if result == 0 {
-                    log.errorf("Could not pack codepoint %u.", codepoint)
+                    log.errorf("Could not pack %r.", codepoint)
                     font.codepoints[codepoint] = false
                     continue
                 }
@@ -184,14 +195,40 @@ get_packedchar :: proc (
     codepoint: rune,
 ) -> (
     packedchar: stbttf.packedchar,
-    ok: b32,
+    requires_repack: b32,
 ) {
-    if !(codepoint in version.packedchars) {
-        if !(codepoint in font.codepoints) {
-            log.warnf("")
+    requires_repack = false
+    
+    if codepoint in version.packedchars {
+        packedchar = version.packedchars[codepoint]
+    } else {
+        packedchar = version.missing_packedchar
+        if codepoint in font.codepoints == false {
+            font.codepoints[codepoint] = true
         }
+        requires_repack = font.codepoints[codepoint] == true
     }
 
-    ok = true
+    return
+}
+
+get_aligned_quad :: proc (
+    font: ^Font,
+    version: ^FontVersion,
+    x: ^f32,
+    y: ^f32,
+    codepoint: rune,
+) -> (
+    aligned_quad: stbttf.aligned_quad,
+    requires_repack: b32
+) {
+    packedchar: stbttf.packedchar
+    packedchar, requires_repack = get_packedchar(font, version, codepoint)
+
+    // TODO(jan): Link in texture here so we can read height and width from it.
+    height: i32 = 512
+    width: i32 = 512
+    stbttf.GetPackedQuad(&packedchar, width, height, 0, x, y, &aligned_quad, false);
+
     return
 }
