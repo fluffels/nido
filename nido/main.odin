@@ -620,8 +620,13 @@ main :: proc() {
 
 			programs.cleanup(&program, &vulkan, program_allocator)
 			free_all(program_allocator)
-			log.infof("Initializing program %s", program.name);
-			programs.initialize(&program, &vulkan, program_allocator)
+			log.infof("Initializing program %s", program.name)
+			
+			if program.name == "terminal" {
+				programs.initialize(&program, &vulkan, mem_logger.data, program_allocator)
+			} else {
+				programs.initialize(&program, &vulkan, nil, program_allocator)
+			}
 		}
 
 		// NOTE(jan): Resize framebuffers and swap chain.

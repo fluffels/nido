@@ -4,11 +4,13 @@ import "core:fmt"
 import "core:log"
 import "core:math"
 import "core:mem"
+import "core:strings"
 
 import vk "vendor:vulkan"
 
 import "../../font"
 import "../../gfx"
+import "../../logext"
 import "../../programs"
 
 import "core:unicode/utf8"
@@ -18,6 +20,7 @@ Uniforms :: struct {
 }
 
 TerminalState :: struct {
+    log_data: ^logext.Circular_Buffer_Logger_Data,
     fonts: [dynamic]font.Font,
     font_bitmap: []u8,
     font_sprite_sheet: gfx.VulkanImage,
@@ -38,8 +41,8 @@ PASS := gfx.VulkanPassMetadata {
         {
             name = "textured",
             modules = {
-                "ortho_xy_uv",
-                "sampler",
+                "ortho_xy_uv_rgb",
+                "sampler_as_coverage",
             },
         },
     },
@@ -53,6 +56,9 @@ VERTEX_DESCRIPTION := gfx.VertexDescription {
         },
         {
             component_count = 2,
+        },
+        {
+            component_count = 3,
         },
     },
 }
@@ -68,6 +74,8 @@ init :: proc (
     vulkan := request.vulkan
 
     new_state = new(TerminalState)
+
+    new_state.log_data = cast(^logext.Circular_Buffer_Logger_Data)request.user_data
 
     // NOTE(jan): Uniforms containing orthographic / perspective projection.
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &new_state.uniforms.ortho)
@@ -93,22 +101,27 @@ init :: proc (
 
 	// NOTE(jan): Upload mesh.
     new_state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
+    color := gfx.base0[:3]
     vertices := [][][]f32 {
         {
             {-1, -1},
             {0, 0},
+            color,
         },
         {
             {1, -1},
             {1, 0},
+            color,
         },
         {
             {1, 1},
             {1, 1},
+            color,
         },
         {
             {-1, 1},
             {0, 1},
+            color,
         },
     }
     append(&new_state.mesh.indices, 0)
@@ -165,38 +178,70 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     default_font := font.get_font(state.fonts[:], "default")
     version := default_font.versions[0]
 
-    message := "Hello, world!"
-    runes := utf8.string_to_runes(message)
+    // TODO(jan): Guard
+    line_start := state.log_data.bottom - 2
+    // TODO(jan): This isn't quite right
+    ring_char := cast(^u8)state.log_data.ring_buffer
+    end_index := cast(int)state.log_data.bottom
+    str := strings.string_from_ptr(ring_char, end_index)
+    str = strings.trim(str, "\n")
+
+    runes := utf8.string_to_runes(str)
 
     x: f32 = 0
-    y: f32 = 120
-    q, repack := font.get_aligned_quad(default_font, &version, &x, &y, runes[0])
+    y: f32 = 0
+    
+    for rune, index in runes {
+        tab := rune == 9
+        newline := rune == 10
+        past_end := x > cast(f32)vulkan.swap.extent.width
+        // if newline || past_end {
+        if past_end || newline {
+            y += 20
+            x = 0
+        }
+        
+        r := rune
+        if newline || tab {
+            r = 0x20
+        }
 
-    vertices := [][][]f32 {
-        {
-            {q.x0, q.y0},
-            {q.s0, q.t0},
-        },
-        {
-            {q.x1, q.y0},
-            {q.s1, q.t0},
-        },
-        {
-            {q.x1, q.y1},
-            {q.s1, q.t1},
-        },
-        {
-            {q.x0, q.y1},
-            {q.s0, q.t1},
-        },
+        q, repack := font.get_aligned_quad(default_font, &version, &x, &y, r)
+
+        color := gfx.base0[:3]
+        vertices := [][][]f32 {
+            {
+                {q.x0, q.y0},
+                {q.s0, q.t0},
+                color,
+            },
+            {
+                {q.x1, q.y0},
+                {q.s1, q.t0},
+                color,
+            },
+            {
+                {q.x1, q.y1},
+                {q.s1, q.t1},
+                color,
+            },
+            {
+                {q.x0, q.y1},
+                {q.s0, q.t1},
+                color,
+            },
+        }
+        gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
+
+        base_index := cast(u32)index * 4
+        append(&state.mesh.indices, base_index + 0)
+        append(&state.mesh.indices, base_index + 1)
+        append(&state.mesh.indices, base_index + 2)
+        append(&state.mesh.indices, base_index + 2)
+        append(&state.mesh.indices, base_index + 3)
+        append(&state.mesh.indices, base_index + 0)
     }
-    append(&state.mesh.indices, 0)
-    append(&state.mesh.indices, 1)
-    append(&state.mesh.indices, 2)
-    append(&state.mesh.indices, 2)
-    append(&state.mesh.indices, 3)
-    append(&state.mesh.indices, 0)
-    gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
+
     gfx.vulkan_mesh_upload(vulkan, &state.mesh)
 }
 
@@ -209,7 +254,7 @@ draw_frame :: proc (state: ^TerminalState, request: programs.DrawFrame) {
     pipeline := vulkan_pass.pipelines["textured"]
 
     clears := [?]vk.ClearValue {
-        vk.ClearValue { color = { float32 = {.5, .5, .5, 1}}},
+        vk.ClearValue { color = { float32 = gfx.base03}},
     }
 
     pass := vk.RenderPassBeginInfo {

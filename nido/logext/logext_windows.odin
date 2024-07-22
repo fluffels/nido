@@ -35,7 +35,7 @@ circular_buffer_logger_proc :: proc (data: rawptr, level: Level, text: string, o
     write_ptr: ^u8 = mem.ptr_offset(buffer_start, logger_data.bottom)
 
     buffer_slice := mem.slice_ptr(write_ptr, int(logger_data.size))
-    written := fmt.bprintf(buffer_slice, "%s", text)
+    written := fmt.bprintf(buffer_slice, "%s\n", text)
     bytes_written := len(written)
 
     logger_data.bottom = (logger_data.bottom + u64(bytes_written)) % u64(logger_data.size)
@@ -84,5 +84,6 @@ create_circular_buffer_logger :: proc(requested_size: uint, lowest := Level.Debu
 
 destroy_circular_buffer_logger :: proc(log: ^Logger) {
 	data := cast(^Circular_Buffer_Logger_Data)log.data
+    // TODO(jan): Free file mapping
 	free(data)
 }

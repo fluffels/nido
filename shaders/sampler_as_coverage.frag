@@ -4,11 +4,11 @@
 layout(binding=1) uniform sampler2D colorMap;
 
 layout(location=0) in vec2 inUV;
-layout(location=1) in vec4 inRGBA;
+layout(location=1) in vec3 inRGB;
 
 layout(location=0) out vec4 outColor;
 
 void main() {
     float alpha = texture(colorMap, inUV).r;
-    outColor = vec4(inRGBA.rgb, inRGBA.a * alpha);
+    outColor = vec4(inRGB, alpha);
 }

@@ -8,6 +8,7 @@ import gfx "../gfx"
 Initialize :: struct {
     vulkan: ^gfx.Vulkan,
     allocator: mem.Allocator,
+    user_data: rawptr,
 }
 
 CreatePasses :: struct {
@@ -58,10 +59,11 @@ Program :: struct {
 
 ProgramProc :: #type proc (program: ^Program, request: Request)
 
-initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, allocator: mem.Allocator) {
+initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, user_data: rawptr, allocator: mem.Allocator) {
     request := Initialize {
         vulkan = vulkan,
         allocator = allocator,
+        user_data = user_data,
     }
     program.handler(program, request)
 }

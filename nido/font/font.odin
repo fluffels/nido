@@ -32,7 +32,7 @@ FONT_METADATA := [?]FontMetadata{
         name = "default",
         path = "./fonts/FiraCode-Bold.ttf",
         // path = "./fonts/AkkuratPro-Regular.ttf",
-        size = 30,
+        size = 20,
         supersample = 2,
         glyphs = DEFAULT_GLYPHS[:],
     },
@@ -204,6 +204,7 @@ get_packedchar :: proc (
     } else {
         packedchar = version.missing_packedchar
         if codepoint in font.codepoints == false {
+            log.warnf("Marking %r for loading.", codepoint)
             font.codepoints[codepoint] = true
         }
         requires_repack = font.codepoints[codepoint] == true
