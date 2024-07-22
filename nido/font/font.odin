@@ -45,8 +45,8 @@ FontFlags :: enum {
 FontVersion :: struct {
     flags: bit_set[FontFlags],
     size: f32,
-    packed_chars: map[u32]stbttf.packedchar,
-    missing_packed_char: stbttf.packedchar,
+    packedchars: map[u32]stbttf.packedchar,
+    missing_packedchar: stbttf.packedchar,
 }
 
 Font :: struct {
@@ -130,20 +130,20 @@ pack_fonts_into_texture :: proc (
                 0,
                 version.size,
                 0, 1,
-                &version.missing_packed_char,
+                &version.missing_packedchar,
             )
 
             for codepoint in font.codepoints {
                 if font.codepoints[codepoint] == false do continue
 
-                packed_char: stbttf.packedchar
+                packedchar: stbttf.packedchar
                 result := stbttf.PackFontRange(
                     &pack_context,
                     raw_data(font.ttf),
                     0,
                     version.size,
                     cast(i32)codepoint, 1,
-                    &packed_char,
+                    &packedchar,
                 )
 
                 if result == 0 {
@@ -152,13 +152,13 @@ pack_fonts_into_texture :: proc (
                     continue
                 }
 
-                version.packed_chars[codepoint] = packed_char
+                version.packedchars[codepoint] = packedchar
 
                 q: stbttf.aligned_quad
                 x: f32 = 0
                 y: f32 = 0
                 stbttf.GetPackedQuad(
-                    &packed_char, 
+                    &packedchar, 
                     width, height,
                     0,
                     &x, &y,
@@ -175,5 +175,23 @@ pack_fonts_into_texture :: proc (
         log.warnf("Font atlas nearly full: %f %f", max_x, max_y)
     }
 
+    return
+}
+
+get_packedchar :: proc (
+    font: ^Font,
+    version: ^FontVersion,
+    codepoint: u32,
+) -> (
+    packedchar: stbttf.packedchar,
+    ok: b32,
+) {
+    if !(codepoint in version.packedchars) {
+        if !(codepoint in font.codepoints) {
+            log.warnf("")
+        }
+    }
+
+    ok = true
     return
 }

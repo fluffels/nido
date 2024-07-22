@@ -84,16 +84,9 @@ init :: proc (
 	new_state.linear_sampler = gfx.vulkan_sampler_create_linear(vulkan)
 
     // NOTE(jan): Texture.
+    // TODO(jan): Store this with the bitmap.
     extent := vk.Extent2D { 512, 512 }
     size := extent.height * extent.width
-	// new_state.font_bitmap = make([]u8, size)
-    // for i in 0..<extent.height {
-    //     for j in 0..<extent.width {
-    //         s := (1 + math.cos_f32(f32(j) / 100)) / 2
-    //         value := u8(s * 255)
-    //         new_state.font_bitmap[i * extent.width + j] = value
-    //     }
-    // }
 	new_state.font_sprite_sheet = gfx.vulkan_image_create_2d_monochrome_texture(vulkan, extent)
 
 	// NOTE(jan): Upload mesh.
@@ -161,6 +154,8 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
         []gfx.VulkanImage { state.font_sprite_sheet },
         state.linear_sampler,
     )
+
+    // NOTE(jan): Update mesh.
 }
 
 draw_frame :: proc (state: ^TerminalState, request: programs.DrawFrame) {
