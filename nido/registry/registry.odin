@@ -3,6 +3,7 @@ package registry
 import "../programs"
 import "demo"
 import "map_editor"
+import "terminal"
 
 Registry :: struct {
     current_program_index: int,
@@ -23,6 +24,7 @@ get_current_program :: proc (registry: Registry) -> programs.Program {
 }
 
 make :: proc () -> (registry: Registry) {
+    register(&registry, terminal.make_program())
     register(&registry, map_editor.make_program())
     register(&registry, demo.make_program())
 

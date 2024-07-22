@@ -1,5 +1,7 @@
 package nido
 
+import "base:runtime"
+
 import "core:dynlib"
 import "core:fmt"
 import "core:log"
@@ -11,7 +13,6 @@ import "core:mem/virtual"
 import "core:os"
 import "core:slice"
 import "core:strings"
-import "core:runtime"
 import "vendor:sdl2"
 import vk "vendor:vulkan"
 
