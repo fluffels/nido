@@ -633,7 +633,7 @@ main :: proc() {
 		if (do_resize) {
 			do_resize = false
 
-			programs.destroy_passes(&program, &vulkan)
+			programs.resize_begin(&program, &vulkan)
 
 			free_all(vulkan.resize_allocator)
 
@@ -642,7 +642,7 @@ main :: proc() {
 			gfx.vulkan_swap_update_extent(&vulkan)
 			gfx.vulkan_swap_create(&vulkan)
 
-			programs.create_passes(&program, &vulkan)
+			programs.resize_end(&program, &vulkan)
 		}
 
 		// NOTE(jan): Allocate a transient command buffer for before-frame actions like updating uniforms.
@@ -741,6 +741,4 @@ main :: proc() {
 		}
 		vk.FreeCommandBuffers(vulkan.device, transient_cmd_pool, 1, &transient_cmd)
 	}
-
-	programs.cleanup(&program, &vulkan, program_allocator)
 }

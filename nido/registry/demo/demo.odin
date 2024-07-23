@@ -113,11 +113,11 @@ init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^
     return
 }
 
-create_passes :: proc (state: ^DemoState, request: programs.CreatePasses) {
+resize_end :: proc (state: ^DemoState, request: programs.ResizeEnd) {
     state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
 }
 
-destroy_passes :: proc (state: ^DemoState, request: programs.DestroyPasses) {
+resize_begin :: proc (state: ^DemoState, request: programs.ResizeBegin) {
     gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
 }
 
@@ -214,10 +214,10 @@ handler :: proc (program: ^programs.Program, request: programs.Request) {
     switch r in request {
         case programs.Initialize:
             program.state = init(state, r)
-        case programs.CreatePasses:
-            create_passes(state, r)
-        case programs.DestroyPasses:
-            destroy_passes(state, r)
+        case programs.ResizeEnd:
+            resize_end(state, r)
+        case programs.ResizeBegin:
+            resize_begin(state, r)
         case programs.PrepareFrame:
             prepare_frame(state, r)
         case programs.DrawFrame:

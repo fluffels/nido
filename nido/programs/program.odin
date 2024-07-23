@@ -11,11 +11,11 @@ Initialize :: struct {
     user_data: rawptr,
 }
 
-CreatePasses :: struct {
+ResizeEnd :: struct {
     vulkan: ^gfx.Vulkan,
 }
 
-DestroyPasses :: struct {
+ResizeBegin :: struct {
     vulkan: ^gfx.Vulkan,
 }
 
@@ -43,8 +43,8 @@ Cleanup :: struct {
 
 Request :: union {
     Initialize,
-    CreatePasses,
-    DestroyPasses,
+    ResizeEnd,
+    ResizeBegin,
     PrepareFrame,
     DrawFrame,
     CleanupFrame,
@@ -68,15 +68,15 @@ initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, user_data: rawptr, a
     program.handler(program, request)
 }
 
-create_passes :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
-    request := CreatePasses {
+resize_end :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+    request := ResizeEnd {
         vulkan = vulkan,
     }
     program.handler(program, request)
 }
 
-destroy_passes :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
-    request := DestroyPasses {
+resize_begin :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+    request := ResizeBegin {
         vulkan = vulkan,
     }
     program.handler(program, request)
