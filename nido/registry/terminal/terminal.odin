@@ -224,7 +224,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
 
             if repack_required do state.repack_required = true
 
-            baseline += text_span.extent.y
+            baseline -= text_span.extent.y
             append(&text_spans, text_span)
             break
         }
@@ -237,6 +237,8 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     y := cast(f32)vulkan.swap.extent.height
     base_vert_index: u32 = 0
     for span in text_spans {
+        y -= span.baseline_offset
+        
         for glyph in span.glyphs {
             q := glyph.quad
             vertices := [][][]f32 {
@@ -272,7 +274,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
             base_vert_index += 4
         }
     
-        y += span.extent.y
+        y -= version.size
     }
 
     gfx.vulkan_mesh_upload(vulkan, &state.mesh)

@@ -13,6 +13,7 @@ TextSpan :: struct {
     text: string,
     glyphs: [dynamic]Glyph,
     line_length: f32,
+    baseline_offset: f32,
     extent: linalg.Vector2f32,
 }
 
@@ -39,6 +40,9 @@ layout_span :: proc (
     x: f32 = 0
     y: f32 = 0
 
+    y_min := max(f32)
+    y_max := min(f32)
+
     for &glyph in span.glyphs {
         tab := glyph.codepoint == 9
         newline := glyph.codepoint == 10
@@ -49,7 +53,6 @@ layout_span :: proc (
         }
         
         if newline do continue
-        // TODO(jan): Fix
         if tab {
             x += 40
             continue
@@ -61,10 +64,14 @@ layout_span :: proc (
             &x, &y,
             glyph.codepoint
         )
-        span.extent.y = min(span.extent.y, glyph.quad.y0)
+        y_min = min(y_min, glyph.quad.y0)
+        y_max = max(y_max, glyph.quad.y1)
     }
 
+    span.baseline_offset = y
+
     span.extent.x = x
+    span.extent.y = y_max - y_min
 
     return
 }
