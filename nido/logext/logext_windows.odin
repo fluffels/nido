@@ -27,6 +27,7 @@ Circular_Buffer_Logger_Data :: struct {
     top: u64,
     bottom: u64,
     bytes_read: u64,
+    last_frame: u64,
 }
 
 circular_buffer_logger_proc :: proc (data: rawptr, level: Level, text: string, options: LoggerOptions, location := #caller_location) {

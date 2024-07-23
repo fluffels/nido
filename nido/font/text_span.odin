@@ -12,6 +12,7 @@ Glyph :: struct {
 TextSpan :: struct {
     text: string,
     glyphs: [dynamic]Glyph,
+    line_length: f32,
     extent: linalg.Vector2f32,
 }
 
@@ -39,6 +40,21 @@ layout_span :: proc (
     y: f32 = 0
 
     for &glyph in span.glyphs {
+        tab := glyph.codepoint == 9
+        newline := glyph.codepoint == 10
+        past_end := x > span.line_length
+        if past_end || newline {
+            y += 20
+            x = 0
+        }
+        
+        if newline do continue
+        // TODO(jan): Fix
+        if tab {
+            x += 40
+            continue
+        }
+
         glyph.quad, repack_required = get_aligned_quad(
             font,
             version,

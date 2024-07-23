@@ -25,6 +25,8 @@ TerminalState :: struct {
     font_bitmap: []u8,
     font_sprite_sheet: gfx.VulkanImage,
 
+    repack_required: b32,
+
     linear_sampler: vk.Sampler,
 
     mesh: gfx.VulkanMesh,
@@ -95,6 +97,8 @@ init :: proc (
 
     // NOTE(jan): Texture.
     // TODO(jan): Store this with the bitmap.
+    // NOTE(jan): Initial repack is required.
+    new_state.repack_required = true
     extent := vk.Extent2D { 512, 512 }
     size := extent.height * extent.width
 	new_state.font_sprite_sheet = gfx.vulkan_image_create_2d_monochrome_texture(vulkan, extent)
@@ -157,19 +161,31 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
 
     // NOTE(jan): Update sampler.
-    gfx.vulkan_image_update_texture(
-        vulkan,
-        cmd,
-        state.font_bitmap,
-        state.font_sprite_sheet,
-    )
-    gfx.vulkan_descriptor_update_combined_image_sampler(
-        vulkan,
-        pipeline.descriptor_sets[0],
-        1,
-        []gfx.VulkanImage { state.font_sprite_sheet },
-        state.linear_sampler,
-    )
+    if state.repack_required {
+        // TODO(jan): Delete.
+        bitmap, ok := font.pack_fonts_into_texture(state.fonts)
+        if !ok {
+            fmt.panicf("Could not load font bitmap.")
+        }
+        // TODO(jan): Ownership?
+        state.font_bitmap = bitmap[:]
+
+        gfx.vulkan_image_update_texture(
+            vulkan,
+            cmd,
+            state.font_bitmap,
+            state.font_sprite_sheet,
+        )
+        gfx.vulkan_descriptor_update_combined_image_sampler(
+            vulkan,
+            pipeline.descriptor_sets[0],
+            1,
+            []gfx.VulkanImage { state.font_sprite_sheet },
+            state.linear_sampler,
+        )
+
+        state.repack_required = false
+    }
 
     // NOTE(jan): Update mesh.
     gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
@@ -184,62 +200,78 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     ring_char := cast(^u8)state.log_data.ring_buffer
     end_index := cast(int)state.log_data.bottom
     str := strings.string_from_ptr(ring_char, end_index)
-    str = strings.trim(str, "\n")
 
-    runes := utf8.string_to_runes(str)
+    // NOTE(jan): Compute text spans.
+    text_spans := make([dynamic]font.TextSpan, context.temp_allocator)
+    baseline := cast(f32)vulkan.swap.extent.height
+    for i := len(str) - 1; i >= 0; i -= 1 {
+        if str[i] != '\n' do continue
 
-    x: f32 = 0
-    y: f32 = 0
+        line_end := i
+        for j := i - 1; j >= 0; j -= 1 {
+            if str[j] != '\n' do continue
+
+            line_start := j + 1
+            line := str[line_start:line_end]
+            
+            text_span := font.TextSpan {
+                text = line,
+                line_length = cast(f32)vulkan.swap.extent.width,
+            }
+            font.translate_span(&text_span)
+            repack_required := font.layout_span(default_font, &version, &text_span)
+
+            if repack_required do state.repack_required = true
+
+            baseline += text_span.extent.y
+            append(&text_spans, text_span)
+            break
+        }
+
+        if baseline < 0 do break
+    }
+
+    // NOTE(jan): Draw spans.
+    color := gfx.base0[:3]
+    y := cast(f32)vulkan.swap.extent.height
+    base_vert_index: u32 = 0
+    for span in text_spans {
+        for glyph in span.glyphs {
+            q := glyph.quad
+            vertices := [][][]f32 {
+                {
+                    {q.x0, q.y0 + y},
+                    {q.s0, q.t0},
+                    color,
+                },
+                {
+                    {q.x1, q.y0 + y},
+                    {q.s1, q.t0},
+                    color,
+                },
+                {
+                    {q.x1, q.y1 + y},
+                    {q.s1, q.t1},
+                    color,
+                },
+                {
+                    {q.x0, q.y1 + y},
+                    {q.s0, q.t1},
+                    color,
+                },
+            }
+            gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
+
+            append(&state.mesh.indices, base_vert_index + 0)
+            append(&state.mesh.indices, base_vert_index + 1)
+            append(&state.mesh.indices, base_vert_index + 2)
+            append(&state.mesh.indices, base_vert_index + 2)
+            append(&state.mesh.indices, base_vert_index + 3)
+            append(&state.mesh.indices, base_vert_index + 0)
+            base_vert_index += 4
+        }
     
-    for rune, index in runes {
-        tab := rune == 9
-        newline := rune == 10
-        past_end := x > cast(f32)vulkan.swap.extent.width
-        // if newline || past_end {
-        if past_end || newline {
-            y += 20
-            x = 0
-        }
-        
-        r := rune
-        if newline || tab {
-            r = 0x20
-        }
-
-        q, repack := font.get_aligned_quad(default_font, &version, &x, &y, r)
-
-        color := gfx.base0[:3]
-        vertices := [][][]f32 {
-            {
-                {q.x0, q.y0},
-                {q.s0, q.t0},
-                color,
-            },
-            {
-                {q.x1, q.y0},
-                {q.s1, q.t0},
-                color,
-            },
-            {
-                {q.x1, q.y1},
-                {q.s1, q.t1},
-                color,
-            },
-            {
-                {q.x0, q.y1},
-                {q.s0, q.t1},
-                color,
-            },
-        }
-        gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
-
-        base_index := cast(u32)index * 4
-        append(&state.mesh.indices, base_index + 0)
-        append(&state.mesh.indices, base_index + 1)
-        append(&state.mesh.indices, base_index + 2)
-        append(&state.mesh.indices, base_index + 2)
-        append(&state.mesh.indices, base_index + 3)
-        append(&state.mesh.indices, base_index + 0)
+        y += span.extent.y
     }
 
     gfx.vulkan_mesh_upload(vulkan, &state.mesh)
