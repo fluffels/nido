@@ -234,31 +234,32 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
 
     // NOTE(jan): Draw spans.
     color := gfx.base0[:3]
-    y := cast(f32)vulkan.swap.extent.height
+    x := cast(f32)10
+    y := cast(f32)vulkan.swap.extent.height - 10
     base_vert_index: u32 = 0
     for span in text_spans {
         y -= span.baseline_offset
-        
+
         for glyph in span.glyphs {
             q := glyph.quad
             vertices := [][][]f32 {
                 {
-                    {q.x0, q.y0 + y},
+                    {q.x0 + x, q.y0 + y},
                     {q.s0, q.t0},
                     color,
                 },
                 {
-                    {q.x1, q.y0 + y},
+                    {q.x1 + x, q.y0 + y},
                     {q.s1, q.t0},
                     color,
                 },
                 {
-                    {q.x1, q.y1 + y},
+                    {q.x1 + x, q.y1 + y},
                     {q.s1, q.t1},
                     color,
                 },
                 {
-                    {q.x0, q.y1 + y},
+                    {q.x0 + x, q.y1 + y},
                     {q.s0, q.t1},
                     color,
                 },
