@@ -580,6 +580,8 @@ main :: proc() {
 							program = registry.get_current_program(program_registry)
 							do_resize = true
 							do_init = true
+						case sdl2.Keycode.HOME: input_state.key_down.home = true
+						case sdl2.Keycode.END: input_state.key_down.end = true
 						case sdl2.Keycode.PAGEDOWN: input_state.key_down.page_down = true
 						case sdl2.Keycode.PAGEUP: input_state.key_down.page_up = true
 					}

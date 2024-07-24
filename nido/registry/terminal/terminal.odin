@@ -20,6 +20,7 @@ Uniforms :: struct {
 }
 
 TerminalState :: struct {
+    top_down: b32,
     line_offset: int,
 
     log_data: ^logext.Circular_Buffer_Logger_Data,
@@ -159,8 +160,17 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     pipeline := state.vulkan_pass.pipelines["textured"]
 
     // NOTE(jan): Handle input.
-    if request.input_state.key_down.page_up   == true do state.line_offset += 4
-    if request.input_state.key_down.page_down == true do state.line_offset -= 4
+    scroll_d := state.top_down == true ? -1 : 1
+    if request.input_state.key_down.page_up == true do state.line_offset += 4 * scroll_d
+    if request.input_state.key_down.page_down == true do state.line_offset -= 4 * scroll_d
+    if request.input_state.key_down.home == true {
+        state.top_down = true
+        state.line_offset = 0
+    }
+    if request.input_state.key_down.end == true {
+        state.top_down = false
+        state.line_offset = 0
+    }
 
     if state.line_offset < 0 do state.line_offset = 0
 
@@ -209,48 +219,84 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     str := strings.string_from_ptr(ring_char, end_index)
 
     // NOTE(jan): Compute text spans.
-    lines_to_skip := state.line_offset
     text_spans := make([dynamic]font.TextSpan, context.temp_allocator)
-    baseline := cast(f32)vulkan.swap.extent.height
-    for i := len(str) - 1; i >= 0; i -= 1 {
-        if str[i] != '\n' do continue
-
-        if lines_to_skip > 0 {
-            lines_to_skip -= 1
-            continue
+    lines_to_skip := state.line_offset
+    line_length := cast(f32)vulkan.swap.extent.width - 10
+    if (state.top_down == true) {
+        // NOTE(jan): Top-down, used if we HOME is pressed to go back to the beginning of the buffer.
+        index := 0
+        for ; index < len(str); index += 1 {
+            if str[index] != '\n' do continue
+            else if lines_to_skip == 0 do break
+            else do lines_to_skip -= 1
         }
+        index += 1
+        line_start := index
 
-        line_end := i
-        for j := i - 1; j >= 0; j -= 1 {
-            if str[j] != '\n' do continue
+        baseline := version.size
+        for ; index < len(str); index += 1 {
+            if str[index] != '\n' do continue
 
-            line_start := j + 1
-            line := str[line_start:line_end]
-            
             text_span := font.TextSpan {
-                text = line,
-                line_length = cast(f32)vulkan.swap.extent.width - 10,
+                text = str[line_start:index],
+                line_length = line_length,
             }
+
             font.translate_span(&text_span)
             repack_required := font.layout_span(default_font, &version, &text_span)
 
             if repack_required do state.repack_required = true
 
-            baseline -= text_span.extent.y
+            baseline += text_span.extent.y
             append(&text_spans, text_span)
-            break
-        }
 
-        if baseline < 0 do break
+            if baseline > cast(f32)vulkan.swap.extent.height do break
+            line_start = index + 1
+        }
+    } else {
+        // NOTE(jan): Bottom-up, default and used END is pressed to go to the end of the buffer.
+        baseline := cast(f32)vulkan.swap.extent.height
+        for i := len(str) - 1; i >= 0; i -= 1 {
+            if str[i] != '\n' do continue
+
+            if lines_to_skip > 0 {
+                lines_to_skip -= 1
+                continue
+            }
+
+            line_end := i
+            for j := i - 1; j >= 0; j -= 1 {
+                if str[j] != '\n' do continue
+
+                line_start := j + 1
+                line := str[line_start:line_end]
+                
+                text_span := font.TextSpan {
+                    text = line,
+                    line_length = line_length,
+                }
+                font.translate_span(&text_span)
+                repack_required := font.layout_span(default_font, &version, &text_span)
+
+                if repack_required do state.repack_required = true
+
+                baseline -= text_span.extent.y
+                append(&text_spans, text_span)
+                break
+            }
+
+            if baseline < 0 do break
+        }
     }
 
     // NOTE(jan): Draw spans.
     color := gfx.base0[:3]
-    x := cast(f32)10
-    y := cast(f32)vulkan.swap.extent.height - 10
+    x: f32 = 10
+    y: f32 = f32(vulkan.swap.extent.height) - 10
+    if state.top_down == true do y = version.size
     base_vert_index: u32 = 0
     for span in text_spans {
-        y -= span.baseline_offset
+        y -= span.baseline_offset * f32(scroll_d)
 
         for glyph in span.glyphs {
             q := glyph.quad
@@ -287,7 +333,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
             base_vert_index += 4
         }
     
-        y -= version.size
+        y -= version.size * f32(scroll_d)
     }
 
     gfx.vulkan_mesh_upload(vulkan, &state.mesh)

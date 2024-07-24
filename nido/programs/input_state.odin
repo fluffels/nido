@@ -15,6 +15,8 @@ Keyboard :: struct {
     right: bool,
     up: bool,
     down: bool,
+    home: b32,
+    end: b32,
     page_up: b32,
     page_down: b32,
 }
