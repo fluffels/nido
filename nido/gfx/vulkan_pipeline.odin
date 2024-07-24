@@ -196,7 +196,7 @@ vulkan_pipelines_create :: proc(
         }
         descriptor_set_count := u32(len(descriptor_set_layout_binding_map))
 
-        pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, descriptor_set_count, temp_allocator)
+        pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, descriptor_set_count, allocator)
         for descriptor_set_index in 0..<descriptor_set_count {
             binding_map := descriptor_set_layout_binding_map[descriptor_set_index]
 
@@ -220,7 +220,7 @@ vulkan_pipelines_create :: proc(
                 vk.CreateDescriptorSetLayout(vulkan.device, &create, nil, &pipeline.descriptor_set_layouts[descriptor_set_index]),
                 "could not create descriptor set layout",
             )
-            log.infof("Created descriptor set layout #%d.", descriptor_set_index)
+            log.infof("Created descriptor set layout #%d (%d).", descriptor_set_index, pipeline.descriptor_set_layouts[descriptor_set_index])
         }
         
         if (len(sizes) > 0) {
@@ -404,14 +404,17 @@ vulkan_pipelines_create :: proc(
 }
 
 vulkan_pipeline_destroy :: proc(vulkan: ^Vulkan, pipeline: ^VulkanPipeline) {
-    for descriptor_set_layout in pipeline.descriptor_set_layouts do vk.DestroyDescriptorSetLayout(vulkan.device, descriptor_set_layout, nil)
-    clear(&pipeline.descriptor_set_layouts)
-
-    vk.DestroyPipelineLayout(vulkan.device, pipeline.layout, nil)
-
     vk.DestroyDescriptorPool(vulkan.device, pipeline.descriptor_pool, nil)
     clear(&pipeline.descriptor_sets)
     pipeline.descriptor_pool = 0
+
+    for descriptor_set_layout in pipeline.descriptor_set_layouts {
+        log.infof("Destroying descriptor set layout: %d", descriptor_set_layout)
+        vk.DestroyDescriptorSetLayout(vulkan.device, descriptor_set_layout, nil)
+    }
+    clear(&pipeline.descriptor_set_layouts)
+
+    vk.DestroyPipelineLayout(vulkan.device, pipeline.layout, nil)
 
     vk.DestroyPipeline(vulkan.device, pipeline.handle, nil)
 }
