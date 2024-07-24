@@ -560,6 +560,7 @@ main :: proc() {
 
 		// NOTE(jan): Handle events.
 		events := make([dynamic]programs.Event, context.temp_allocator)
+		input_state: programs.InputState
 
 		sdl2.PumpEvents();
 		for event: sdl2.Event; sdl2.PollEvent(&event); {
@@ -579,38 +580,37 @@ main :: proc() {
 							program = registry.get_current_program(program_registry)
 							do_resize = true
 							do_init = true
+						case sdl2.Keycode.PAGEDOWN: input_state.key_down.page_down = true
+						case sdl2.Keycode.PAGEUP: input_state.key_down.page_up = true
 					}
 				case sdl2.EventType.QUIT:
 					done = true;
 			}
 		}
 
-		// NOTE(jan): Input state.
-		state: programs.InputState
+		// NOTE(jan): Fill out input state.
 		{
 			x, y: i32
 			button := sdl2.GetMouseState(&x, &y)
 			pos := linalg.Vector2f32 { f32(x), f32(y) }
 			delta := pos - last_frame_mouse
 			keys := sdl2.GetKeyboardState(nil)
-			state = programs.InputState {
-				ticks = sdl2.GetTicks(),
-				keyboard = programs.Keyboard {
-					left = keys[sdl2.SCANCODE_LEFT] != 0,
-					right = keys[sdl2.SCANCODE_RIGHT] != 0,
-					up = keys[sdl2.SCANCODE_UP] != 0,
-					down = keys[sdl2.SCANCODE_DOWN] != 0,
-				},
-				mouse = programs.Mouse {
-					pos = pos,
-					delta = delta,
-					left = ((button & sdl2.BUTTON_LMASK) != 0),
-					middle = ((button & sdl2.BUTTON_MMASK) != 0),
-					right = ((button & sdl2.BUTTON_RMASK) != 0),
-				},
+			input_state.ticks = sdl2.GetTicks()
+			input_state.keyboard = programs.Keyboard {
+				left = keys[sdl2.SCANCODE_LEFT] != 0,
+				right = keys[sdl2.SCANCODE_RIGHT] != 0,
+				up = keys[sdl2.SCANCODE_UP] != 0,
+				down = keys[sdl2.SCANCODE_DOWN] != 0,
 			}
-			state.slice = state.ticks - last_frame
-			last_frame = state.ticks
+			input_state.mouse = programs.Mouse {
+				pos = pos,
+				delta = delta,
+				left = ((button & sdl2.BUTTON_LMASK) != 0),
+				middle = ((button & sdl2.BUTTON_MMASK) != 0),
+				right = ((button & sdl2.BUTTON_RMASK) != 0),
+			}
+			input_state.slice = input_state.ticks - last_frame
+			last_frame = input_state.ticks
 			last_frame_mouse = pos
 		}
 
@@ -647,7 +647,7 @@ main :: proc() {
 
 		// NOTE(jan): Allocate a transient command buffer for before-frame actions like updating uniforms.
 		transient_cmd := gfx.vulkan_cmd_allocate_and_begin_transient(vulkan, transient_cmd_pool)
-		programs.prepare_frame(&program, &vulkan, events[:], state, transient_cmd)
+		programs.prepare_frame(&program, &vulkan, events[:], input_state, transient_cmd)
 		gfx.vulkan_cmd_end_and_submit(vulkan, &transient_cmd)
 
 		// NOTE(jan): Acquire next swap image.
@@ -741,4 +741,7 @@ main :: proc() {
 		}
 		vk.FreeCommandBuffers(vulkan.device, transient_cmd_pool, 1, &transient_cmd)
 	}
+
+	vk.DeviceWaitIdle(vulkan.device)
+	programs.cleanup(&program, &vulkan, program_allocator)
 }

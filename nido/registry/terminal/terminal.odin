@@ -20,6 +20,8 @@ Uniforms :: struct {
 }
 
 TerminalState :: struct {
+    line_offset: int,
+
     log_data: ^logext.Circular_Buffer_Logger_Data,
     fonts: [dynamic]font.Font,
     font_bitmap: []u8,
@@ -156,6 +158,12 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     assert("textured" in state.vulkan_pass.pipelines)
     pipeline := state.vulkan_pass.pipelines["textured"]
 
+    // NOTE(jan): Handle input.
+    if request.input_state.key_down.page_up   == true do state.line_offset += 4
+    if request.input_state.key_down.page_down == true do state.line_offset -= 4
+
+    if state.line_offset < 0 do state.line_offset = 0
+
     // NOTE(jan): Update uniforms.
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
@@ -195,18 +203,22 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     default_font := font.get_font(state.fonts[:], "default")
     version := default_font.versions[0]
 
-    // TODO(jan): Guard
-    line_start := state.log_data.bottom - 2
-    // TODO(jan): This isn't quite right
+    // TODO(jan): This isn't quite right. Should read current size #bytes from current read pointer
     ring_char := cast(^u8)state.log_data.ring_buffer
     end_index := cast(int)state.log_data.bottom
     str := strings.string_from_ptr(ring_char, end_index)
 
     // NOTE(jan): Compute text spans.
+    lines_to_skip := state.line_offset
     text_spans := make([dynamic]font.TextSpan, context.temp_allocator)
     baseline := cast(f32)vulkan.swap.extent.height
     for i := len(str) - 1; i >= 0; i -= 1 {
         if str[i] != '\n' do continue
+
+        if lines_to_skip > 0 {
+            lines_to_skip -= 1
+            continue
+        }
 
         line_end := i
         for j := i - 1; j >= 0; j -= 1 {
@@ -217,7 +229,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
             
             text_span := font.TextSpan {
                 text = line,
-                line_length = cast(f32)vulkan.swap.extent.width,
+                line_length = cast(f32)vulkan.swap.extent.width - 10,
             }
             font.translate_span(&text_span)
             repack_required := font.layout_span(default_font, &version, &text_span)

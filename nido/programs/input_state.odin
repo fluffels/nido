@@ -15,11 +15,15 @@ Keyboard :: struct {
     right: bool,
     up: bool,
     down: bool,
+    page_up: b32,
+    page_down: b32,
 }
 
 InputState :: struct {
     ticks: u32,
     slice: u32,
     keyboard: Keyboard,
+    key_up: Keyboard,
+    key_down: Keyboard,
     mouse: Mouse,
 }
