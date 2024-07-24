@@ -214,9 +214,10 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     version := default_font.versions[0]
 
     // TODO(jan): This isn't quite right. Should read current size #bytes from current read pointer
-    ring_char := cast(^u8)state.log_data.ring_buffer
+    ring_buffer_start := cast(^u8)state.log_data.ring_buffer
+    ring_buffer_top := mem.ptr_offset(ring_buffer_start, state.log_data.top)
     end_index := cast(int)state.log_data.bottom
-    str := strings.string_from_ptr(ring_char, end_index)
+    log := strings.string_from_ptr(ring_buffer_start, end_index)
 
     // NOTE(jan): Compute text spans.
     text_spans := make([dynamic]font.TextSpan, context.temp_allocator)
@@ -224,9 +225,10 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     line_length := cast(f32)vulkan.swap.extent.width - 10
     if (state.top_down == true) {
         // NOTE(jan): Top-down, used if we HOME is pressed to go back to the beginning of the buffer.
+        // TODO(jan): Wrap to the bottom when we go off the top edge, since the circular buffer isn't circular on that end
         index := 0
-        for ; index < len(str); index += 1 {
-            if str[index] != '\n' do continue
+        for ; index < len(log); index += 1 {
+            if log[index] != '\n' do continue
             else if lines_to_skip == 0 do break
             else do lines_to_skip -= 1
         }
@@ -234,11 +236,11 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
         line_start := index
 
         baseline := version.size
-        for ; index < len(str); index += 1 {
-            if str[index] != '\n' do continue
+        for ; index < len(log); index += 1 {
+            if log[index] != '\n' do continue
 
             text_span := font.TextSpan {
-                text = str[line_start:index],
+                text = log[line_start:index],
                 line_length = line_length,
             }
 
@@ -256,8 +258,8 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     } else {
         // NOTE(jan): Bottom-up, default and used END is pressed to go to the end of the buffer.
         baseline := cast(f32)vulkan.swap.extent.height
-        for i := len(str) - 1; i >= 0; i -= 1 {
-            if str[i] != '\n' do continue
+        for i := len(log) - 1; i >= 0; i -= 1 {
+            if log[i] != '\n' do continue
 
             if lines_to_skip > 0 {
                 lines_to_skip -= 1
@@ -266,10 +268,10 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
 
             line_end := i
             for j := i - 1; j >= 0; j -= 1 {
-                if str[j] != '\n' do continue
+                if log[j] != '\n' do continue
 
                 line_start := j + 1
-                line := str[line_start:line_end]
+                line := log[line_start:line_end]
                 
                 text_span := font.TextSpan {
                     text = line,
