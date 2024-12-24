@@ -106,40 +106,6 @@ init :: proc (
     size := extent.height * extent.width
 	new_state.font_sprite_sheet = gfx.vulkan_image_create_2d_monochrome_texture(vulkan, extent)
 
-	// NOTE(jan): Upload mesh.
-    new_state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
-    color := gfx.base0[:3]
-    vertices := [][][]f32 {
-        {
-            {-1, -1},
-            {0, 0},
-            color,
-        },
-        {
-            {1, -1},
-            {1, 0},
-            color,
-        },
-        {
-            {1, 1},
-            {1, 1},
-            color,
-        },
-        {
-            {-1, 1},
-            {0, 1},
-            color,
-        },
-    }
-    append(&new_state.mesh.indices, 0)
-    append(&new_state.mesh.indices, 1)
-    append(&new_state.mesh.indices, 2)
-    append(&new_state.mesh.indices, 2)
-    append(&new_state.mesh.indices, 3)
-    append(&new_state.mesh.indices, 0)
-    gfx.vulkan_mesh_push_vertices(&new_state.mesh, vertices)
-	gfx.vulkan_mesh_upload(vulkan, &new_state.mesh)
-
     return
 }
 
@@ -215,6 +181,39 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     // NOTE(jan): Update mesh.
     gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
     state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
+    
+    // NOTE(jan): Background.
+    state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
+    background_color := gfx.base03[:3]
+    vertices := [][][]f32 {
+        {
+            {-1, -1},
+            {0, 0},
+            background_color,
+        },
+        {
+            {1, -1},
+            {1, 0},
+            background_color,
+        },
+        {
+            {1, 0},
+            {1, 1},
+            background_color,
+        },
+        {
+            {-1, 0},
+            {0, 1},
+            background_color,
+        },
+    }
+    gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
+    append(&state.mesh.indices, 0)
+    append(&state.mesh.indices, 1)
+    append(&state.mesh.indices, 2)
+    append(&state.mesh.indices, 2)
+    append(&state.mesh.indices, 3)
+    append(&state.mesh.indices, 0)
 
     default_font := font.get_font(state.fonts[:], "default")
     version := default_font.versions[0]
@@ -298,11 +297,11 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     }
 
     // NOTE(jan): Draw spans.
-    color := gfx.base0[:3]
+    text_color := gfx.base0[:3]
     x: f32 = 10
-    y: f32 = f32(vulkan.swap.extent.height) - 10
+    y: f32 = f32(vulkan.swap.extent.height) / 2.0 - 10
     if state.top_down == true do y = version.size
-    base_vert_index: u32 = 0
+    base_vert_index: u32 = state.mesh.vertex_count
     for span in text_spans {
         y -= span.baseline_offset * f32(scroll_d)
 
@@ -312,22 +311,22 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
                 {
                     {q.x0 + x, q.y0 + y},
                     {q.s0, q.t0},
-                    color,
+                    text_color,
                 },
                 {
                     {q.x1 + x, q.y0 + y},
                     {q.s1, q.t0},
-                    color,
+                    text_color,
                 },
                 {
                     {q.x1 + x, q.y1 + y},
                     {q.s1, q.t1},
-                    color,
+                    text_color,
                 },
                 {
                     {q.x0 + x, q.y1 + y},
                     {q.s0, q.t1},
-                    color,
+                    text_color,
                 },
             }
             gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
