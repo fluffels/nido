@@ -32,7 +32,8 @@ TerminalState :: struct {
 
     linear_sampler: vk.Sampler,
 
-    mesh: gfx.VulkanMesh,
+    colored_mesh: gfx.VulkanMesh,
+    textured_mesh: gfx.VulkanMesh,
 
     uniforms: Uniforms,
     uniform_buffer: gfx.VulkanBuffer,
@@ -43,6 +44,13 @@ TerminalState :: struct {
 PASS := gfx.VulkanPassMetadata {
     enable_depth = false,
     pipelines = []gfx.VulkanPipelineMetadata {
+        gfx.VulkanPipelineMetadata {
+            name = "colored",
+            modules = {
+                "ortho_xy_rgb",
+                "color",
+            },
+        },
         {
             name = "textured",
             modules = {
@@ -53,8 +61,20 @@ PASS := gfx.VulkanPassMetadata {
     },
 }
 
-VERTEX_DESCRIPTION := gfx.VertexDescription {
-    name = "terminal_vertex",
+COLORED_VERTEX := gfx.VertexDescription {
+    name = "terminal_colored",
+    attributes = []gfx.VertexAttributeDescription {
+        {
+            component_count = 2,
+        },
+        {
+            component_count = 3
+        },
+    },
+}
+
+TEXTURED_VERTEX := gfx.VertexDescription {
+    name = "terminal_textured",
     attributes = []gfx.VertexAttributeDescription {
         {
             component_count = 2,
@@ -123,7 +143,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     vulkan := request.vulkan
 
     assert("textured" in state.vulkan_pass.pipelines)
-    pipeline := state.vulkan_pass.pipelines["textured"]
+    textured_pipeline := state.vulkan_pass.pipelines["textured"]
 
     // NOTE(jan): Handle input.
     scroll_d := state.top_down == true ? -1 : 1
@@ -149,7 +169,10 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     // NOTE(jan): Update uniforms.
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
-    gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
+    for pipeline_name in state.vulkan_pass.pipelines {
+        pipeline := state.vulkan_pass.pipelines[pipeline_name]
+        gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
+    }
 
     // NOTE(jan): Update sampler.
     if state.repack_required {
@@ -169,7 +192,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
         )
         gfx.vulkan_descriptor_update_combined_image_sampler(
             vulkan,
-            pipeline.descriptor_sets[0],
+            textured_pipeline.descriptor_sets[0],
             1,
             []gfx.VulkanImage { state.font_sprite_sheet },
             state.linear_sampler,
@@ -179,41 +202,40 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     }
 
     // NOTE(jan): Update mesh.
-    gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
-    state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
+    gfx.vulkan_mesh_destroy(vulkan, &state.textured_mesh)
+    state.textured_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
+    gfx.vulkan_mesh_destroy(vulkan, &state.colored_mesh)
+    state.colored_mesh = gfx.vulkan_mesh_create(COLORED_VERTEX)
     
     // NOTE(jan): Background.
-    state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
-    background_color := gfx.base03[:3]
+    background_color := gfx.base02[:3]
+    xmax := f32(vulkan.swap.extent.width)
+    ymax := f32(vulkan.swap.extent.height) / 2
     vertices := [][][]f32 {
         {
-            {-1, -1},
             {0, 0},
             background_color,
         },
         {
-            {1, -1},
-            {1, 0},
+            {xmax, 0},
             background_color,
         },
         {
-            {1, 0},
-            {1, 1},
+            {xmax, ymax},
             background_color,
         },
         {
-            {-1, 0},
-            {0, 1},
+            {0, ymax},
             background_color,
         },
     }
-    gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
-    append(&state.mesh.indices, 0)
-    append(&state.mesh.indices, 1)
-    append(&state.mesh.indices, 2)
-    append(&state.mesh.indices, 2)
-    append(&state.mesh.indices, 3)
-    append(&state.mesh.indices, 0)
+    gfx.vulkan_mesh_push_vertices(&state.colored_mesh, vertices)
+    append(&state.colored_mesh.indices, 0)
+    append(&state.colored_mesh.indices, 1)
+    append(&state.colored_mesh.indices, 2)
+    append(&state.colored_mesh.indices, 2)
+    append(&state.colored_mesh.indices, 3)
+    append(&state.colored_mesh.indices, 0)
 
     default_font := font.get_font(state.fonts[:], "default")
     version := default_font.versions[0]
@@ -301,7 +323,7 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     x: f32 = 10
     y: f32 = f32(vulkan.swap.extent.height) / 2.0 - 10
     if state.top_down == true do y = version.size
-    base_vert_index: u32 = state.mesh.vertex_count
+    base_vert_index: u32 = state.textured_mesh.vertex_count
     for span in text_spans {
         y -= span.baseline_offset * f32(scroll_d)
 
@@ -329,30 +351,28 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
                     text_color,
                 },
             }
-            gfx.vulkan_mesh_push_vertices(&state.mesh, vertices)
+            gfx.vulkan_mesh_push_vertices(&state.textured_mesh, vertices)
 
-            append(&state.mesh.indices, base_vert_index + 0)
-            append(&state.mesh.indices, base_vert_index + 1)
-            append(&state.mesh.indices, base_vert_index + 2)
-            append(&state.mesh.indices, base_vert_index + 2)
-            append(&state.mesh.indices, base_vert_index + 3)
-            append(&state.mesh.indices, base_vert_index + 0)
+            append(&state.textured_mesh.indices, base_vert_index + 0)
+            append(&state.textured_mesh.indices, base_vert_index + 1)
+            append(&state.textured_mesh.indices, base_vert_index + 2)
+            append(&state.textured_mesh.indices, base_vert_index + 2)
+            append(&state.textured_mesh.indices, base_vert_index + 3)
+            append(&state.textured_mesh.indices, base_vert_index + 0)
             base_vert_index += 4
         }
     
         y -= version.size * f32(scroll_d)
     }
 
-    gfx.vulkan_mesh_upload(vulkan, &state.mesh)
+    gfx.vulkan_mesh_upload(vulkan, &state.textured_mesh)
+    gfx.vulkan_mesh_upload(vulkan, &state.colored_mesh)
 }
 
 draw_frame :: proc (state: ^TerminalState, request: programs.DrawFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
     vulkan_pass := state.vulkan_pass
-
-    assert("textured" in vulkan_pass.pipelines)
-    pipeline := vulkan_pass.pipelines["textured"]
 
     clears := [?]vk.ClearValue {
         vk.ClearValue { color = { float32 = gfx.base03}},
@@ -372,20 +392,44 @@ draw_frame :: proc (state: ^TerminalState, request: programs.DrawFrame) {
 
     vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
 
-    vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-    
-    vk.CmdBindDescriptorSets(
-        cmd,
-        vk.PipelineBindPoint.GRAPHICS,
-        pipeline.layout,
-        0, u32(len(pipeline.descriptor_sets)),
-        raw_data(pipeline.descriptor_sets),
-        0, nil,
-    )
+    {
+        assert("colored" in vulkan_pass.pipelines)
+        pipeline := vulkan_pass.pipelines["colored"]
 
-    gfx.vulkan_mesh_bind(cmd, &state.mesh)
+        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
+        
+        vk.CmdBindDescriptorSets(
+            cmd,
+            vk.PipelineBindPoint.GRAPHICS,
+            pipeline.layout,
+            0, u32(len(pipeline.descriptor_sets)),
+            raw_data(pipeline.descriptor_sets),
+            0, nil,
+        )
 
-    vk.CmdDrawIndexed(cmd, u32(len(state.mesh.indices)), 1, 0, 0, 0)
+        gfx.vulkan_mesh_bind(cmd, &state.colored_mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(state.colored_mesh.indices)), 1, 0, 0, 0)
+    }
+
+    // TODO(jan): Lots of reused code here.
+    {
+        assert("textured" in vulkan_pass.pipelines)
+        pipeline := vulkan_pass.pipelines["textured"]
+
+        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
+        
+        vk.CmdBindDescriptorSets(
+            cmd,
+            vk.PipelineBindPoint.GRAPHICS,
+            pipeline.layout,
+            0, u32(len(pipeline.descriptor_sets)),
+            raw_data(pipeline.descriptor_sets),
+            0, nil,
+        )
+
+        gfx.vulkan_mesh_bind(cmd, &state.textured_mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(state.textured_mesh.indices)), 1, 0, 0, 0)
+    }
 
     vk.CmdEndRenderPass(cmd)
 }
@@ -401,7 +445,7 @@ cleanup :: proc (state: ^TerminalState, request: programs.Cleanup) {
     state.linear_sampler = 0
 
     gfx.vulkan_image_destroy(vulkan, &state.font_sprite_sheet)
-    gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
+    gfx.vulkan_mesh_destroy(vulkan, &state.textured_mesh)
     gfx.vulkan_buffer_destroy(vulkan, &state.uniform_buffer)
     gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
 }
