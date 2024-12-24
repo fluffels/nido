@@ -463,7 +463,7 @@ main :: proc() {
 						(format.format == vk.Format.B8G8R8A8_UNORM) {
 					vulkan.swap.format = format.format;
 					vulkan.swap.color_space = format.colorSpace;
-					log.infof("Found a compatible color space & format.")
+					log.infof("Found a compatible color space & format: %d, %d", vulkan.swap.color_space, vulkan.swap.format)
 					found = true;
 					break;
 				}
@@ -547,8 +547,7 @@ main :: proc() {
 	done := false;
 	// NOTE(jan): Initialize program first time through.
 	do_init := true
-	// NOTE(jan): Create render passes first time through.
-	do_resize := true;
+	do_resize := false;
 	// NOTE(jan): Keep track of the last frame's time stamp.
 	last_frame: u32 = 0;
 	last_frame_mouse: linalg.Vector2f32;
@@ -631,6 +630,9 @@ main :: proc() {
 			} else {
 				programs.initialize(&program, &vulkan, nil, program_allocator)
 			}
+
+			// NOTE(jan): Create render passes first time through.
+			programs.resize_end(&program, &vulkan)
 		}
 
 		// NOTE(jan): Resize framebuffers and swap chain.
