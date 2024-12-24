@@ -584,6 +584,8 @@ main :: proc() {
 						case sdl2.Keycode.END: input_state.key_down.end = true
 						case sdl2.Keycode.PAGEDOWN: input_state.key_down.page_down = true
 						case sdl2.Keycode.PAGEUP: input_state.key_down.page_up = true
+						case sdl2.Keycode.DOWN: input_state.key_down.down = true
+						case sdl2.Keycode.UP: input_state.key_down.up = true
 					}
 				case sdl2.EventType.QUIT:
 					done = true;

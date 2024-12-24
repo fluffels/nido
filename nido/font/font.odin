@@ -229,7 +229,7 @@ get_aligned_quad :: proc (
     // TODO(jan): Link in texture here so we can read height and width from it.
     height: i32 = 512
     width: i32 = 512
-    stbttf.GetPackedQuad(&packedchar, width, height, 0, x, y, &aligned_quad, false);
+    stbttf.GetPackedQuad(&packedchar, width, height, 0, x, y, &aligned_quad, false)
 
     return
 }

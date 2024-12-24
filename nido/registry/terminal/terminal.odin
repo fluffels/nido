@@ -171,6 +171,12 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
         state.top_down = false
         state.line_offset = 0
     }
+    if request.input_state.key_down.up == true {
+        if state.top_down && (state.line_offset > 0) do state.line_offset -= 1
+        if !state.top_down do state.line_offset += 1
+    }
+    if request.input_state.key_down.down == true {
+    }
 
     if state.line_offset < 0 do state.line_offset = 0
 
