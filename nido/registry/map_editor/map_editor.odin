@@ -133,12 +133,12 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
     return
 }
 
-resize_end :: proc (state: ^MapEditorState, request: programs.ResizeEnd) {
-    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
-}
-
 resize_begin :: proc (state: ^MapEditorState, request: programs.ResizeBegin) {
     gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
+}
+
+resize_end :: proc (state: ^MapEditorState, request: programs.ResizeEnd) {
+    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
 }
 
 prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {

@@ -1,523 +1,419 @@
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:57:main()] Logging initialized
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:61:main()] Loaded vulkan-1.dll
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:65:main()] Loaded vulkan global functions
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:76:main()] Vulkan instance version: 1.3.290
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:88:main()] Required layers: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:105:main()] Available layers: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_NV_optimus
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_AMD_switchable_graphics
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_RENDERDOC_Capture
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* GalaxyOverlayVkLayer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* GalaxyOverlayVkLayer_VERBOSE
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* GalaxyOverlayVkLayer_DEBUG
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_NV_nomad_release_public_2021_2_1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_NV_GPU_Trace_release_public_2021_2_1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_OBS_HOOK
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_NV_nomad_release_public_2023_3_2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_NV_GPU_Trace_release_public_2023_3_2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_EOS_Overlay
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_VALVE_steam_overlay
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_VALVE_steam_fossilize
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_ROCKSTAR_GAMES_social_club
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_LUNARG_api_dump
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_LUNARG_gfxreconstruct
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_synchronization2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_validation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_LUNARG_monitor
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_LUNARG_screenshot
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_profiles
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_shader_object
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:114:main()] Checking required layers: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:124:main()] Checking optional layers: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:127:main()] 	✓ VK_LAYER_KHRONOS_validation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:140:main()] SDL2 initialized
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:157:main()] SDL2 requires these vulkan extensions: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:161:main()] 	* VK_KHR_surface
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:161:main()] 	* VK_KHR_win32_surface
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:167:main()] App requires these vulkan extensions: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:174:main()] 	* VK_EXT_debug_report
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:174:main()] 	* VK_KHR_get_physical_device_properties2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:193:main()] Vulkan extensions available: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_device_group_creation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_display
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_external_fence_capabilities
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_external_memory_capabilities
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_external_semaphore_capabilities
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_get_display_properties2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_get_physical_device_properties2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_get_surface_capabilities2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_surface
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_surface_protected_capabilities
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_win32_surface
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_EXT_debug_report
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_EXT_debug_utils
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_EXT_direct_mode_display
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_EXT_surface_maintenance1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_EXT_swapchain_colorspace
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_NV_external_memory_capabilities
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_KHR_portability_enumeration
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:195:main()] 	* VK_LUNARG_direct_driver_loading
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:198:main()] Checking extensions: 
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:202:main()] 	✓ VK_KHR_surface
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:202:main()] 	✓ VK_KHR_win32_surface
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:202:main()] 	✓ VK_EXT_debug_report
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:202:main()] 	✓ VK_KHR_get_physical_device_properties2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:229:main()] Vulkan instance created.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:238:main()] Loaded vulkan instance functions
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:261:main()] Created debug callback.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:273:main()] App requires these device extensions:
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:275:main()] 	* VK_KHR_swapchain
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:292:main()] 2 physical device(s)
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:299:main()] GPU #0 "NVIDIA GeForce RTX 3070":
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:316:main()] 	Available device extensions:
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_16bit_storage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_8bit_storage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_acceleration_structure
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_bind_memory2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_buffer_device_address
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_calibrated_timestamps
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_cooperative_matrix
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_copy_commands2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_create_renderpass2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_dedicated_allocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_deferred_host_operations
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_depth_stencil_resolve
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_descriptor_update_template
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_device_group
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_draw_indirect_count
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_driver_properties
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_dynamic_rendering
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_dynamic_rendering_local_read
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_fence
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_fence_win32
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_memory_win32
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_semaphore
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_semaphore_win32
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_format_feature_flags2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_fragment_shader_barycentric
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_fragment_shading_rate
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_get_memory_requirements2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_global_priority
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_image_format_list
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_imageless_framebuffer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_index_type_uint8
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_line_rasterization
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_load_store_op_none
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance3
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance4
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance5
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance6
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance7
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_map_memory2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_multiview
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_pipeline_executable_properties
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_pipeline_library
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_present_id
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_present_wait
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_push_descriptor
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_query
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_tracing_maintenance1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_tracing_pipeline
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_tracing_position_fetch
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_relaxed_block_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_sampler_mirror_clamp_to_edge
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_sampler_ycbcr_conversion
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_separate_depth_stencil_layouts
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_atomic_int64
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_clock
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_draw_parameters
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_expect_assume
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_float16_int8
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_float_controls
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_float_controls2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_integer_dot_product
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_maximal_reconvergence
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_non_semantic_info
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_quad_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_relaxed_extended_instruction
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_extended_types
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_rotate
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_uniform_control_flow
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_terminate_invocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_spirv_1_4
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_storage_buffer_storage_class
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_swapchain
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_swapchain_mutable_format
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_synchronization2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_timeline_semaphore
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_uniform_buffer_standard_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_variable_pointers
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_vertex_attribute_divisor
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_decode_av1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_decode_h264
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_decode_h265
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_decode_queue
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_encode_h264
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_encode_h265
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_encode_queue
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_maintenance1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_queue
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_vulkan_memory_model
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_win32_keyed_mutex
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_workgroup_memory_explicit_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_zero_initialize_workgroup_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_4444_formats
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_attachment_feedback_loop_dynamic_state
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_attachment_feedback_loop_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_blend_operation_advanced
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_border_color_swizzle
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_buffer_device_address
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_calibrated_timestamps
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_color_write_enable
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_conditional_rendering
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_conservative_rasterization
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_custom_border_color
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_bias_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_clamp_zero_one
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_clip_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_clip_enable
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_range_unrestricted
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_descriptor_buffer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_descriptor_indexing
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_device_fault
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_discard_rectangles
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_dynamic_rendering_unused_attachments
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state3
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_external_memory_host
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_fragment_shader_interlock
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_full_screen_exclusive
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_global_priority
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_global_priority_query
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_graphics_pipeline_library
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_hdr_metadata
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_host_image_copy
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_host_query_reset
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_image_2d_view_of_3d
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_image_robustness
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_image_sliced_view_of_3d
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_image_view_min_lod
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_index_type_uint8
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_inline_uniform_block
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_legacy_vertex_attributes
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_line_rasterization
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_load_store_op_none
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_memory_budget
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_memory_priority
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_mesh_shader
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_multi_draw
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_mutable_descriptor_type
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_nested_command_buffer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_non_seamless_cube_map
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_opacity_micromap
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pageable_device_local_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pci_bus_info
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_cache_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_feedback
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pipeline_library_group_handles
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pipeline_robustness
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_post_depth_coverage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_primitive_topology_list_restart
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_primitives_generated_query
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_private_data
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_provoking_vertex
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_queue_family_foreign
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_robustness2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_sample_locations
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_sampler_filter_minmax
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_scalar_block_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_separate_stencil_usage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_atomic_float
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_demote_to_helper_invocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_image_atomic_int64
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_module_identifier
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_object
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_replicated_composites
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_ballot
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_vote
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_viewport_index_layer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_subgroup_size_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_swapchain_maintenance1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_texel_buffer_alignment
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_tooling_info
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_transform_feedback
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_vertex_attribute_divisor
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_vertex_input_dynamic_state
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_ycbcr_2plane_444_formats
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_ycbcr_image_arrays
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_acquire_winrt_display
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_clip_space_w_scaling
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_compute_shader_derivatives
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_cooperative_matrix
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_copy_memory_indirect
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_corner_sampled_image
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_coverage_reduction_mode
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_cuda_kernel_launch
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_dedicated_allocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_dedicated_allocation_image_aliasing
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_descriptor_pool_overallocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_device_diagnostic_checkpoints
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_device_diagnostics_config
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_device_generated_commands
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_device_generated_commands_compute
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_external_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_external_memory_win32
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_fill_rectangle
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_fragment_coverage_to_color
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_fragment_shader_barycentric
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_fragment_shading_rate_enums
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_framebuffer_mixed_samples
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_geometry_shader_passthrough
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_inherited_viewport_scissor
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_linear_color_attachment
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_low_latency
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_low_latency2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_memory_decompression
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_mesh_shader
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_optical_flow
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_raw_access_chains
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_ray_tracing
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_ray_tracing_invocation_reorder
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_ray_tracing_motion_blur
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_representative_fragment_test
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_sample_mask_override_coverage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_scissor_exclusive
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_shader_atomic_float16_vector
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_shader_image_footprint
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_shader_sm_builtins
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_shader_subgroup_partitioned
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_shading_rate_image
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_viewport_array2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_viewport_swizzle
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NV_win32_keyed_mutex
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NVX_binary_import
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NVX_image_view_handle
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_NVX_multiview_per_view_attributes
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_buffer_marker
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_GOOGLE_user_type
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:324:main()] 	Checking device extensions:
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:327:main()] 		✓ VK_KHR_swapchain
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:340:main()] 	Checking device queues:
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:351:main()] 		✓ Found a graphics queue family...
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:357:main()] 		✓ and it is a present queue.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:365:main()] 		✓ Found a compute queue family.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:365:main()] 		✓ Found a compute queue family.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:381:main()] Selected GPU #0
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:299:main()] GPU #1 "AMD Radeon(TM) Graphics":
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:316:main()] 	Available device extensions:
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_16bit_storage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_8bit_storage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_acceleration_structure
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_bind_memory2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_buffer_device_address
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_copy_commands2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_create_renderpass2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_dedicated_allocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_deferred_host_operations
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_depth_stencil_resolve
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_descriptor_update_template
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_device_group
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_draw_indirect_count
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_driver_properties
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_dynamic_rendering
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_fence
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_fence_win32
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_memory_win32
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_semaphore
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_external_semaphore_win32
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_format_feature_flags2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_fragment_shader_barycentric
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_fragment_shading_rate
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_get_memory_requirements2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_global_priority
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_imageless_framebuffer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_image_format_list
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance3
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance4
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_maintenance5
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_map_memory2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_multiview
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_pipeline_executable_properties
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_pipeline_library
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_push_descriptor
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_query
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_tracing_maintenance1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_tracing_pipeline
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_ray_tracing_position_fetch
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_relaxed_block_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_sampler_mirror_clamp_to_edge
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_sampler_ycbcr_conversion
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_separate_depth_stencil_layouts
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_atomic_int64
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_clock
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_draw_parameters
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_float16_int8
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_float_controls
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_integer_dot_product
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_non_semantic_info
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_extended_types
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_uniform_control_flow
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_shader_terminate_invocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_spirv_1_4
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_storage_buffer_storage_class
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_swapchain
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_swapchain_mutable_format
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_synchronization2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_timeline_semaphore
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_uniform_buffer_standard_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_variable_pointers
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_decode_h264
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_decode_h265
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_decode_queue
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_video_queue
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_vulkan_memory_model
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_win32_keyed_mutex
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_workgroup_memory_explicit_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_KHR_zero_initialize_workgroup_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_4444_formats
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_attachment_feedback_loop_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_border_color_swizzle
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_calibrated_timestamps
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_color_write_enable
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_conditional_rendering
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_conservative_rasterization
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_custom_border_color
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_clamp_zero_one
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_clip_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_clip_enable
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_depth_range_unrestricted
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_descriptor_buffer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_descriptor_indexing
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_device_address_binding_report
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_device_fault
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_dynamic_rendering_unused_attachments
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state3
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_external_memory_host
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_frame_boundary
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_full_screen_exclusive
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_global_priority
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_global_priority_query
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_hdr_metadata
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_host_query_reset
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_image_robustness
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_image_sliced_view_of_3d
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_image_view_min_lod
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_index_type_uint8
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_inline_uniform_block
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_line_rasterization
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_load_store_op_none
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_memory_budget
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_memory_priority
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_mesh_shader
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_mutable_descriptor_type
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_nested_command_buffer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_non_seamless_cube_map
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pageable_device_local_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_cache_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_feedback
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_pipeline_library_group_handles
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_post_depth_coverage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_primitive_topology_list_restart
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_private_data
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_provoking_vertex
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_queue_family_foreign
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_robustness2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_sampler_filter_minmax
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_sample_locations
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_scalar_block_layout
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_separate_stencil_usage
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_atomic_float
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_atomic_float2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_demote_to_helper_invocation
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_image_atomic_int64
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_module_identifier
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_stencil_export
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_ballot
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_vote
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_shader_viewport_index_layer
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_subgroup_size_control
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_texel_buffer_alignment
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_tooling_info
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_transform_feedback
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_vertex_attribute_divisor
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_vertex_input_dynamic_state
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_EXT_ycbcr_image_arrays
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_buffer_marker
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_calibrated_timestamps
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_device_coherent_memory
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_display_native_hdr
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_draw_indirect_count
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_gcn_shader
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_gpa_interface
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_gpu_shader_half_float
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_gpu_shader_int16
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_memory_overallocation_behavior
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_mixed_attachment_samples
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_ballot
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_core_properties
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_core_properties2
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_early_and_late_fragment_tests
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_explicit_vertex_parameter
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_fragment_mask
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_image_load_store_lod
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_info
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_shader_trinary_minmax
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_AMD_texture_gather_bias_lod
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_GOOGLE_decorate_string
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_GOOGLE_hlsl_functionality1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_GOOGLE_user_type
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:321:main()] 		* VK_VALVE_mutable_descriptor_type
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:324:main()] 	Checking device extensions:
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:327:main()] 		✓ VK_KHR_swapchain
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:340:main()] 	Checking device queues:
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:351:main()] 		✓ Found a graphics queue family...
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:357:main()] 		✓ and it is a present queue.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:365:main()] 		✓ Found a compute queue family.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:365:main()] 		✓ Found a compute queue family.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:381:main()] Selected GPU #1
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:427:main()] Created Vulkan device.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:431:main()] Fetched queues.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:466:main()] Found a compatible color space & format.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_swap.odin:37:vulkan_swap_create()] Created swapchain.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'color' at 'shaders\color.frag.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'mvp_xy_uv' at 'shaders\mvp_xy_uv.vert.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xy_uv' at 'shaders\ortho_xy_uv.vert.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xy_uv_rgb' at 'shaders\ortho_xy_uv_rgb.vert.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xyz_rgba' at 'shaders\ortho_xyz_rgba.vert.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xyz_uv' at 'shaders\ortho_xyz_uv.vert.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'sampler' at 'shaders\sampler.frag.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'sampler_as_coverage' at 'shaders\sampler_as_coverage.frag.spv':
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:529:main()] Semaphores created.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_cmd.odin:24:vulkan_cmd_create_pool()] Created command pool.
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_cmd.odin:24:vulkan_cmd_create_pool()] Created command pool.
-[INFO ] --- [2024-12-24 22:43:01] [main.odin:627:main()] Initializing program terminal
-[INFO ] --- [2024-12-24 22:43:01] [vulkan_swap.odin:71:vulkan_swap_destroy()] Destroyed swapchain.
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_swap.odin:37:vulkan_swap_create()] Created swapchain.
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pass.odin:106:vulkan_pass_create()] Created render pass.
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pipeline.odin:95:vulkan_pipelines_create()] Creating pipeline 'textured'...
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pipeline.odin:109:vulkan_pipelines_create()] 	... found a Vertex shader
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pipeline.odin:109:vulkan_pipelines_create()] 	... found a Fragment shader
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pipeline.odin:223:vulkan_pipelines_create()] Created descriptor set layout #0 (1714705860976).
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pipeline.odin:266:vulkan_pipelines_create()] Created pipeline layout.
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pipeline.odin:398:vulkan_pipelines_create()] Pipeline created.
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pass.odin:113:vulkan_pass_create()] Creating framebuffers...
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pass.odin:141:vulkan_pass_create()] 	✓ for swap chain image #0
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pass.odin:141:vulkan_pass_create()] 	✓ for swap chain image #1
-[INFO ] --- [2024-12-24 22:43:02] [vulkan_pass.odin:144:vulkan_pass_create()] Created framebuffers.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:57:main()] Logging initialized
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:61:main()] Loaded vulkan-1.dll
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:65:main()] Loaded vulkan global functions
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:76:main()] Vulkan instance version: 1.3.290
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:88:main()] Required layers: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:105:main()] Available layers: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_NV_optimus
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_AMD_switchable_graphics
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_RENDERDOC_Capture
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* GalaxyOverlayVkLayer
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* GalaxyOverlayVkLayer_VERBOSE
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* GalaxyOverlayVkLayer_DEBUG
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_NV_nomad_release_public_2021_2_1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_NV_GPU_Trace_release_public_2021_2_1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_OBS_HOOK
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_NV_nomad_release_public_2023_3_2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_NV_GPU_Trace_release_public_2023_3_2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_EOS_Overlay
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_VALVE_steam_overlay
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_VALVE_steam_fossilize
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_ROCKSTAR_GAMES_social_club
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_LUNARG_api_dump
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_LUNARG_gfxreconstruct
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_synchronization2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_validation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_LUNARG_monitor
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_LUNARG_screenshot
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_profiles
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:111:main()] 	* VK_LAYER_KHRONOS_shader_object
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:114:main()] Checking required layers: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:124:main()] Checking optional layers: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:127:main()] 	✓ VK_LAYER_KHRONOS_validation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:140:main()] SDL2 initialized
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:157:main()] SDL2 requires these vulkan extensions: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:161:main()] 	* VK_KHR_surface
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:161:main()] 	* VK_KHR_win32_surface
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:167:main()] App requires these vulkan extensions: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:174:main()] 	* VK_EXT_debug_report
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:174:main()] 	* VK_KHR_get_physical_device_properties2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:193:main()] Vulkan extensions available: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_EXT_debug_report
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_EXT_debug_utils
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_EXT_direct_mode_display
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_EXT_surface_maintenance1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_EXT_swapchain_colorspace
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_device_group_creation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_display
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_external_fence_capabilities
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_external_memory_capabilities
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_external_semaphore_capabilities
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_get_display_properties2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_get_physical_device_properties2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_get_surface_capabilities2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_surface
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_surface_protected_capabilities
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_KHR_win32_surface
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_NV_external_memory_capabilities
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:195:main()] 	* VK_EXT_debug_utils
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:198:main()] Checking extensions: 
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:202:main()] 	✓ VK_KHR_surface
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:202:main()] 	✓ VK_KHR_win32_surface
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:202:main()] 	✓ VK_EXT_debug_report
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:202:main()] 	✓ VK_KHR_get_physical_device_properties2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:229:main()] Vulkan instance created.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:238:main()] Loaded vulkan instance functions
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:261:main()] Created debug callback.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:273:main()] App requires these device extensions:
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:275:main()] 	* VK_KHR_swapchain
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:292:main()] 2 physical device(s)
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:299:main()] GPU #0 "NVIDIA GeForce RTX 3070":
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:316:main()] 	Available device extensions:
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_buffer_marker
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_4444_formats
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_attachment_feedback_loop_dynamic_state
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_attachment_feedback_loop_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_border_color_swizzle
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_buffer_device_address
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_calibrated_timestamps
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_color_write_enable
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_conditional_rendering
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_conservative_rasterization
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_custom_border_color
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_debug_marker
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_clamp_zero_one
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_clip_control
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_clip_enable
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_range_unrestricted
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_descriptor_indexing
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_discard_rectangles
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state3
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_fragment_shader_interlock
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_full_screen_exclusive
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_global_priority
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_global_priority_query
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_graphics_pipeline_library
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_hdr_metadata
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_host_query_reset
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_image_2d_view_of_3d
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_image_robustness
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_image_view_min_lod
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_index_type_uint8
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_inline_uniform_block
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_line_rasterization
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_load_store_op_none
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_memory_budget
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_memory_priority
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_mesh_shader
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_mutable_descriptor_type
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_nested_command_buffer
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_non_seamless_cube_map
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_pageable_device_local_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_pci_bus_info
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_cache_control
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_feedback
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_post_depth_coverage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_primitive_topology_list_restart
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_primitives_generated_query
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_private_data
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_provoking_vertex
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_queue_family_foreign
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_robustness2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_sample_locations
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_sampler_filter_minmax
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_scalar_block_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_separate_stencil_usage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_atomic_float
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_demote_to_helper_invocation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_image_atomic_int64
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_object
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_ballot
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_vote
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_viewport_index_layer
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_subgroup_size_control
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_swapchain_maintenance1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_texel_buffer_alignment
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_tooling_info
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_transform_feedback
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_vertex_attribute_divisor
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_vertex_input_dynamic_state
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_ycbcr_2plane_444_formats
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_ycbcr_image_arrays
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_GOOGLE_user_type
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_16bit_storage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_8bit_storage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_acceleration_structure
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_bind_memory2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_buffer_device_address
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_calibrated_timestamps
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_copy_commands2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_create_renderpass2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_dedicated_allocation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_deferred_host_operations
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_depth_stencil_resolve
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_descriptor_update_template
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_device_group
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_draw_indirect_count
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_driver_properties
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_dynamic_rendering
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_dynamic_rendering_local_read
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_fence
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_fence_win32
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_memory_win32
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_semaphore
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_semaphore_win32
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_format_feature_flags2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_fragment_shader_barycentric
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_fragment_shading_rate
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_get_memory_requirements2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_global_priority
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_image_format_list
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_imageless_framebuffer
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_index_type_uint8
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_line_rasterization
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_load_store_op_none
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance3
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance4
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_multiview
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_pipeline_executable_properties
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_pipeline_library
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_present_id
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_present_wait
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_push_descriptor
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_ray_query
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_relaxed_block_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_sampler_mirror_clamp_to_edge
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_sampler_ycbcr_conversion
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_separate_depth_stencil_layouts
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_atomic_int64
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_clock
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_draw_parameters
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_float16_int8
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_float_controls
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_integer_dot_product
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_non_semantic_info
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_relaxed_extended_instruction
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_extended_types
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_uniform_control_flow
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_terminate_invocation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_spirv_1_4
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_storage_buffer_storage_class
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_swapchain
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_swapchain_mutable_format
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_synchronization2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_timeline_semaphore
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_uniform_buffer_standard_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_variable_pointers
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_vertex_attribute_divisor
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_vulkan_memory_model
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_win32_keyed_mutex
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_workgroup_memory_explicit_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_zero_initialize_workgroup_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_compute_shader_derivatives
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_dedicated_allocation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_external_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_external_memory_win32
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_fragment_shader_barycentric
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_geometry_shader_passthrough
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_sample_mask_override_coverage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_shader_image_footprint
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_shader_subgroup_partitioned
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_viewport_array2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_NV_win32_keyed_mutex
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_debug_marker
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_tooling_info
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:324:main()] 	Checking device extensions:
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:327:main()] 		✓ VK_KHR_swapchain
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:340:main()] 	Checking device queues:
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:351:main()] 		✓ Found a graphics queue family...
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:357:main()] 		✓ and it is a present queue.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:365:main()] 		✓ Found a compute queue family.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:365:main()] 		✓ Found a compute queue family.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:381:main()] Selected GPU #0
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:299:main()] GPU #1 "AMD Radeon(TM) Graphics":
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:316:main()] 	Available device extensions:
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_buffer_marker
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_device_coherent_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_display_native_hdr
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_gcn_shader
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_gpu_shader_half_float
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_gpu_shader_int16
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_memory_overallocation_behavior
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_mixed_attachment_samples
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_shader_ballot
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_shader_core_properties
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_shader_explicit_vertex_parameter
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_shader_fragment_mask
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_shader_image_load_store_lod
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_shader_trinary_minmax
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_AMD_texture_gather_bias_lod
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_4444_formats
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_attachment_feedback_loop_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_border_color_swizzle
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_calibrated_timestamps
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_color_write_enable
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_conditional_rendering
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_conservative_rasterization
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_custom_border_color
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_debug_marker
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_clamp_zero_one
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_clip_control
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_clip_enable
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_depth_range_unrestricted
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_descriptor_indexing
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_extended_dynamic_state3
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_full_screen_exclusive
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_global_priority
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_global_priority_query
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_hdr_metadata
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_host_query_reset
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_image_robustness
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_image_view_min_lod
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_index_type_uint8
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_inline_uniform_block
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_line_rasterization
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_load_store_op_none
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_memory_budget
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_memory_priority
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_mesh_shader
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_mutable_descriptor_type
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_nested_command_buffer
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_non_seamless_cube_map
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_pageable_device_local_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_cache_control
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_pipeline_creation_feedback
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_post_depth_coverage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_primitive_topology_list_restart
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_private_data
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_provoking_vertex
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_queue_family_foreign
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_robustness2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_sample_locations
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_sampler_filter_minmax
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_scalar_block_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_separate_stencil_usage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_atomic_float
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_atomic_float2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_demote_to_helper_invocation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_image_atomic_int64
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_stencil_export
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_ballot
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_subgroup_vote
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_shader_viewport_index_layer
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_subgroup_size_control
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_texel_buffer_alignment
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_tooling_info
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_transform_feedback
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_vertex_attribute_divisor
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_vertex_input_dynamic_state
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_ycbcr_image_arrays
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_GOOGLE_decorate_string
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_GOOGLE_hlsl_functionality1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_GOOGLE_user_type
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_16bit_storage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_8bit_storage
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_acceleration_structure
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_bind_memory2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_copy_commands2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_create_renderpass2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_dedicated_allocation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_deferred_host_operations
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_depth_stencil_resolve
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_descriptor_update_template
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_device_group
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_draw_indirect_count
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_driver_properties
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_dynamic_rendering
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_fence
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_fence_win32
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_memory_win32
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_semaphore
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_external_semaphore_win32
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_format_feature_flags2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_fragment_shader_barycentric
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_fragment_shading_rate
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_get_memory_requirements2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_global_priority
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_image_format_list
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_imageless_framebuffer
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance3
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_maintenance4
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_multiview
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_pipeline_executable_properties
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_pipeline_library
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_push_descriptor
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_ray_query
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_ray_tracing_pipeline
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_relaxed_block_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_sampler_mirror_clamp_to_edge
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_sampler_ycbcr_conversion
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_separate_depth_stencil_layouts
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_atomic_int64
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_clock
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_draw_parameters
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_float16_int8
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_float_controls
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_integer_dot_product
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_non_semantic_info
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_extended_types
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_subgroup_uniform_control_flow
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_shader_terminate_invocation
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_spirv_1_4
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_storage_buffer_storage_class
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_swapchain
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_swapchain_mutable_format
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_synchronization2
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_timeline_semaphore
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_uniform_buffer_standard_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_variable_pointers
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_vulkan_memory_model
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_win32_keyed_mutex
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_workgroup_memory_explicit_layout
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_KHR_zero_initialize_workgroup_memory
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_VALVE_mutable_descriptor_type
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_debug_marker
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:321:main()] 		* VK_EXT_tooling_info
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:324:main()] 	Checking device extensions:
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:327:main()] 		✓ VK_KHR_swapchain
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:340:main()] 	Checking device queues:
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:351:main()] 		✓ Found a graphics queue family...
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:357:main()] 		✓ and it is a present queue.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:365:main()] 		✓ Found a compute queue family.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:365:main()] 		✓ Found a compute queue family.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:381:main()] Selected GPU #1
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:427:main()] Created Vulkan device.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:431:main()] Fetched queues.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:466:main()] Found a compatible color space & format.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_swap.odin:58:vulkan_swap_create()] Created swapchain.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'color' at 'shaders\color.frag.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'mvp_xy_uv' at 'shaders\mvp_xy_uv.vert.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xy_uv' at 'shaders\ortho_xy_uv.vert.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xy_uv_rgb' at 'shaders\ortho_xy_uv_rgb.vert.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xyz_rgba' at 'shaders\ortho_xyz_rgba.vert.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'ortho_xyz_uv' at 'shaders\ortho_xyz_uv.vert.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'sampler' at 'shaders\sampler.frag.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:57:vulkan_create_shader_modules()] Loading shader module 'sampler_as_coverage' at 'shaders\sampler_as_coverage.frag.spv':
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_pipeline.odin:72:vulkan_create_shader_modules()] 	... module created.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:529:main()] Semaphores created.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_cmd.odin:24:vulkan_cmd_create_pool()] Created command pool.
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_cmd.odin:24:vulkan_cmd_create_pool()] Created command pool.
+[INFO ] --- [2024-12-24 23:12:00] [main.odin:627:main()] Initializing program terminal
+[INFO ] --- [2024-12-24 23:12:00] [vulkan_swap.odin:92:vulkan_swap_destroy()] Destroyed swapchain.
+[ERROR] --- [2024-12-24 23:12:00] [vulkan_swap.odin:55:vulkan_swap_create()] Could not create swapchain: unknown error (-13).

@@ -1,5 +1,6 @@
 package gfx
 
+import "core:fmt"
 import "core:log"
 import vk "vendor:vulkan"
 
@@ -30,10 +31,30 @@ vulkan_swap_create :: proc(vulkan: ^Vulkan) {
         clipped = false,
     }
 
-    check(
-        vk.CreateSwapchainKHR(vulkan.device, &create, nil, &vulkan.swap.handle),
-        "could not create swapchain",
-    )
+    result := vk.CreateSwapchainKHR(vulkan.device, &create, nil, &vulkan.swap.handle)
+    e := ""
+    #partial switch (result) {
+        case vk.Result.ERROR_OUT_OF_HOST_MEMORY:
+            e = "Could not create swapchain: host out of memory."
+        case vk.Result.ERROR_OUT_OF_DEVICE_MEMORY:
+            e = "Could not create swapchain: device out of memory."
+        case vk.Result.ERROR_DEVICE_LOST:
+            e = "Could not create swapchain: device lost."
+        case vk.Result.ERROR_SURFACE_LOST_KHR:
+            e = "Could not create swapchain: surface lost."
+        case vk.Result.ERROR_NATIVE_WINDOW_IN_USE_KHR:
+            e = "Could not create swapchain: window in use."
+        case vk.Result.ERROR_INITIALIZATION_FAILED:
+            e = "Could not create swapchain: initialization failed."
+        case vk.Result.ERROR_COMPRESSION_EXHAUSTED_EXT:
+            e = "Could not create swapchain: compression exhausted."
+        case:
+            e = fmt.aprintf("Could not create swapchain: unknown error (%d).", result)
+    }
+    if (result != vk.Result.SUCCESS) {
+        log.error(e)
+        panic(e)
+    }
     log.infof("Created swapchain.")
 
     count: u32;

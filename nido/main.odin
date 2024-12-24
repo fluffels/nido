@@ -637,11 +637,13 @@ main :: proc() {
 		if (do_resize) {
 			do_resize = false
 
+			vk.QueueWaitIdle(vulkan.gfx_queue)
+
 			programs.resize_begin(&program, &vulkan)
 
+			gfx.vulkan_swap_destroy(&vulkan)
 			free_all(vulkan.resize_allocator)
 
-			gfx.vulkan_swap_destroy(&vulkan)
 			gfx.vulkan_swap_update_capabilities(&vulkan)
 			gfx.vulkan_swap_update_extent(&vulkan)
 			gfx.vulkan_swap_create(&vulkan)

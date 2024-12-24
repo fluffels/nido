@@ -109,13 +109,13 @@ init :: proc (
     return
 }
 
+resize_begin :: proc (state: ^TerminalState, request: programs.ResizeBegin) {
+    gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
+}
+
 resize_end :: proc (state: ^TerminalState, request: programs.ResizeEnd) {
     state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
     state.repack_required = true
-}
-
-resize_begin :: proc (state: ^TerminalState, request: programs.ResizeBegin) {
-    gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
 }
 
 prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
