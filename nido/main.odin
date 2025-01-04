@@ -535,12 +535,16 @@ main :: proc() {
 
 	// NOTE(jan): Initialize registry of programs.
 	program_registry := registry.make()
-	program := program_registry.programs[program_registry.current_program_index]
 
-	// NOTE(jan): Create arena for the program.
-	alloc_error := virtual.arena_init_growing(&program.arena)
-	if alloc_error != virtual.Allocator_Error.None do panic("could not initialize program allocator")
-	program.allocator = virtual.arena_allocator(&program.arena)
+	// NOTE(jan): Create arena for each program.
+	for p, i in program_registry.programs {
+		alloc_error := virtual.arena_init_growing(&program_registry.programs[i].arena)
+		if alloc_error != virtual.Allocator_Error.None do panic("could not initialize program allocator")
+		program_registry.programs[i].allocator = virtual.arena_allocator(&program_registry.programs[i].arena)
+	}
+
+	// NOTE(jan): Select current program.
+	program := program_registry.programs[program_registry.current_program_index]
 
 	// NOTE(jan): Main loop.
 	done := false;
