@@ -538,10 +538,9 @@ main :: proc() {
 	program := program_registry.programs[program_registry.current_program_index]
 
 	// NOTE(jan): Create arena for the program.
-	program_arena: virtual.Arena
-	alloc_error := virtual.arena_init_growing(&program_arena)
+	alloc_error := virtual.arena_init_growing(&program.arena)
 	if alloc_error != virtual.Allocator_Error.None do panic("could not initialize program allocator")
-	program_allocator := virtual.arena_allocator(&program_arena)
+	program.allocator = virtual.arena_allocator(&program.arena)
 
 	// NOTE(jan): Main loop.
 	done := false;
@@ -621,14 +620,14 @@ main :: proc() {
 		if (do_init) {
 			do_init = false
 
-			programs.cleanup(&program, &vulkan, program_allocator)
-			free_all(program_allocator)
+			programs.cleanup(&program, &vulkan)
+			free_all(program.allocator)
 			log.infof("Initializing program %s", program.name)
 			
 			if program.name == "terminal" {
-				programs.initialize(&program, &vulkan, mem_logger.data, program_allocator)
+				programs.initialize(&program, &vulkan, mem_logger.data)
 			} else {
-				programs.initialize(&program, &vulkan, nil, program_allocator)
+				programs.initialize(&program, &vulkan, nil)
 			}
 
 			// NOTE(jan): Create render passes first time through.
@@ -751,5 +750,5 @@ main :: proc() {
 	}
 
 	vk.DeviceWaitIdle(vulkan.device)
-	programs.cleanup(&program, &vulkan, program_allocator)
+	programs.cleanup(&program, &vulkan)
 }

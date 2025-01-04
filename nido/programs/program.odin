@@ -1,13 +1,13 @@
 package programs
 
 import "core:mem"
+import "core:mem/virtual"
 import vk "vendor:vulkan"
 
 import gfx "../gfx"
 
 Initialize :: struct {
     vulkan: ^gfx.Vulkan,
-    allocator: mem.Allocator,
     user_data: rawptr,
 }
 
@@ -38,7 +38,6 @@ CleanupFrame :: struct {
 
 Cleanup :: struct {
     vulkan: ^gfx.Vulkan,
-    allocator: mem.Allocator,
 }
 
 Request :: union {
@@ -52,6 +51,8 @@ Request :: union {
 }
 
 Program :: struct {
+    arena: virtual.Arena,
+    allocator: mem.Allocator,
     name: string,
     handler: ProgramProc,
     state: rawptr,
@@ -59,10 +60,9 @@ Program :: struct {
 
 ProgramProc :: #type proc (program: ^Program, request: Request)
 
-initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, user_data: rawptr, allocator: mem.Allocator) {
+initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, user_data: rawptr) {
     request := Initialize {
         vulkan = vulkan,
-        allocator = allocator,
         user_data = user_data,
     }
     program.handler(program, request)
@@ -108,10 +108,9 @@ cleanup_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
     program.handler(program, request)
 }
 
-cleanup :: proc (program: ^Program, vulkan: ^gfx.Vulkan, allocator: mem.Allocator) {
+cleanup :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
     request := Cleanup {
         vulkan = vulkan,
-        allocator = allocator,
     }
     program.handler(program, request)
 }

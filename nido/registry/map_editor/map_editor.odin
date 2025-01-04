@@ -94,8 +94,6 @@ TEXTURED_VERTEX := gfx.VertexDescription {
 }
 
 init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_state: ^MapEditorState) {
-    allocator := request.allocator
-    context.allocator = allocator
     vulkan := request.vulkan
 
     new_state = new(MapEditorState)
@@ -293,6 +291,8 @@ cleanup :: proc (state: ^MapEditorState, request: programs.Cleanup) {
 
 handler :: proc (program: ^programs.Program, request: programs.Request) {
     state := (^MapEditorState)(program.state)
+
+    context.allocator = program.allocator
 
     switch r in request {
         case programs.Initialize:

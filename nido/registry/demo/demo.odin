@@ -3,6 +3,7 @@ package demo
 import "core:log"
 import "core:math"
 import "core:mem"
+import "core:mem/virtual"
 
 import vk "vendor:vulkan"
 
@@ -54,8 +55,6 @@ VERTEX_DESCRIPTION := gfx.VertexDescription {
 }
 
 init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^DemoState) {
-    allocator := request.allocator
-    context.allocator = allocator
     vulkan := request.vulkan
 
     new_state = new(DemoState)
@@ -210,6 +209,8 @@ cleanup :: proc (state: ^DemoState, request: programs.Cleanup) {
 
 handler :: proc (program: ^programs.Program, request: programs.Request) {
     state := (^DemoState)(program.state)
+
+    context.allocator = program.allocator
 
     switch r in request {
         case programs.Initialize:

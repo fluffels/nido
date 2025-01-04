@@ -94,8 +94,6 @@ init :: proc (
 ) -> (
     new_state: ^TerminalState
 ) {
-    allocator := request.allocator
-    context.allocator = allocator
     vulkan := request.vulkan
 
     new_state = new(TerminalState)
@@ -452,6 +450,8 @@ cleanup :: proc (state: ^TerminalState, request: programs.Cleanup) {
 
 handler :: proc (program: ^programs.Program, request: programs.Request) {
     state := (^TerminalState)(program.state)
+
+    context.allocator = program.allocator
 
     switch r in request {
         case programs.Initialize:
