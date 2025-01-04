@@ -118,7 +118,7 @@ pack_fonts_into_texture :: proc (
     height: i32 = 512
     width: i32 = 512
     bitmap_size := height * width
-    bitmap = make([dynamic]u8, bitmap_size)
+    bitmap = make([dynamic]u8, bitmap_size, context.temp_allocator)
 
     pack_context: stbttf.pack_context
     success = stbttf.PackBegin(&pack_context, raw_data(bitmap), width, height, 0, 1, nil) != 0

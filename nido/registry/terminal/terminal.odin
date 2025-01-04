@@ -25,7 +25,6 @@ TerminalState :: struct {
 
     log_data: ^logext.Circular_Buffer_Logger_Data,
     fonts: [dynamic]font.Font,
-    font_bitmap: []u8,
     font_sprite_sheet: gfx.VulkanImage,
 
     repack_required: b32,
@@ -104,20 +103,17 @@ init :: proc (
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &new_state.uniforms.ortho)
 	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
 
+    // NOTE(jan): Meshes.
+    new_state.colored_mesh = gfx.vulkan_mesh_create(COLORED_VERTEX)
+    new_state.textured_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
+
     // NOTE(jan): Font.
     new_state.fonts = font.load_fonts()
-    bitmap, ok := font.pack_fonts_into_texture(new_state.fonts)
-    if !ok {
-        fmt.panicf("Could not load font bitmap.")
-    }
-    // TODO(jan): Ownership?
-    new_state.font_bitmap = bitmap[:]
 
     // NOTE(jan): Sampler for textures.
 	new_state.linear_sampler = gfx.vulkan_sampler_create_linear(vulkan)
 
     // NOTE(jan): Texture.
-    // TODO(jan): Store this with the bitmap.
     // NOTE(jan): Initial repack is required.
     new_state.repack_required = true
     extent := vk.Extent2D { 512, 512 }
@@ -174,18 +170,15 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
 
     // NOTE(jan): Update sampler.
     if state.repack_required {
-        // TODO(jan): Delete.
         bitmap, ok := font.pack_fonts_into_texture(state.fonts)
         if !ok {
             fmt.panicf("Could not load font bitmap.")
         }
-        // TODO(jan): Ownership?
-        state.font_bitmap = bitmap[:]
 
         gfx.vulkan_image_update_texture(
             vulkan,
             cmd,
-            state.font_bitmap,
+            bitmap[:],
             state.font_sprite_sheet,
         )
         gfx.vulkan_descriptor_update_combined_image_sampler(
@@ -200,10 +193,8 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
     }
 
     // NOTE(jan): Update mesh.
-    gfx.vulkan_mesh_destroy(vulkan, &state.textured_mesh)
-    state.textured_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
-    gfx.vulkan_mesh_destroy(vulkan, &state.colored_mesh)
-    state.colored_mesh = gfx.vulkan_mesh_create(COLORED_VERTEX)
+    gfx.vulkan_mesh_reset(&state.textured_mesh)
+    gfx.vulkan_mesh_reset(&state.colored_mesh)
     
     // NOTE(jan): Background.
     background_color := gfx.base02[:3]
@@ -269,10 +260,12 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
                 line_length = line_length,
             }
 
-            font.translate_span(&text_span)
-            repack_required := font.layout_span(default_font, &version, &text_span)
-
-            if repack_required do state.repack_required = true
+            {
+                context.allocator = context.temp_allocator
+                font.translate_span(&text_span)
+                repack_required := font.layout_span(default_font, &version, &text_span)
+                if repack_required do state.repack_required = true
+            }
 
             baseline += text_span.extent.y
             append(&text_spans, text_span)
@@ -302,10 +295,13 @@ prepare_frame :: proc (state: ^TerminalState, request: programs.PrepareFrame) {
                     text = line,
                     line_length = line_length,
                 }
-                font.translate_span(&text_span)
-                repack_required := font.layout_span(default_font, &version, &text_span)
-
-                if repack_required do state.repack_required = true
+                
+                {
+                    context.allocator = context.temp_allocator
+                    font.translate_span(&text_span)
+                    repack_required := font.layout_span(default_font, &version, &text_span)
+                    if repack_required do state.repack_required = true
+                }
 
                 baseline -= text_span.extent.y
                 append(&text_spans, text_span)
