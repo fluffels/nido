@@ -747,6 +747,8 @@ main :: proc() {
 			gfx.vulkan_buffer_destroy(&vulkan, &vulkan.temp_buffers[i])
 		}
 		vk.FreeCommandBuffers(vulkan.device, transient_cmd_pool, 1, &transient_cmd)
+
+		free_all(context.temp_allocator)
 	}
 
 	vk.DeviceWaitIdle(vulkan.device)
