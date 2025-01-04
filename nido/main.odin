@@ -578,6 +578,9 @@ main :: proc() {
 					#partial switch event.keysym.sym {
 						case sdl2.Keycode.ESCAPE: done = true
 						case sdl2.Keycode.TAB:
+							programs.cleanup(&program, &vulkan)
+							free_all(program.allocator)
+
 							registry.advance_program_index(&program_registry)
 							program = registry.get_current_program(program_registry)
 							do_resize = true
