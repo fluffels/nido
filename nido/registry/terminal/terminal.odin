@@ -444,7 +444,7 @@ cleanup :: proc (state: ^TerminalState, request: programs.Cleanup) {
     gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
 }
 
-handler :: proc (program: ^programs.Program, request: programs.Request) {
+handler :: proc (program: ^programs.BackEnd, request: programs.Request) {
     state := (^TerminalState)(program.state)
 
     context.allocator = program.allocator
@@ -469,8 +469,8 @@ handler :: proc (program: ^programs.Program, request: programs.Request) {
     }
 }
 
-make_program :: proc () -> programs.Program {
-    return programs.Program {
+make_program :: proc () -> programs.BackEnd {
+    return programs.BackEnd {
         name = "terminal",
         handler = handler,
     }

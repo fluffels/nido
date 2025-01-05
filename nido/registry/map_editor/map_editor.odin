@@ -289,7 +289,7 @@ cleanup :: proc (state: ^MapEditorState, request: programs.Cleanup) {
     save_map(state)
 }
 
-handler :: proc (program: ^programs.Program, request: programs.Request) {
+handler :: proc (program: ^programs.BackEnd, request: programs.Request) {
     state := (^MapEditorState)(program.state)
 
     context.allocator = program.allocator
@@ -314,8 +314,8 @@ handler :: proc (program: ^programs.Program, request: programs.Request) {
     }
 }
 
-make_program :: proc () -> programs.Program {
-    return programs.Program {
+make_program :: proc () -> programs.BackEnd {
+    return programs.BackEnd {
         name = "map_editor",
         handler = handler,
     }

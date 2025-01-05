@@ -50,17 +50,17 @@ Request :: union {
     Cleanup,
 }
 
-Program :: struct {
+BackEnd :: struct {
     arena: virtual.Arena,
     allocator: mem.Allocator,
     name: string,
-    handler: ProgramProc,
+    handler: BackEndProc,
     state: rawptr,
 }
 
-ProgramProc :: #type proc (program: ^Program, request: Request)
+BackEndProc :: #type proc (program: ^BackEnd, request: Request)
 
-initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, user_data: rawptr) {
+initialize :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, user_data: rawptr) {
     request := Initialize {
         vulkan = vulkan,
         user_data = user_data,
@@ -68,21 +68,21 @@ initialize :: proc (program: ^Program, vulkan: ^gfx.Vulkan, user_data: rawptr) {
     program.handler(program, request)
 }
 
-resize_end :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+resize_end :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan) {
     request := ResizeEnd {
         vulkan = vulkan,
     }
     program.handler(program, request)
 }
 
-resize_begin :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+resize_begin :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan) {
     request := ResizeBegin {
         vulkan = vulkan,
     }
     program.handler(program, request)
 }
 
-prepare_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, events: []Event, state: InputState, cmd: vk.CommandBuffer) {
+prepare_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, events: []Event, state: InputState, cmd: vk.CommandBuffer) {
     request := PrepareFrame {
         vulkan = vulkan,
         events = events,
@@ -92,7 +92,7 @@ prepare_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, events: []Event, 
     program.handler(program, request)
 }
 
-draw_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer, image_index: u32) {
+draw_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer, image_index: u32) {
     request := DrawFrame {
         vulkan = vulkan,
         cmd = cmd,
@@ -101,14 +101,14 @@ draw_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffe
     program.handler(program, request)
 }
 
-cleanup_frame :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+cleanup_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan) {
     request := CleanupFrame {
         vulkan = vulkan,
     }
     program.handler(program, request)
 }
 
-cleanup :: proc (program: ^Program, vulkan: ^gfx.Vulkan) {
+cleanup :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan) {
     request := Cleanup {
         vulkan = vulkan,
     }

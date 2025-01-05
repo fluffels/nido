@@ -7,11 +7,11 @@ import "terminal"
 
 Registry :: struct {
     current_program_index: int,
-    programs: [dynamic]programs.Program,
+    programs: [dynamic]programs.BackEnd,
 }
 
 @(private)
-register :: proc (registry: ^Registry, program: programs.Program) {
+register :: proc (registry: ^Registry, program: programs.BackEnd) {
     append(&registry.programs, program)
 }
 
@@ -19,7 +19,7 @@ advance_program_index :: proc (registry: ^Registry) {
     registry.current_program_index = (registry.current_program_index + 1) % len(registry.programs)
 }
 
-get_current_program :: proc (registry: Registry) -> programs.Program {
+get_current_program :: proc (registry: Registry) -> programs.BackEnd {
     return registry.programs[registry.current_program_index]
 }
 
