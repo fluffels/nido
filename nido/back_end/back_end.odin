@@ -22,7 +22,9 @@ ResizeBegin :: struct {
 PrepareFrame :: struct {
     vulkan: ^gfx.Vulkan,
     cmd: vk.CommandBuffer,
+    // TODO(jan): Remove. These are moved to 
     events: []Event,
+    // TODO(jan): Remove.
     input_state: InputState,
 }
 
