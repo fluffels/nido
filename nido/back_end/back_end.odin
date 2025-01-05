@@ -4,6 +4,7 @@ import "core:mem"
 import "core:mem/virtual"
 import vk "vendor:vulkan"
 
+import "../app"
 import gfx "../gfx"
 
 Initialize :: struct {
@@ -22,10 +23,11 @@ ResizeBegin :: struct {
 PrepareFrame :: struct {
     vulkan: ^gfx.Vulkan,
     cmd: vk.CommandBuffer,
+    app_cmd_lists: []app.CommandList,
     // TODO(jan): Remove. These are moved to Apps.
-    events: []Event,
+    events: []app.Event,
     // TODO(jan): Remove.
-    input_state: InputState,
+    input_state: app.InputState,
 }
 
 DrawFrame :: struct {
@@ -84,12 +86,13 @@ resize_begin :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan) {
     program.handler(program, request)
 }
 
-prepare_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, events: []Event, state: InputState, cmd: vk.CommandBuffer) {
+prepare_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, events: []app.Event, state: app.InputState, app_cmd_lists: []app.CommandList, cmd: vk.CommandBuffer) {
     request := PrepareFrame {
         vulkan = vulkan,
         events = events,
         input_state = state,
         cmd = cmd,
+        app_cmd_lists = app_cmd_lists
     }
     program.handler(program, request)
 }

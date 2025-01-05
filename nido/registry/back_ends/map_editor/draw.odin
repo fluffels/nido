@@ -3,8 +3,9 @@ package map_editor
 import "core:log"
 import "core:math"
 
-import "../../gfx"
-import "../../back_end"
+import "../../../app"
+import "../../../gfx"
+import "../../../back_end"
 
 push_box :: proc(state: ^MapEditorState, box: gfx.AABox, z: f32, color: gfx.Color) {
     vertices := [][][]f32 {
@@ -129,10 +130,10 @@ push_doodad :: proc(state: ^MapEditorState, x0: f32, y0: f32, z: f32, doodad: Do
     return result
 }
 
-clicked :: proc (box: gfx.AABox, events: []back_end.Event) -> bool {
+clicked :: proc (box: gfx.AABox, events: []app.Event) -> bool {
     for event in events {
         #partial switch e in event {
-            case back_end.Click:
+            case app.Click:
                 if (e.x >= box.left) && (e.x <= box.right) && (e.y >= box.top) && (e.y <= box.bottom) do return true
         }
     }
@@ -140,23 +141,23 @@ clicked :: proc (box: gfx.AABox, events: []back_end.Event) -> bool {
     return false
 }
 
-mouse_down :: proc (box: gfx.AABox, mouse: back_end.Mouse) -> bool {
+mouse_down :: proc (box: gfx.AABox, mouse: app.Mouse) -> bool {
     return mouse.left && (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
-mouse_down_middle :: proc (box: gfx.AABox, mouse: back_end.Mouse) -> bool {
+mouse_down_middle :: proc (box: gfx.AABox, mouse: app.Mouse) -> bool {
     return mouse.middle && (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
-mouse_down_right :: proc (box: gfx.AABox, mouse: back_end.Mouse) -> bool {
+mouse_down_right :: proc (box: gfx.AABox, mouse: app.Mouse) -> bool {
     return mouse.right && (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
-mouse_over :: proc (box: gfx.AABox, mouse: back_end.Mouse) -> bool {
+mouse_over :: proc (box: gfx.AABox, mouse: app.Mouse) -> bool {
     return (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
-draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []back_end.Event, input_state: back_end.InputState) {
+draw :: proc (vulkan: ^gfx.Vulkan, state: ^MapEditorState, events: []app.Event, input_state: app.InputState) {
     max_x := f32(vulkan.swap.extent.width)
     max_y := f32(vulkan.swap.extent.height)
 

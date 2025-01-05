@@ -10,8 +10,8 @@ import "core:os"
 import image "vendor:stb/image"
 import vk "vendor:vulkan"
 
-import "../../gfx"
-import "../../back_end"
+import "../../../gfx"
+import "../../../back_end"
 
 Uniforms :: struct {
 	ortho: gfx.mat4x4,

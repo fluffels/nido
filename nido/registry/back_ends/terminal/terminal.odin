@@ -8,10 +8,10 @@ import "core:strings"
 
 import vk "vendor:vulkan"
 
-import "../../font"
-import "../../gfx"
-import "../../logext"
-import "../../back_end"
+import "../../../font"
+import "../../../gfx"
+import "../../../logext"
+import "../../../back_end"
 
 import "core:unicode/utf8"
 

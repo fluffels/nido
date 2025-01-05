@@ -1,4 +1,4 @@
-package back_end
+package app
 
 import linalg "core:math/linalg"
 
