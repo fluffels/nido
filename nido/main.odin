@@ -18,7 +18,7 @@ import vk "vendor:vulkan"
 
 import "logext"
 import "gfx"
-import "programs"
+import "back_end"
 import "registry"
 
 vulkan_debug :: proc "stdcall" (
@@ -533,18 +533,18 @@ main :: proc() {
 	cmd_pool := gfx.vulkan_cmd_create_per_frame_pool(vulkan)
 	cmd      := gfx.vulkan_cmd_allocate_buffer(vulkan, cmd_pool)
 
-	// NOTE(jan): Initialize registry of programs.
+	// NOTE(jan): Initialize registry of back_end.
 	program_registry := registry.make()
 
 	// NOTE(jan): Create arena for each program.
-	for p, i in program_registry.programs {
-		alloc_error := virtual.arena_init_growing(&program_registry.programs[i].arena)
+	for p, i in program_registry.back_end {
+		alloc_error := virtual.arena_init_growing(&program_registry.back_end[i].arena)
 		if alloc_error != virtual.Allocator_Error.None do panic("could not initialize program allocator")
-		program_registry.programs[i].allocator = virtual.arena_allocator(&program_registry.programs[i].arena)
+		program_registry.back_end[i].allocator = virtual.arena_allocator(&program_registry.back_end[i].arena)
 	}
 
 	// NOTE(jan): Select current program.
-	program := program_registry.programs[program_registry.current_program_index]
+	program := program_registry.back_end[program_registry.current_program_index]
 
 	// NOTE(jan): Main loop.
 	done := false;
@@ -561,15 +561,15 @@ main :: proc() {
 		vulkan.temp_buffers = make([dynamic]gfx.VulkanBuffer, context.temp_allocator)
 
 		// NOTE(jan): Handle events.
-		events := make([dynamic]programs.Event, context.temp_allocator)
-		input_state: programs.InputState
+		events := make([dynamic]back_end.Event, context.temp_allocator)
+		input_state: back_end.InputState
 
 		sdl2.PumpEvents();
 		for event: sdl2.Event; sdl2.PollEvent(&event); {
 			#partial switch event.type {
 				case sdl2.EventType.MOUSEBUTTONDOWN:
 					event: sdl2.MouseButtonEvent = event.button;
-					append(&events, programs.Click {
+					append(&events, back_end.Click {
 						x = f32(event.x),
 						y = f32(event.y),
 					})
@@ -578,7 +578,7 @@ main :: proc() {
 					#partial switch event.keysym.sym {
 						case sdl2.Keycode.ESCAPE: done = true
 						case sdl2.Keycode.TAB:
-							programs.cleanup(&program, &vulkan)
+							back_end.cleanup(&program, &vulkan)
 							free_all(program.allocator)
 
 							registry.advance_program_index(&program_registry)
@@ -605,13 +605,13 @@ main :: proc() {
 			delta := pos - last_frame_mouse
 			keys := sdl2.GetKeyboardState(nil)
 			input_state.ticks = sdl2.GetTicks()
-			input_state.keyboard = programs.Keyboard {
+			input_state.keyboard = back_end.Keyboard {
 				left = keys[sdl2.SCANCODE_LEFT] != 0,
 				right = keys[sdl2.SCANCODE_RIGHT] != 0,
 				up = keys[sdl2.SCANCODE_UP] != 0,
 				down = keys[sdl2.SCANCODE_DOWN] != 0,
 			}
-			input_state.mouse = programs.Mouse {
+			input_state.mouse = back_end.Mouse {
 				pos = pos,
 				delta = delta,
 				left = ((button & sdl2.BUTTON_LMASK) != 0),
@@ -627,18 +627,18 @@ main :: proc() {
 		if (do_init) {
 			do_init = false
 
-			programs.cleanup(&program, &vulkan)
+			back_end.cleanup(&program, &vulkan)
 			free_all(program.allocator)
 			log.infof("Initializing program %s", program.name)
 			
 			if program.name == "terminal" {
-				programs.initialize(&program, &vulkan, mem_logger.data)
+				back_end.initialize(&program, &vulkan, mem_logger.data)
 			} else {
-				programs.initialize(&program, &vulkan, nil)
+				back_end.initialize(&program, &vulkan, nil)
 			}
 
 			// NOTE(jan): Create render passes first time through.
-			programs.resize_end(&program, &vulkan)
+			back_end.resize_end(&program, &vulkan)
 		}
 
 		// NOTE(jan): Resize framebuffers and swap chain.
@@ -647,7 +647,7 @@ main :: proc() {
 
 			vk.QueueWaitIdle(vulkan.gfx_queue)
 
-			programs.resize_begin(&program, &vulkan)
+			back_end.resize_begin(&program, &vulkan)
 
 			gfx.vulkan_swap_destroy(&vulkan)
 			free_all(vulkan.resize_allocator)
@@ -656,12 +656,12 @@ main :: proc() {
 			gfx.vulkan_swap_update_extent(&vulkan)
 			gfx.vulkan_swap_create(&vulkan)
 
-			programs.resize_end(&program, &vulkan)
+			back_end.resize_end(&program, &vulkan)
 		}
 
 		// NOTE(jan): Allocate a transient command buffer for before-frame actions like updating uniforms.
 		transient_cmd := gfx.vulkan_cmd_allocate_and_begin_transient(vulkan, transient_cmd_pool)
-		programs.prepare_frame(&program, &vulkan, events[:], input_state, transient_cmd)
+		back_end.prepare_frame(&program, &vulkan, events[:], input_state, transient_cmd)
 		gfx.vulkan_cmd_end_and_submit(vulkan, &transient_cmd)
 
 		// NOTE(jan): Acquire next swap image.
@@ -698,7 +698,7 @@ main :: proc() {
 			"could not begin cmd buffer",
 		)
 
-		programs.draw_frame(&program, &vulkan, cmd, swap_image_index)
+		back_end.draw_frame(&program, &vulkan, cmd, swap_image_index)
 
 		vk.EndCommandBuffer(cmd)
 
@@ -748,7 +748,7 @@ main :: proc() {
 		// PERF(jan): This might be slow.
 		vk.QueueWaitIdle(vulkan.gfx_queue)
 
-		programs.cleanup_frame(&program, &vulkan)
+		back_end.cleanup_frame(&program, &vulkan)
 
 		for buffer, i in vulkan.temp_buffers {
 			gfx.vulkan_buffer_destroy(&vulkan, &vulkan.temp_buffers[i])
@@ -757,5 +757,5 @@ main :: proc() {
 	}
 
 	vk.DeviceWaitIdle(vulkan.device)
-	programs.cleanup(&program, &vulkan)
+	back_end.cleanup(&program, &vulkan)
 }

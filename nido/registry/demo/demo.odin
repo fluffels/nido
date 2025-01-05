@@ -8,7 +8,7 @@ import "core:mem/virtual"
 import vk "vendor:vulkan"
 
 import "../../gfx"
-import "../../programs"
+import "../../back_end"
 
 Uniforms :: struct {
     mvp: gfx.mat4x4,
@@ -54,7 +54,7 @@ VERTEX_DESCRIPTION := gfx.VertexDescription {
     },
 }
 
-init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^DemoState) {
+init :: proc (state: ^DemoState, request: back_end.Initialize,) -> (new_state: ^DemoState) {
     vulkan := request.vulkan
 
     new_state = new(DemoState)
@@ -112,15 +112,15 @@ init :: proc (state: ^DemoState, request: programs.Initialize,) -> (new_state: ^
     return
 }
 
-resize_end :: proc (state: ^DemoState, request: programs.ResizeEnd) {
+resize_end :: proc (state: ^DemoState, request: back_end.ResizeEnd) {
     state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
 }
 
-resize_begin :: proc (state: ^DemoState, request: programs.ResizeBegin) {
+resize_begin :: proc (state: ^DemoState, request: back_end.ResizeBegin) {
     gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
 }
 
-prepare_frame :: proc (state: ^DemoState, request: programs.PrepareFrame) {
+prepare_frame :: proc (state: ^DemoState, request: back_end.PrepareFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
 
@@ -147,7 +147,7 @@ prepare_frame :: proc (state: ^DemoState, request: programs.PrepareFrame) {
     )
 }
 
-draw_frame :: proc (state: ^DemoState, request: programs.DrawFrame) {
+draw_frame :: proc (state: ^DemoState, request: back_end.DrawFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
     vulkan_pass := state.vulkan_pass
@@ -191,9 +191,9 @@ draw_frame :: proc (state: ^DemoState, request: programs.DrawFrame) {
     vk.CmdEndRenderPass(cmd)
 }
 
-cleanup_frame :: proc (state: ^DemoState, request: programs.CleanupFrame) { }
+cleanup_frame :: proc (state: ^DemoState, request: back_end.CleanupFrame) { }
 
-cleanup :: proc (state: ^DemoState, request: programs.Cleanup) {
+cleanup :: proc (state: ^DemoState, request: back_end.Cleanup) {
     if state == nil do return
 
     vulkan := request.vulkan
@@ -207,33 +207,33 @@ cleanup :: proc (state: ^DemoState, request: programs.Cleanup) {
     gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
 }
 
-handler :: proc (program: ^programs.BackEnd, request: programs.Request) {
+handler :: proc (program: ^back_end.BackEnd, request: back_end.Request) {
     state := (^DemoState)(program.state)
 
     context.allocator = program.allocator
 
     switch r in request {
-        case programs.Initialize:
+        case back_end.Initialize:
             program.state = init(state, r)
-        case programs.ResizeEnd:
+        case back_end.ResizeEnd:
             resize_end(state, r)
-        case programs.ResizeBegin:
+        case back_end.ResizeBegin:
             resize_begin(state, r)
-        case programs.PrepareFrame:
+        case back_end.PrepareFrame:
             prepare_frame(state, r)
-        case programs.DrawFrame:
+        case back_end.DrawFrame:
             draw_frame(state, r)
-        case programs.CleanupFrame:
+        case back_end.CleanupFrame:
             cleanup_frame(state, r)
-        case programs.Cleanup:
+        case back_end.Cleanup:
             cleanup(state, r)
         case:
             panic("unhandled request")
     }
 }
 
-make_program :: proc () -> programs.BackEnd {
-    return programs.BackEnd {
+make_program :: proc () -> back_end.BackEnd {
+    return back_end.BackEnd {
         name = "demo",
         handler = handler,
     }

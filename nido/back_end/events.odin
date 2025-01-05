@@ -1,4 +1,4 @@
-package programs
+package back_end
 
 Click :: struct {
     x: f32,

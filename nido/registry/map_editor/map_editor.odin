@@ -11,7 +11,7 @@ import image "vendor:stb/image"
 import vk "vendor:vulkan"
 
 import "../../gfx"
-import "../../programs"
+import "../../back_end"
 
 Uniforms :: struct {
 	ortho: gfx.mat4x4,
@@ -93,7 +93,7 @@ TEXTURED_VERTEX := gfx.VertexDescription {
     },
 }
 
-init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_state: ^MapEditorState) {
+init :: proc (state: ^MapEditorState, request: back_end.Initialize,) -> (new_state: ^MapEditorState) {
     vulkan := request.vulkan
 
     new_state = new(MapEditorState)
@@ -131,15 +131,15 @@ init :: proc (state: ^MapEditorState, request: programs.Initialize,) -> (new_sta
     return
 }
 
-resize_begin :: proc (state: ^MapEditorState, request: programs.ResizeBegin) {
+resize_begin :: proc (state: ^MapEditorState, request: back_end.ResizeBegin) {
     gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
 }
 
-resize_end :: proc (state: ^MapEditorState, request: programs.ResizeEnd) {
+resize_end :: proc (state: ^MapEditorState, request: back_end.ResizeEnd) {
     state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
 }
 
-prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
+prepare_frame :: proc (state: ^MapEditorState, request: back_end.PrepareFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
 
@@ -209,7 +209,7 @@ prepare_frame :: proc (state: ^MapEditorState, request: programs.PrepareFrame) {
 	gfx.vulkan_mesh_upload(vulkan, &state.textured_mesh)
 }
 
-draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
+draw_frame :: proc (state: ^MapEditorState, request: back_end.DrawFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
     vulkan_pass := state.vulkan_pass
@@ -270,9 +270,9 @@ draw_frame :: proc (state: ^MapEditorState, request: programs.DrawFrame) {
     vk.CmdEndRenderPass(cmd)
 }
 
-cleanup_frame :: proc (state: ^MapEditorState, request: programs.CleanupFrame) { }
+cleanup_frame :: proc (state: ^MapEditorState, request: back_end.CleanupFrame) { }
 
-cleanup :: proc (state: ^MapEditorState, request: programs.Cleanup) {
+cleanup :: proc (state: ^MapEditorState, request: back_end.Cleanup) {
     if state == nil do return
 
     vulkan := request.vulkan
@@ -289,33 +289,33 @@ cleanup :: proc (state: ^MapEditorState, request: programs.Cleanup) {
     save_map(state)
 }
 
-handler :: proc (program: ^programs.BackEnd, request: programs.Request) {
+handler :: proc (program: ^back_end.BackEnd, request: back_end.Request) {
     state := (^MapEditorState)(program.state)
 
     context.allocator = program.allocator
 
     switch r in request {
-        case programs.Initialize:
+        case back_end.Initialize:
             program.state = init(state, r)
-        case programs.ResizeEnd:
+        case back_end.ResizeEnd:
             resize_end(state, r)
-        case programs.ResizeBegin:
+        case back_end.ResizeBegin:
             resize_begin(state, r)
-        case programs.PrepareFrame:
+        case back_end.PrepareFrame:
             prepare_frame(state, r)
-        case programs.DrawFrame:
+        case back_end.DrawFrame:
             draw_frame(state, r)
-        case programs.CleanupFrame:
+        case back_end.CleanupFrame:
             cleanup_frame(state, r)
-        case programs.Cleanup:
+        case back_end.Cleanup:
             cleanup(state, r)
         case:
             panic("unhandled request")
     }
 }
 
-make_program :: proc () -> programs.BackEnd {
-    return programs.BackEnd {
+make_program :: proc () -> back_end.BackEnd {
+    return back_end.BackEnd {
         name = "map_editor",
         handler = handler,
     }
