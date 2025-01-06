@@ -12,7 +12,7 @@ RegisterTextureCommand :: struct {
 
 DrawBoxCommand :: struct {
     quad: Quad,
-    color: [3]f32,
+    color: [4]f32,
     z: f32,
 }
 
@@ -34,7 +34,7 @@ CommandList :: struct {
     commands: [dynamic]Command,
 }
 
-cmd_draw_box :: proc (cmds: ^CommandList, box: Quad, color: [3]f32, z: f32) {
+cmd_draw_box :: proc (cmds: ^CommandList, box: Quad, color: [4]f32, z: f32) {
     cmd := DrawBoxCommand {
         quad = box,
         color = color,

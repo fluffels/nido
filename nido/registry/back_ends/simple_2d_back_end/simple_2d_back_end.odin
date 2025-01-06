@@ -68,8 +68,8 @@ COLOR_VERTEX := gfx.VertexDescription {
             component_count = 3,
         },
         {
-            // NOTE(jan): RGBA.
-            component_count = 4,
+            // NOTE(jan): RGB.
+            component_count = 3,
         },
     },
 }
@@ -105,6 +105,7 @@ init :: proc (state: ^Simple2DBackEnd, request: back_end.Initialize,) -> (new_st
     // NOTE(jan): Meshes.
     new_state.box_mesh = gfx.vulkan_mesh_create(COLOR_VERTEX)
     new_state.glyph_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
+    new_state.textured_quad_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
 
     return
 }
@@ -120,6 +121,10 @@ resize_end :: proc (state: ^Simple2DBackEnd, request: back_end.ResizeEnd) {
 prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
+
+	// NOTE(jan): Upload meshes.
+    gfx.vulkan_mesh_reset(&state.box_mesh)
+    gfx.vulkan_mesh_reset(&state.glyph_mesh)
 
     for app_cmd_list in request.app_cmd_lists {
         if app_cmd_list.type != "simple_2d_front_end" {
@@ -138,6 +143,10 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         }
     }
 
+    gfx.vulkan_mesh_upload(vulkan, &state.box_mesh)
+	gfx.vulkan_mesh_upload(vulkan, &state.glyph_mesh)
+	gfx.vulkan_mesh_upload(vulkan, &state.textured_quad_mesh)
+
     // NOTE(jan): Update uniforms.
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
@@ -145,15 +154,6 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         // NOTE(jan): Assume that descriptor set 0 is always uniforms.
         gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
     }
-
-	// NOTE(jan): Upload meshes.
-    gfx.vulkan_mesh_reset(&state.box_mesh)
-    gfx.vulkan_mesh_reset(&state.glyph_mesh)
-
-    // draw(vulkan, state, request.events, request.input_state)
-
-    gfx.vulkan_mesh_upload(vulkan, &state.box_mesh)
-	gfx.vulkan_mesh_upload(vulkan, &state.glyph_mesh)
 }
 
 draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {

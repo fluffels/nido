@@ -13,6 +13,8 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
 
     tex_handle := simple_2d_front_end.cmd_register_texture(command_list, "tinyrts.png")
 
+    simple_2d_front_end.cmd_draw_box(command_list, { { 0, 0 }, { 200, 200 }, }, { 1, 0, 0, 1 }, 0)
+
     result.type = "simple_2d_front_end"
     result.list = cast(rawptr)command_list
 
