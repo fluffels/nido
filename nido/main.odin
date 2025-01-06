@@ -586,6 +586,7 @@ main :: proc() {
 
 	// NOTE(jan): Main loop.
 	done := false;
+	isMinimized := false;
 	// NOTE(jan): Initialize back end first time through.
 	do_init := true
 	do_resize := false;
@@ -632,7 +633,19 @@ main :: proc() {
 					}
 				case sdl2.EventType.QUIT:
 					done = true;
+				case sdl2.EventType.WINDOWEVENT:
+					#partial switch event.window.event {
+						case .MINIMIZED:
+							isMinimized = true
+						case .RESTORED:
+							isMinimized = false
+					}
 			}
+		}
+
+		if isMinimized {
+			sdl2.WaitEvent(nil)
+			continue
 		}
 
 		// NOTE(jan): Fill out input state.
@@ -683,6 +696,13 @@ main :: proc() {
 		if (do_resize) {
 			do_resize = false
 
+			gfx.vulkan_swap_update_capabilities(&vulkan)
+			gfx.vulkan_swap_update_extent(&vulkan)
+
+			if (vulkan.swap.extent.height == 0) || (vulkan.swap.extent.width == 0) {
+				continue
+			}
+
 			vk.QueueWaitIdle(vulkan.gfx_queue)
 
 			back_end.resize_begin(&current_back_end, &vulkan)
@@ -690,8 +710,6 @@ main :: proc() {
 			gfx.vulkan_swap_destroy(&vulkan)
 			free_all(vulkan.resize_allocator)
 
-			gfx.vulkan_swap_update_capabilities(&vulkan)
-			gfx.vulkan_swap_update_extent(&vulkan)
 			gfx.vulkan_swap_create(&vulkan)
 
 			back_end.resize_end(&current_back_end, &vulkan)
