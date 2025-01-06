@@ -19,6 +19,7 @@ MapEditor :: struct {
     tile_width: f32,
     tile_height: f32,
     sprite_sheet_extent: [2]f32,
+    sprite_sheet_handle: Maybe(u32),
     sprite_width: f32,
     sprite_height: f32,
     zoom: f32,

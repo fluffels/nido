@@ -113,7 +113,10 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     result.type = "simple_2d_front_end"
     result.list = cast(rawptr)cmds
 
-    tex_handle := fe.cmd_register_texture(cmds, "tinyrts.png")
+    if state.sprite_sheet_handle == nil {
+        state.sprite_sheet_handle = fe.cmd_register_texture(cmds)
+        fe.cmd_update_texture_from_file_command(cmds, state.sprite_sheet_handle.?, "tinyrts.png")
+    }
 
     max_x := f32(input_state.screen.x)
     max_y := f32(input_state.screen.y)

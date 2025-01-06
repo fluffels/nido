@@ -123,7 +123,9 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
     vulkan := request.vulkan
 
 	// NOTE(jan): Upload meshes.
+    // TODO(jan): Separate meshes are very error-prone.
     gfx.vulkan_mesh_reset(&state.box_mesh)
+    gfx.vulkan_mesh_reset(&state.textured_quad_mesh)
     gfx.vulkan_mesh_reset(&state.glyph_mesh)
 
     for app_cmd_list in request.app_cmd_lists {
@@ -137,6 +139,8 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
                     cmd_draw_box(state, c)
                 case simple_2d_front_end.RegisterTextureCommand:
                     cmd_register_texture(state, c, request)
+                case simple_2d_front_end.UpdateTextureFromFileCommand:
+                    cmd_update_texture_from_file(state, c, request)
                 case simple_2d_front_end.DrawTexturedQuadCommand:
                     cmd_draw_textured_quad(state, c)
             }

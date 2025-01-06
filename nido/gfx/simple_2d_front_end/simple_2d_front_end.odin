@@ -7,6 +7,10 @@ Quad :: struct {
 
 RegisterTextureCommand :: struct {
     handle: u32,
+}
+
+UpdateTextureFromFileCommand :: struct {
+    handle: u32,
     fname: string,
 }
 
@@ -27,6 +31,7 @@ Command :: union {
     DrawBoxCommand,
     DrawTexturedQuadCommand,
     RegisterTextureCommand,
+    UpdateTextureFromFileCommand,
 }
 
 CommandList :: struct {
@@ -52,14 +57,21 @@ cmd_draw_textured_quad :: proc (cmds: ^CommandList, box: Quad, tex: Quad, z: f32
     append(&cmds.commands, cmd)
 }
 
-cmd_register_texture :: proc (cmds: ^CommandList, fname: string) -> (handle: u32) {
+cmd_register_texture :: proc (cmds: ^CommandList) -> (handle: u32) {
     cmd := RegisterTextureCommand {
         handle = cmds.last_texture_handle,
-        fname = fname
     }
     append(&cmds.commands, cmd)
     cmds.last_texture_handle += 1
     return cmd.handle
+}
+
+cmd_update_texture_from_file_command :: proc (cmds: ^CommandList, handle: u32, fname: string) {
+    cmd := UpdateTextureFromFileCommand {
+        handle = handle,
+        fname = fname
+    }
+    append(&cmds.commands, cmd)
 }
 
 make_list :: proc () -> (result: ^CommandList) {
