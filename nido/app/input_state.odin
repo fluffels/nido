@@ -22,6 +22,7 @@ Keyboard :: struct {
 }
 
 InputState :: struct {
+    screen: [2]u32,
     ticks: u32,
     slice: u32,
     keyboard: Keyboard,

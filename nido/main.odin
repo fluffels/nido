@@ -715,6 +715,10 @@ main :: proc() {
 			back_end.resize_end(&current_back_end, &vulkan)
 		}
 
+		// NOTE(jan): Update input state screen res since it may have changed during resize.
+		input_state.screen.x = vulkan.swap.extent.width
+		input_state.screen.y = vulkan.swap.extent.height
+
 		// NOTE(jan): Collect commands from all currently running apps.
 		app_cmd_lists := make([dynamic]app.CommandList, context.temp_allocator)
 		append(&app_cmd_lists, current_app.emit_commands_proc(&current_app, events[:], input_state))
