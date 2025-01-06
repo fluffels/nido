@@ -154,6 +154,18 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         // NOTE(jan): Assume that descriptor set 0 is always uniforms.
         gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
     }
+    
+    // NOTE(jan): Update sampler.
+    // TODO(jan): Actually handle mapping between texture registry and this
+    textured_pipeline := state.vulkan_pass.pipelines["textured_quads"] or_else panic("No textured pipeline")
+    sprite_sheet := state.texture_registry.textures[0].image
+    gfx.vulkan_descriptor_update_combined_image_sampler(
+        vulkan,
+        textured_pipeline.descriptor_sets[0],
+        1,
+        []gfx.VulkanImage { sprite_sheet },
+        state.sampler,
+    )
 }
 
 draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
@@ -210,8 +222,8 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
             raw_data(pipeline.descriptor_sets),
             0, nil,
         )
-        gfx.vulkan_mesh_bind(cmd, &state.glyph_mesh)
-        vk.CmdDrawIndexed(cmd, u32(len(state.glyph_mesh.indices)), 1, 0, 0, 0)
+        gfx.vulkan_mesh_bind(cmd, &state.textured_quad_mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(state.textured_quad_mesh.indices)), 1, 0, 0, 0)
     }
 
     vk.CmdEndRenderPass(cmd)

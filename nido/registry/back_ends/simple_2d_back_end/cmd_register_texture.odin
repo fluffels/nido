@@ -28,11 +28,6 @@ cmd_register_texture :: proc (state: ^Simple2DBackEnd, command: simple_2d_front_
         }
     }
 
-    registration := TextureRegistration {
-        handle = command.handle
-    }
-    append(&state.texture_registry.textures, registration)
-
     sprite_sheet_path := path.join({".", "textures", command.fname}, context.temp_allocator)
     sprite_sheet_filename, _ := path.to_slash(sprite_sheet_path, context.temp_allocator)
     sprite_sheet_bytes, success := os.read_entire_file_from_filename(sprite_sheet_filename, context.temp_allocator)
@@ -51,6 +46,9 @@ cmd_register_texture :: proc (state: ^Simple2DBackEnd, command: simple_2d_front_
 
             pixels: []u8 = sprite_sheet_pixels[0:size]
 
+            registration := TextureRegistration {
+                handle = command.handle
+            }
             registration.image = gfx.vulkan_image_create_2d_rgba_texture(request.vulkan, extent)
             gfx.vulkan_image_update_texture(
                 request.vulkan,
@@ -58,6 +56,8 @@ cmd_register_texture :: proc (state: ^Simple2DBackEnd, command: simple_2d_front_
                 pixels,
                 registration.image,
             )
+            append(&state.texture_registry.textures, registration)
+
             image.image_free(sprite_sheet_pixels)
         }
     }

@@ -573,11 +573,13 @@ main :: proc() {
 		reg.back_end[i].allocator = virtual.arena_allocator(&reg.back_end[i].arena)
 	}
 
-	// NOTE(jan): Create arena for each App.
-	for _, i in reg.app {
-		alloc_error := virtual.arena_init_growing(&reg.app[i].arena)
+	// NOTE(jan): Initialize Apps.
+	for &a, i in reg.app {
+		alloc_error := virtual.arena_init_growing(&a.arena)
 		if alloc_error != virtual.Allocator_Error.None do panic("could not initialize app allocator")
-		reg.app[i].allocator = virtual.arena_allocator(&reg.app[i].arena)
+		a.allocator = virtual.arena_allocator(&a.arena)
+
+		app.initialize(&a, nil)
 	}
 
 	// NOTE(jan): Select current back end.
