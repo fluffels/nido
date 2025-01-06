@@ -11,7 +11,7 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
         command_list = simple_2d_front_end.make_list()
     }
 
-    simple_2d_front_end.cmd_register_texture(command_list, "tinyrts.png")
+    tex_handle := simple_2d_front_end.cmd_register_texture(command_list, "tinyrts.png")
 
     result.type = "simple_2d_front_end"
     result.list = cast(rawptr)command_list

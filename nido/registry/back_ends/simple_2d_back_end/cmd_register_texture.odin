@@ -21,6 +21,13 @@ TextureRegistry :: struct {
 }
 
 cmd_register_texture :: proc (state: ^Simple2DBackEnd, command: simple_2d_front_end.RegisterTextureCommand, request: back_end.PrepareFrame) {
+    // NOTE(jan): Check if the texture has already been handled.
+    for &registration in state.texture_registry.textures {
+        if registration.handle == command.handle {
+            return
+        }
+    }
+
     registration := TextureRegistration {
         handle = command.handle
     }
@@ -54,4 +61,6 @@ cmd_register_texture :: proc (state: ^Simple2DBackEnd, command: simple_2d_front_
             image.image_free(sprite_sheet_pixels)
         }
     }
+
+    // TODO(jan): This allocates memory on the video card. It should be deallocated when no longer needed.
 }

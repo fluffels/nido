@@ -57,6 +57,27 @@ main :: proc() {
 	context.logger = log.create_multi_logger(file_logger, mem_logger)
 	log.infof("Logging initialized")
 
+	// NOTE(jan): Tacking allocator.
+	when ODIN_DEBUG {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
+
+		defer {
+			if len(track.allocation_map) > 0 {
+				for _, entry in track.allocation_map {
+					fmt.eprintf("%v leaked %v bytes\n", entry.location, entry.size)
+				}
+			}
+			if len(track.bad_free_array) > 0 {
+				for entry in track.bad_free_array {
+					fmt.eprintf("%v bad free at %v\n", entry.location, entry.memory)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
+
 	// NOTE(jan): Load Vulkan functions.
 	vk_dll := dynlib.load_library("vulkan-1.dll") or_else panic("Couldn't load vulkan-1.dll!")
 	log.infof("Loaded vulkan-1.dll")
@@ -497,6 +518,14 @@ main :: proc() {
 		}
 	}
 
+	// NOTE(jan): Allocator for all Vulkan objects that need to persist as long as the device does.
+	{
+		alloc_error := virtual.arena_init_growing(&vulkan.device_arena)
+		if alloc_error != virtual.Allocator_Error.None do panic("could not initialize vulkan device allocator")
+		vulkan.device_allocator = virtual.arena_allocator(&vulkan.device_arena)
+	}
+	
+	// NOTE(jan): Create initial swap chain.
 	gfx.vulkan_swap_create(&vulkan)
 
 	// NOTE(jan): Create shader modules.
@@ -535,7 +564,7 @@ main :: proc() {
 	cmd      := gfx.vulkan_cmd_allocate_buffer(vulkan, cmd_pool)
 
 	// NOTE(jan): Initialize registry.
-	reg := registry.make()
+	reg := registry.make_registry()
 
 	// NOTE(jan): Create arena for each back_end.
 	for _, i in reg.back_end {
@@ -669,11 +698,11 @@ main :: proc() {
 		}
 
 		// NOTE(jan): Collect commands from all currently running apps.
-		app_cmd_lists := new([dynamic]app.CommandList, context.temp_allocator)
-		append(app_cmd_lists, current_app.emit_commands_proc(&current_app, events[:], input_state))
+		app_cmd_lists := make([dynamic]app.CommandList, context.temp_allocator)
+		append(&app_cmd_lists, current_app.emit_commands_proc(&current_app, events[:], input_state))
 		for &a in reg.app {
 			if app.is_system_app(&a) {
-				append(app_cmd_lists, a.emit_commands_proc(&a, events[:], input_state))
+				append(&app_cmd_lists, a.emit_commands_proc(&a, events[:], input_state))
 			}
 		}
 
@@ -776,4 +805,17 @@ main :: proc() {
 
 	vk.DeviceWaitIdle(vulkan.device)
 	back_end.cleanup(&current_back_end, &vulkan)
+
+	// NOTE(jan): This fixes false positives in the leak without having to free unnecessarily in prod.
+	when ODIN_DEBUG {
+		for a in reg.app {
+			free_all(a.allocator)
+		}
+		for b in reg.back_end {
+			free_all(b.allocator)
+		}
+		free_all(reg.allocator)
+		free_all(context.temp_allocator)
+		free_all(vulkan.device_allocator)
+	}
 }

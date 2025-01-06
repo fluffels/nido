@@ -2,6 +2,7 @@ package gfx
 
 import "core:log"
 import "core:mem"
+import "core:mem/virtual"
 import vk "vendor:vulkan"
 
 // NOTE(jan): Global Vulkan-related state goes in one of these.
@@ -27,6 +28,9 @@ Vulkan :: struct {
 
     modules: map[string]VulkanModule,
 
+    // NOTE(jan): Contains objects that live for as long as the device, i.e. shader objects.
+    device_arena: virtual.Arena,
+    device_allocator: mem.Allocator,
 	// NOTE(jan): Contains objects allocated between window resizes, i.e. swapchains, pipelines, etc.
 	resize_pool: mem.Dynamic_Pool,
 	resize_allocator: mem.Allocator,

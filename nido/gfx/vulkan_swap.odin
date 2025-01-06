@@ -69,6 +69,7 @@ vulkan_swap_create :: proc(vulkan: ^Vulkan) {
         "could not fetch swapchain images",
     )
 
+    vulkan.swap.views = make([dynamic]vk.ImageView, vulkan.device_allocator)
     for i in 0..<count {
         view := view_create(
             vulkan^,

@@ -29,12 +29,13 @@ CommandList :: struct {
     commands: [dynamic]Command,
 }
 
-cmd_register_texture :: proc (cmds: ^CommandList, fname: string) {
+cmd_register_texture :: proc (cmds: ^CommandList, fname: string) -> (handle: u32) {
     cmd := RegisterTextureCommand {
         handle = cmds.last_texture_handle,
         fname = fname
     }
     append(&cmds.commands, cmd)
+    return cmd.handle
 }
 
 make_list :: proc () -> (result: ^CommandList) {

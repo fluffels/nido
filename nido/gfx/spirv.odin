@@ -2,6 +2,7 @@ package gfx
 
 import "core:fmt"
 import "core:log"
+import "core:mem"
 import "core:strings"
 import vk "vendor:vulkan"
 
@@ -573,6 +574,8 @@ fill_type_description :: proc(
     type_id: u32,
     types: map[u32]SpirvType,
     description: ^TypeDescription,
+    allocator: mem.Allocator,
+    loc := #caller_location,
 ) {
     type := types[type_id]
     switch t in type {
@@ -600,15 +603,15 @@ fill_type_description :: proc(
         case SpirvVec:
             description.dimensions = Dimensionality.VECTOR
             scalar_type_id := t.component_type_id
-            scalar_type := new(TypeDescription)
-            fill_type_description(scalar_type_id, types, scalar_type)
+            scalar_type := new(TypeDescription, allocator)
+            fill_type_description(scalar_type_id, types, scalar_type, allocator)
             description.component_type = scalar_type
             description.component_count = int(t.component_count)
         case SpirvMatrix:
             description.dimensions = Dimensionality.MATRIX
             vector_type_id := t.column_type_id
-            vector_type := new(TypeDescription)
-            fill_type_description(vector_type_id, types, vector_type)
+            vector_type := new(TypeDescription, allocator)
+            fill_type_description(vector_type_id, types, vector_type, allocator)
             description.component_type = vector_type
             description.component_count = int(t.column_count)
         case SpirvImage:
@@ -624,19 +627,19 @@ fill_type_description :: proc(
         case SpirvArray:
             description.dimensions = Dimensionality.ARRAY
             scalar_type_id := t.element_type_id
-            scalar_type := new(TypeDescription)
-            fill_type_description(scalar_type_id, types, scalar_type)
+            scalar_type := new(TypeDescription, allocator)
+            fill_type_description(scalar_type_id, types, scalar_type, allocator)
             description.component_type = scalar_type
             description.component_count = int(t.length)
         case SpirvStruct:
             struct_description := StructDescription {
-                fields = make([dynamic]TypeDescription),
+                fields = make([dynamic]TypeDescription, allocator),
             }
             for element_type_id in t.element_type_ids {
                 field_index := len(struct_description.fields)
                 append(&struct_description.fields, TypeDescription {})
                 field := struct_description.fields[field_index]
-                fill_type_description(element_type_id, types, &field)
+                fill_type_description(element_type_id, types, &field, allocator)
             }
             description.dimensions = Dimensionality.STRUCT
             description.component_type = struct_description
@@ -650,6 +653,8 @@ fill_type_description :: proc(
 
 parse :: proc(
     bytes: []u8,
+    allocator: mem.Allocator,
+    loc := #caller_location,
 ) -> (
     description: ShaderModuleDescription,
     ok: b32,
@@ -855,18 +860,19 @@ parse :: proc(
         }
 
         desc: VariableDescription
-        desc.name = strings.clone(names[var.id])
+        desc.name = strings.clone(names[var.id], allocator)
 
         pointer_id := var.type_id
         pointer := pointers[pointer_id]
         type_id := pointer.type_id
         type := types[type_id]
-        fill_type_description(type_id, types, &desc.type)
+        fill_type_description(type_id, types, &desc.type, allocator)
 
         var_id_to_desc[var_id] = desc
     }
 
     // NOTE(jan): Store uniforms.
+    description.uniforms = make([dynamic]UniformDescription, allocator)
     for var_id, var in vars {
         if (var.storage_class != SpirvStorageClass.UniformConstant) && (var.storage_class != SpirvStorageClass.Uniform) {
             continue
@@ -884,13 +890,13 @@ parse :: proc(
     }
 
     // NOTE(jan): Extract shaders from entry points.
-    description.shaders = make([dynamic]ShaderDescription, len(entry_points))
+    description.shaders = make([dynamic]ShaderDescription, len(entry_points), allocator)
     for entry, i in entry_points {
         shader := &description.shaders[i]
 
-        shader.name = strings.clone(entry.name)
-        shader.inputs = make([dynamic]InputDescription)
-        shader.outputs = make([dynamic]OutputDescription)
+        shader.name = strings.clone(entry.name, allocator)
+        shader.inputs = make([dynamic]InputDescription, allocator)
+        shader.outputs = make([dynamic]OutputDescription, allocator)
 
         switch entry.execution_model {
             case SpirvExecutionModel.Vertex:

@@ -36,9 +36,9 @@ VulkanPipeline :: struct {
 
 vulkan_create_shader_modules :: proc(vulkan: ^Vulkan) {
     shader_pattern := path.join({".", "shaders", "*.spv"}, context.temp_allocator)
-    module_paths := path.glob(shader_pattern) or_else panic("can't list module source files")
+    module_paths := path.glob(shader_pattern, vulkan.device_allocator) or_else panic("can't list module source files")
 
-    vulkan.modules = make(map[string]VulkanModule, len(module_paths))
+    vulkan.modules = make(map[string]VulkanModule, len(module_paths), vulkan.device_allocator)
 
     for module_path in module_paths {
         meta := VulkanModuleMetadata {
@@ -58,7 +58,7 @@ vulkan_create_shader_modules :: proc(vulkan: ^Vulkan) {
 
         bytes: []u8 = os.read_entire_file_from_filename(meta.path, context.temp_allocator) or_else panic("can't read shader")
         words := cast(^u32)(raw_data(bytes[:]))
-        module.description = parse(bytes) or_else panic("can't describe shader module")
+        module.description = parse(bytes, vulkan.device_allocator) or_else panic("can't describe shader module")
 
         create := vk.ShaderModuleCreateInfo {
             sType = vk.StructureType.SHADER_MODULE_CREATE_INFO,
