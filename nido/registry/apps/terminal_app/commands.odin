@@ -1,6 +1,7 @@
 package terminal_app
 
 import "../../../app"
+import "../../../gfx"
 import "../../../gfx/simple_2d_front_end"
 
 emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputState) -> (result: app.CommandList) {
@@ -10,6 +11,8 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
         context.allocator = context.temp_allocator
         command_list = simple_2d_front_end.make_list()
     }
+
+    simple_2d_front_end.cmd_draw_box(command_list, { { 0, 0 }, { f32(input_state.screen.x), f32(input_state.screen.y / 2) } }, gfx.base03, 0.99)
 
     result.type = "simple_2d_front_end"
     result.list = cast(rawptr)command_list

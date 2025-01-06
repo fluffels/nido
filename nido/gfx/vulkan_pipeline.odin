@@ -364,7 +364,7 @@ vulkan_pipelines_create :: proc(
                 sType = vk.StructureType.PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
                 depthTestEnable = true,
                 depthWriteEnable = true,
-                depthCompareOp = vk.CompareOp.LESS,
+                depthCompareOp = vk.CompareOp.GREATER_OR_EQUAL,
                 depthBoundsTestEnable = false,
             },
             pColorBlendState = &vk.PipelineColorBlendStateCreateInfo {

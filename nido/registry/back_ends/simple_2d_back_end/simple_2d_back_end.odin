@@ -163,7 +163,7 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
 
     clears := [?]vk.ClearValue {
         vk.ClearValue { color = { float32 = gfx.gray }},
-        vk.ClearValue { depthStencil = { depth = 1, stencil = 0 }},
+        vk.ClearValue { depthStencil = { depth = 0, stencil = 0 }},
     }
 
     pass := vk.RenderPassBeginInfo {
