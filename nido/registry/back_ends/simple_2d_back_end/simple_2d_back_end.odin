@@ -88,6 +88,24 @@ TEXTURED_VERTEX := gfx.VertexDescription {
     },
 }
 
+GLYPH_VERTEX := gfx.VertexDescription {
+    name = "simple_2d_back_end_glyph_vertex",
+    attributes = []gfx.VertexAttributeDescription {
+        {
+            // NOTE(jan): Screen-space position + z for layering.
+            component_count = 3,
+        },
+        {
+            // NOTE(jan): Texture coords.
+            component_count = 2,
+        },
+        {
+            // NOTE(jan): RGB.
+            component_count = 3,
+        },
+    },
+}
+
 init :: proc (state: ^Simple2DBackEnd, request: back_end.Initialize,) -> (new_state: ^Simple2DBackEnd) {
     vulkan := request.vulkan
 
@@ -104,7 +122,7 @@ init :: proc (state: ^Simple2DBackEnd, request: back_end.Initialize,) -> (new_st
     
     // NOTE(jan): Meshes.
     new_state.box_mesh = gfx.vulkan_mesh_create(COLOR_VERTEX)
-    new_state.glyph_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
+    new_state.glyph_mesh = gfx.vulkan_mesh_create(GLYPH_VERTEX)
     new_state.textured_quad_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
 
     return
@@ -143,6 +161,10 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
                     cmd_update_texture_from_file(state, c, request)
                 case simple_2d_front_end.DrawTexturedQuadCommand:
                     cmd_draw_textured_quad(state, c)
+                case simple_2d_front_end.DrawGlyphCommand:
+                    cmd_draw_glyph(state, c)
+                case simple_2d_front_end.UpdateTextureFromBitmapCommand:
+                    cmd_update_texture_from_bitmap(state, c, request)
             }
         }
     }
@@ -168,6 +190,16 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         textured_pipeline.descriptor_sets[0],
         1,
         []gfx.VulkanImage { sprite_sheet },
+        state.sampler,
+    )
+    // TODO(jan): Actually handle mapping between texture registry and this
+    glyph_pipeline := state.vulkan_pass.pipelines["glyphs"] or_else panic("No textured pipeline")
+    glyph_sheet := state.texture_registry.textures[1].image
+    gfx.vulkan_descriptor_update_combined_image_sampler(
+        vulkan,
+        glyph_pipeline.descriptor_sets[0],
+        1,
+        []gfx.VulkanImage { glyph_sheet },
         state.sampler,
     )
 }
@@ -228,6 +260,23 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
         )
         gfx.vulkan_mesh_bind(cmd, &state.textured_quad_mesh)
         vk.CmdDrawIndexed(cmd, u32(len(state.textured_quad_mesh.indices)), 1, 0, 0, 0)
+    }
+
+    // NOTE(jan): Draw glyphs.
+    {
+        assert("glyphs" in vulkan_pass.pipelines)
+        pipeline := vulkan_pass.pipelines["glyphs"]
+        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
+        vk.CmdBindDescriptorSets(
+            cmd,
+            vk.PipelineBindPoint.GRAPHICS,
+            pipeline.layout,
+            0, u32(len(pipeline.descriptor_sets)),
+            raw_data(pipeline.descriptor_sets),
+            0, nil,
+        )
+        gfx.vulkan_mesh_bind(cmd, &state.glyph_mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(state.glyph_mesh.indices)), 1, 0, 0, 0)
     }
 
     vk.CmdEndRenderPass(cmd)

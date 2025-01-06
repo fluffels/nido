@@ -579,7 +579,11 @@ main :: proc() {
 		if alloc_error != virtual.Allocator_Error.None do panic("could not initialize app allocator")
 		a.allocator = virtual.arena_allocator(&a.arena)
 
-		app.initialize(&a, nil)
+		if a.name == "terminal" {
+			app.initialize(&a, mem_logger.data)
+		} else {
+			app.initialize(&a, nil)
+		}
 	}
 
 	// NOTE(jan): Select current back end.

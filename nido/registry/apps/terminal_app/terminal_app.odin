@@ -1,18 +1,20 @@
 package terminal_app
 
 import "../../../app"
+import "../../../font"
+import "../../../logext"
 
-Terminal :: struct {
-
-}
-
-init :: proc(state: ^Terminal, request: app.Initialize) -> (new_state: ^Terminal) {
-    new_state = new(Terminal)
-
+init :: proc(state: ^Terminal, request: app.Initialize) {
+    state.log_data = cast(^logext.Circular_Buffer_Logger_Data)request.user_data
+    state.fonts = font.load_fonts()
+    // NOTE(jan): Initial repack is required.
+    state.repack_required = true
     return
 }
 
 cleanup :: proc(state: ^Terminal, request: app.Cleanup) { }
+
+// TODO(jan): Repack on resize.
 
 handler :: proc (a: ^app.App, request: app.Request) {
     state := (^Terminal)(a.state)
@@ -21,7 +23,9 @@ handler :: proc (a: ^app.App, request: app.Request) {
 
     switch r in request {
         case app.Initialize:
-            a.state = init(state, r)
+            state = new(Terminal)
+            init(state, r)
+            a.state = state
         case app.Cleanup:
             cleanup(state, r)
         case:

@@ -113,10 +113,12 @@ pack_fonts_into_texture :: proc (
     fonts: [dynamic]Font,
 ) -> (
     bitmap: [dynamic]u8,
+    width: i32,
+    height: i32,
     success: b32,
 ) {
-    height: i32 = 512
-    width: i32 = 512
+    height = 512
+    width = 512
     bitmap_size := height * width
     bitmap = make([dynamic]u8, bitmap_size, context.temp_allocator)
 

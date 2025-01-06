@@ -170,7 +170,7 @@ prepare_frame :: proc (state: ^TerminalState, request: back_end.PrepareFrame) {
 
     // NOTE(jan): Update sampler.
     if state.repack_required {
-        bitmap, ok := font.pack_fonts_into_texture(state.fonts)
+        bitmap, width, height, ok := font.pack_fonts_into_texture(state.fonts)
         if !ok {
             fmt.panicf("Could not load font bitmap.")
         }
