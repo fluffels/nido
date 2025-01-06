@@ -128,6 +128,8 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         cmd_list := cast(^simple_2d_front_end.CommandList)app_cmd_list.list
         for cmd in cmd_list.commands {
             switch c in cmd {
+                case simple_2d_front_end.DrawBoxCommand:
+                    cmd_draw_box(state, c)
                 case simple_2d_front_end.RegisterTextureCommand:
                     cmd_register_texture(state, c, request)
                 case simple_2d_front_end.DrawTexturedQuadCommand:

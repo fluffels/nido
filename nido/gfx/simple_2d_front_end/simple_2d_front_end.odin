@@ -1,15 +1,19 @@
 package simple_2d_front_end
 
-import "core:math/linalg"
-
 Quad :: struct {
-    position: linalg.Vector2f32,
-    size: linalg.Vector2f32,
+    position: [2]f32,
+    size: [2]f32,
 }
 
 RegisterTextureCommand :: struct {
     handle: u32,
     fname: string,
+}
+
+DrawBoxCommand :: struct {
+    quad: Quad,
+    color: [3]f32,
+    z: f32,
 }
 
 DrawTexturedQuadCommand :: struct {
@@ -20,13 +24,32 @@ DrawTexturedQuadCommand :: struct {
 }
 
 Command :: union {
-    RegisterTextureCommand,
+    DrawBoxCommand,
     DrawTexturedQuadCommand,
+    RegisterTextureCommand,
 }
 
 CommandList :: struct {
     last_texture_handle: u32,
     commands: [dynamic]Command,
+}
+
+cmd_draw_box :: proc (cmds: ^CommandList, box: Quad, color: [3]f32, z: f32) {
+    cmd := DrawBoxCommand {
+        quad = box,
+        color = color,
+        z = z,
+    }
+    append(&cmds.commands, cmd)
+}
+
+cmd_draw_textured_quad :: proc (cmds: ^CommandList, box: Quad, tex: Quad, z: f32) {
+    cmd := DrawTexturedQuadCommand {
+        quad = box,
+        tex = tex,
+        z = z,
+    }
+    append(&cmds.commands, cmd)
 }
 
 cmd_register_texture :: proc (cmds: ^CommandList, fname: string) -> (handle: u32) {
@@ -35,6 +58,7 @@ cmd_register_texture :: proc (cmds: ^CommandList, fname: string) -> (handle: u32
         fname = fname
     }
     append(&cmds.commands, cmd)
+    cmds.last_texture_handle += 1
     return cmd.handle
 }
 
