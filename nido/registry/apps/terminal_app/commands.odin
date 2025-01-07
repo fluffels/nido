@@ -22,6 +22,14 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
 
     state := cast(^Terminal)a.state
 
+    if input_state.key_down.f1 == true {
+        state.show = !state.show
+    }
+
+    if state.show == false {
+        return
+    }
+
     if state.sprite_sheet_handle == nil {
         state.sprite_sheet_handle = fe.cmd_register_texture(cmds)
     }

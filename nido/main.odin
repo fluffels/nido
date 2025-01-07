@@ -622,6 +622,7 @@ main :: proc() {
 					event: sdl2.KeyboardEvent = event.key;
 					#partial switch event.keysym.sym {
 						case sdl2.Keycode.ESCAPE: done = true
+						case sdl2.Keycode.F1: input_state.key_down.f1 = true
 						case sdl2.Keycode.TAB:
 							back_end.cleanup(&current_back_end, &vulkan)
 							free_all(current_back_end.allocator)

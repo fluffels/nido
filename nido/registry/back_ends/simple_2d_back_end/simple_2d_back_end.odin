@@ -193,15 +193,17 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         state.sampler,
     )
     // TODO(jan): Actually handle mapping between texture registry and this
-    glyph_pipeline := state.vulkan_pass.pipelines["glyphs"] or_else panic("No textured pipeline")
-    glyph_sheet := state.texture_registry.textures[1].image
-    gfx.vulkan_descriptor_update_combined_image_sampler(
-        vulkan,
-        glyph_pipeline.descriptor_sets[0],
-        1,
-        []gfx.VulkanImage { glyph_sheet },
-        state.sampler,
-    )
+    glyph_pipeline, ok := state.vulkan_pass.pipelines["glyphs"]
+    if ok && len(state.texture_registry.textures) > 1 {
+        glyph_sheet := state.texture_registry.textures[1].image
+        gfx.vulkan_descriptor_update_combined_image_sampler(
+            vulkan,
+            glyph_pipeline.descriptor_sets[0],
+            1,
+            []gfx.VulkanImage { glyph_sheet },
+            state.sampler,
+        )
+    }
 }
 
 draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {

@@ -4,6 +4,7 @@ import "../../../font"
 import "../../../logext"
 
 Terminal:: struct {
+    show: b32,
     top_down: b32,
     line_offset: int,
 

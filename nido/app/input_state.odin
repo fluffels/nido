@@ -11,6 +11,7 @@ Mouse :: struct {
 }
 
 Keyboard :: struct {
+    f1: bool,
     left: bool,
     right: bool,
     up: bool,
