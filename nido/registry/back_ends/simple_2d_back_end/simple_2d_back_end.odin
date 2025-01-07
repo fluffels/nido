@@ -148,7 +148,8 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
 
     for app_cmd_list in request.app_cmd_lists {
         if app_cmd_list.type != "simple_2d_front_end" {
-            log.panic("Command lists submitted to simple 2d back end must be created by simple 2d front end.")
+            log.warn("Command list of type '%v' is not supported by simple_2d_back_end", app_cmd_list.type)
+            continue
         }
         cmd_list := cast(^simple_2d_front_end.CommandList)app_cmd_list.list
         for cmd in cmd_list.commands {
