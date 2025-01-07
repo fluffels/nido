@@ -831,6 +831,10 @@ main :: proc() {
 		vk.FreeCommandBuffers(vulkan.device, transient_cmd_pool, 1, &transient_cmd)
 	}
 
+	for &a in reg.app {
+		app.cleanup(&a, nil)
+	}
+
 	vk.DeviceWaitIdle(vulkan.device)
 	back_end.cleanup(&current_back_end, &vulkan)
 
