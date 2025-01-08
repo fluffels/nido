@@ -50,25 +50,33 @@ push_doodad :: proc(state: ^MapEditor, cmds: ^fe.CommandList, x0: f32, y0: f32, 
         bottom = y0,
     }
 
+    f: Frame = Frame {
+        x = 0,
+        y = 0,
+    }
     switch s in doodad.sprite {
         case Frame:
-            for y in 0..<doodad.tile_height {
-                for x in 0..<doodad.tile_width {
-                    f := Frame {
-                        x = s.x + u32(x * 8),
-                        y = s.y + u32(y * 8),
-                    }
-                    x := x0 + f32(x) * state.tile_width
-                    y := y0 + f32(y) * state.tile_height
-                    box := push_frame(state, cmds, x, y, z, f)
-                    result.left  = math.min(result.left, box.left)
-                    result.right = math.max(result.right, box.right)
-                    result.top    = math.min(result.top, box.top)
-                    result.bottom = math.max(result.bottom, box.bottom)
-                }
-            }
+            f = s
         case Animation:
-            panic("Not handled")
+            t := ticks / s.frame_duration
+            i := t % u32(len(s.frames))
+            f = s.frames[i]
+    }
+
+    for y in 0..<doodad.tile_height {
+        for x in 0..<doodad.tile_width {
+            f := Frame {
+                x = f.x + u32(x * 8),
+                y = f.y + u32(y * 8),
+            }
+            x := x0 + f32(x) * state.tile_width
+            y := y0 + f32(y) * state.tile_height
+            box := push_frame(state, cmds, x, y, z, f)
+            result.left  = math.min(result.left, box.left)
+            result.right = math.max(result.right, box.right)
+            result.top    = math.min(result.top, box.top)
+            result.bottom = math.max(result.bottom, box.bottom)
+        }
     }
 
     return result
@@ -160,16 +168,29 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
 
         x0 = tile_selector.left
         y0 += state.tile_height
+        delta_y := f32(0)
 
         for doodad, index in DOODADS {
+            w := f32(doodad.tile_width) * state.tile_width
+            h := f32(doodad.tile_height) * state.tile_height
+
+            if x0 + w > tile_selector.right {
+                x0 = tile_selector.left
+                y0 += delta_y
+                delta_y = 0
+            }
+
             box := push_doodad(state, cmds, x0, y0, button_layer, doodad, input_state.ticks)
             if clicked(box, events) {
                 state.selected_doodad = index
                 state.selected_sprite = -1
             }
+            delta_y = math.max(delta_y, box.bottom - box.top)
 
             // NOTE(jan): Mouse cursor. 
             if mouse_over(box, input_state.mouse) do push_sprite(state, cmds, x0, y0, mouse_layer, CURSOR, input_state.ticks)
+
+            x0 += box.right - box.left
         }
     }
 
