@@ -253,7 +253,7 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     }
 
     if mouse_down_middle(map_box, input_state.mouse) {
-        mouse_scroll_scale := -50 * time_scale
+        mouse_scroll_scale := -200 * time_scale
         state.scroll_offset += input_state.mouse.delta * mouse_scroll_scale
     }
 
