@@ -10,9 +10,7 @@ import "apps/map_editor_app"
 import "apps/terminal_app"
 
 import "back_ends/demo"
-import "back_ends/map_editor"
 import "back_ends/simple_2d_back_end"
-import "back_ends/terminal"
 
 Registry :: struct {
     arena: virtual.Arena,
@@ -58,8 +56,6 @@ make_registry :: proc () -> (registry: Registry) {
     register(&registry, terminal_app.make_app())
 
     register(&registry, simple_2d_back_end.make_program())
-    register(&registry, terminal.make_program())
-    register(&registry, map_editor.make_program())
     register(&registry, demo.make_program())
 
     registry.current_app_index = 0

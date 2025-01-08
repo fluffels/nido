@@ -81,7 +81,7 @@ init :: proc (state: ^DemoState, request: back_end.Initialize,) -> (new_state: ^
 	new_state.font_sprite_sheet = gfx.vulkan_image_create_2d_monochrome_texture(vulkan, extent)
 
 	// NOTE(jan): Upload mesh.
-    new_state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION)
+    new_state.mesh = gfx.vulkan_mesh_create(VERTEX_DESCRIPTION, context.allocator)
     vertices := [][][]f32 {
         {
             {-1, -1},

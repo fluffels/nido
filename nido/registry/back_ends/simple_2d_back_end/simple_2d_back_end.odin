@@ -11,141 +11,32 @@ import "../../../gfx"
 import "../../../gfx/simple_2d_front_end"
 import "../../../back_end"
 
-Uniforms :: struct {
-	ortho: gfx.mat4x4,
-}
-
-Simple2DBackEnd :: struct {
-    sampler: vk.Sampler,
-
-    box_mesh: gfx.VulkanMesh,
-    textured_quad_mesh: gfx.VulkanMesh,
-    glyph_mesh: gfx.VulkanMesh,
-
-    texture_registry: TextureRegistry,
-
-    uniforms: Uniforms,
-    uniform_buffer: gfx.VulkanBuffer,
-
-    vulkan_pass: gfx.VulkanPass,
-}
-
-PASS := gfx.VulkanPassMetadata {
-    enable_depth = true,
-    pipelines = []gfx.VulkanPipelineMetadata {
-        // NOTE(jan): Pipeline for colored boxes.
-        gfx.VulkanPipelineMetadata {
-            name = "boxes",
-            modules = {
-                "ortho_xyz_rgba",
-                "color",
-            },
-        },
-        // NOTE(jan): Pipeline for textured quads.
-        gfx.VulkanPipelineMetadata {
-            name = "textured_quads",
-            modules = {
-                "ortho_xyz_uv",
-                "sampler",
-            },
-        },
-        // NOTE(jan): Pipeline for glyphs.
-        gfx.VulkanPipelineMetadata {
-            name = "glyphs",
-            modules = {
-                "ortho_xyz_uv_rgb",
-                "sampler_as_coverage",
-            },
-        },
-    },
-}
-
-COLOR_VERTEX := gfx.VertexDescription {
-    name = "simple_2d_back_end_color_vertex",
-    attributes = []gfx.VertexAttributeDescription {
-        {
-            // NOTE(jan): Screen-space position + z for layering.
-            component_count = 3,
-        },
-        {
-            // NOTE(jan): RGB.
-            component_count = 3,
-        },
-    },
-}
-
-TEXTURED_VERTEX := gfx.VertexDescription {
-    name = "simple_2d_back_end_texture_vertex",
-    attributes = []gfx.VertexAttributeDescription {
-        {
-            // NOTE(jan): Screen-space position + z for layering.
-            component_count = 3,
-        },
-        {
-            // NOTE(jan): Texture coords.
-            component_count = 2,
-        },
-    },
-}
-
-GLYPH_VERTEX := gfx.VertexDescription {
-    name = "simple_2d_back_end_glyph_vertex",
-    attributes = []gfx.VertexAttributeDescription {
-        {
-            // NOTE(jan): Screen-space position + z for layering.
-            component_count = 3,
-        },
-        {
-            // NOTE(jan): Texture coords.
-            component_count = 2,
-        },
-        {
-            // NOTE(jan): RGB.
-            component_count = 3,
-        },
-    },
-}
+/*
+    TODO(jan):
+    - [ ] Handle multiple textures.
+    - [ ] A system is required for allocating Vulkan buffers and freeing them at the end of the frame, similar to a memory arena.
+*/
 
 init :: proc (state: ^Simple2DBackEnd, request: back_end.Initialize,) -> (new_state: ^Simple2DBackEnd) {
     vulkan := request.vulkan
 
     new_state = new(Simple2DBackEnd)
-
     // NOTE(jan): Uniforms containing orthographic projection.
 	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
-
     // NOTE(jan): Texture stuff.
     new_state.texture_registry.textures = make([dynamic]TextureRegistration)
-
-    // NOTE(jan): Sampler for glyph cache.
+    // NOTE(jan): Shared sampler.
 	new_state.sampler = gfx.vulkan_sampler_create_nearest(vulkan)
-    
-    // NOTE(jan): Meshes.
-    new_state.box_mesh = gfx.vulkan_mesh_create(COLOR_VERTEX)
-    new_state.glyph_mesh = gfx.vulkan_mesh_create(GLYPH_VERTEX)
-    new_state.textured_quad_mesh = gfx.vulkan_mesh_create(TEXTURED_VERTEX)
 
     return
-}
-
-resize_begin :: proc (state: ^Simple2DBackEnd, request: back_end.ResizeBegin) {
-    gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
-}
-
-resize_end :: proc (state: ^Simple2DBackEnd, request: back_end.ResizeEnd) {
-    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASS)
 }
 
 prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
 
-	// NOTE(jan): Upload meshes.
-    // TODO(jan): Separate meshes are very error-prone.
-    gfx.vulkan_mesh_reset(&state.box_mesh)
-    gfx.vulkan_mesh_reset(&state.textured_quad_mesh)
-    gfx.vulkan_mesh_reset(&state.glyph_mesh)
-
+    // NOTE(jan): Translate commands to render batches.
+    state.batches = make([dynamic]gfx.RenderBatch, context.temp_allocator)
     for app_cmd_list in request.app_cmd_lists {
         if app_cmd_list.type != "simple_2d_front_end" {
             log.warn("Command list of type '%v' is not supported by simple_2d_back_end", app_cmd_list.type)
@@ -170,40 +61,18 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         }
     }
 
-    gfx.vulkan_mesh_upload(vulkan, &state.box_mesh)
-	gfx.vulkan_mesh_upload(vulkan, &state.glyph_mesh)
-	gfx.vulkan_mesh_upload(vulkan, &state.textured_quad_mesh)
+    // NOTE(jan): Upload meshes to GPU.
+    for &batch in state.batches {
+        gfx.vulkan_mesh_upload(vulkan, &batch.mesh)
+    }
 
     // NOTE(jan): Update uniforms.
+    // TODO(jan): Dynamic uniform bindings.
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
     for _, pipeline in state.vulkan_pass.pipelines {
         // NOTE(jan): Assume that descriptor set 0 is always uniforms.
         gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
-    }
-    
-    // NOTE(jan): Update sampler.
-    // TODO(jan): Actually handle mapping between texture registry and this
-    textured_pipeline := state.vulkan_pass.pipelines["textured_quads"] or_else panic("No textured pipeline")
-    sprite_sheet := state.texture_registry.textures[0].image
-    gfx.vulkan_descriptor_update_combined_image_sampler(
-        vulkan,
-        textured_pipeline.descriptor_sets[0],
-        1,
-        []gfx.VulkanImage { sprite_sheet },
-        state.sampler,
-    )
-    // TODO(jan): Actually handle mapping between texture registry and this
-    glyph_pipeline, ok := state.vulkan_pass.pipelines["glyphs"]
-    if ok && len(state.texture_registry.textures) > 1 {
-        glyph_sheet := state.texture_registry.textures[1].image
-        gfx.vulkan_descriptor_update_combined_image_sampler(
-            vulkan,
-            glyph_pipeline.descriptor_sets[0],
-            1,
-            []gfx.VulkanImage { glyph_sheet },
-            state.sampler,
-        )
     }
 }
 
@@ -231,61 +100,51 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
 
     vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
 
-    // NOTE(jan): Draw colored stuff.
-    {
-        assert("boxes" in vulkan_pass.pipelines)
-        pipeline := vulkan_pass.pipelines["boxes"]
-        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
+    for &batch in state.batches {
+        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, batch.pipeline.handle)
+        // TODO(jan): Dynamic uniform binding.
         vk.CmdBindDescriptorSets(
             cmd,
             vk.PipelineBindPoint.GRAPHICS,
-            pipeline.layout,
-            0, u32(len(pipeline.descriptor_sets)),
-            raw_data(pipeline.descriptor_sets),
+            batch.pipeline.layout,
+            0, u32(len(batch.pipeline.descriptor_sets)),
+            raw_data(batch.pipeline.descriptor_sets),
             0, nil,
         )
-        gfx.vulkan_mesh_bind(cmd, &state.box_mesh)
-        vk.CmdDrawIndexed(cmd, u32(len(state.box_mesh.indices)), 1, 0, 0, 0)
-    }
-
-    // NOTE(jan): Draw textured stuff.
-    {
-        assert("textured_quads" in vulkan_pass.pipelines)
-        pipeline := vulkan_pass.pipelines["textured_quads"]
-        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-        vk.CmdBindDescriptorSets(
-            cmd,
-            vk.PipelineBindPoint.GRAPHICS,
-            pipeline.layout,
-            0, u32(len(pipeline.descriptor_sets)),
-            raw_data(pipeline.descriptor_sets),
-            0, nil,
-        )
-        gfx.vulkan_mesh_bind(cmd, &state.textured_quad_mesh)
-        vk.CmdDrawIndexed(cmd, u32(len(state.textured_quad_mesh.indices)), 1, 0, 0, 0)
-    }
-
-    // NOTE(jan): Draw glyphs.
-    {
-        assert("glyphs" in vulkan_pass.pipelines)
-        pipeline := vulkan_pass.pipelines["glyphs"]
-        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-        vk.CmdBindDescriptorSets(
-            cmd,
-            vk.PipelineBindPoint.GRAPHICS,
-            pipeline.layout,
-            0, u32(len(pipeline.descriptor_sets)),
-            raw_data(pipeline.descriptor_sets),
-            0, nil,
-        )
-        gfx.vulkan_mesh_bind(cmd, &state.glyph_mesh)
-        vk.CmdDrawIndexed(cmd, u32(len(state.glyph_mesh.indices)), 1, 0, 0, 0)
+        // NOTE(jan): Bind textures.
+        for texture_binding, i in batch.textures {
+            for texture in state.texture_registry.textures {
+                if texture.handle != texture_binding.texture_handle do continue
+                gfx.vulkan_descriptor_update_combined_image_sampler(
+                    vulkan,
+                    batch.pipeline.descriptor_sets[0],
+                    u32(i + 1),
+                    []gfx.VulkanImage { texture.image },
+                    state.sampler,
+                )
+                break
+            }
+        }
+        gfx.vulkan_mesh_bind(cmd, &batch.mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(batch.mesh.indices)), 1, 0, 0, 0)
     }
 
     vk.CmdEndRenderPass(cmd)
 }
 
-cleanup_frame :: proc (state: ^Simple2DBackEnd, request: back_end.CleanupFrame) { }
+resize_begin :: proc (state: ^Simple2DBackEnd, request: back_end.ResizeBegin) {
+    gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
+}
+
+resize_end :: proc (state: ^Simple2DBackEnd, request: back_end.ResizeEnd) {
+    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASSES)
+}
+
+cleanup_frame :: proc (state: ^Simple2DBackEnd, request: back_end.CleanupFrame) {
+    for &batch in state.batches {
+        gfx.render_batch_destroy(&batch, request.vulkan)
+    }
+}
 
 cleanup :: proc (state: ^Simple2DBackEnd, request: back_end.Cleanup) {
     if state == nil do return

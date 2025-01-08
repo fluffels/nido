@@ -24,17 +24,17 @@ VulkanMesh :: struct {
     index_buffer: VulkanBuffer,
 }
 
-vulkan_mesh_create :: proc(desc: VertexDescription) -> (mesh: VulkanMesh) {
+vulkan_mesh_create :: proc(desc: VertexDescription, allocator: mem.Allocator) -> (mesh: VulkanMesh) {
     mesh.description = desc
 
-    mesh.attribute_buffers = make([dynamic]VulkanBuffer)
+    mesh.attribute_buffers = make([dynamic]VulkanBuffer, allocator)
 
-    mesh.attributes = make([dynamic][dynamic]f32, len(desc.attributes))
+    mesh.attributes = make([dynamic][dynamic]f32, len(desc.attributes), allocator)
     for i in 0..<len(desc.attributes) {
-        mesh.attributes[i] = make([dynamic]f32)
+        mesh.attributes[i] = make([dynamic]f32, allocator)
     }
 
-    mesh.indices = make([dynamic]u32)
+    mesh.indices = make([dynamic]u32, allocator)
 
     return
 }

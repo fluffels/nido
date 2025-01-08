@@ -1,13 +1,34 @@
 package simple_2d_back_end
 
+import "core:log"
+
 import "../../../gfx"
 import "../../../gfx/simple_2d_front_end"
 
 cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxCommand) {
-    first_index := state.box_mesh.vertex_count
+    batch_index := -1
+    for b, i in state.batches {
+        if b.pipeline.meta.name != BOX_PASS.name do continue
+        batch_index = i
+        break
+    }
+
+    if batch_index == -1 {
+        pipeline, ok := state.vulkan_pass.pipelines[BOX_PASS.name]
+        if (!ok) {
+            log.warnf("Missing pipeline: %s", BOX_PASS.name)
+            return
+        }
+        // TODO(jan): Maybe add vertex to pipeline meta?
+        append(&state.batches, gfx.make_render_batch(pipeline, COLOR_VERTEX, context.temp_allocator))
+        batch_index = len(state.batches) - 1
+    }
+
+    mesh := &state.batches[batch_index].mesh
+    first_index := mesh.vertex_count
 
     gfx.vulkan_mesh_push_vertex(
-        &state.box_mesh,
+        mesh,
         {
             {cmd.quad.position.x, cmd.quad.position.y, cmd.z},
             {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
@@ -15,7 +36,7 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
     );
     
     gfx.vulkan_mesh_push_vertex(
-        &state.box_mesh,
+        mesh,
         {
             {cmd.quad.position.x + cmd.quad.size.x, cmd.quad.position.y, cmd.z},
             {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
@@ -23,7 +44,7 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
     );
 
     gfx.vulkan_mesh_push_vertex(
-        &state.box_mesh,
+        mesh,
         {
             {cmd.quad.position.x + cmd.quad.size.x, cmd.quad.position.y + cmd.quad.size.y, cmd.z},
             {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
@@ -31,17 +52,17 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
     );
 
     gfx.vulkan_mesh_push_vertex(
-        &state.box_mesh,
+        mesh,
         {
             {cmd.quad.position.x, cmd.quad.position.y + cmd.quad.size.y, cmd.z},
             {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
         }
     );
 
-    append(&state.box_mesh.indices, first_index + 0)
-    append(&state.box_mesh.indices, first_index + 1)
-    append(&state.box_mesh.indices, first_index + 2)
-    append(&state.box_mesh.indices, first_index + 2)
-    append(&state.box_mesh.indices, first_index + 3)
-    append(&state.box_mesh.indices, first_index + 0)
+    append(&mesh.indices, first_index + 0)
+    append(&mesh.indices, first_index + 1)
+    append(&mesh.indices, first_index + 2)
+    append(&mesh.indices, first_index + 2)
+    append(&mesh.indices, first_index + 3)
+    append(&mesh.indices, first_index + 0)
 }
