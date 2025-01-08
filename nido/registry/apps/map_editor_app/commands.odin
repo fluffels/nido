@@ -183,17 +183,20 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     }
 
     // NOTE(jan): Map.
-    // PERF(jan): Only draw displayed tiles.
-    // x_tiles := int(tile_selector.left / state.tile_width) + 1
-    // y_tiles := int(max_y / state.tile_height) + 1
-    x_tiles := state.map_width
-    y_tiles := state.map_height
+    x_begin := int(state.scroll_offset.x / state.tile_width)
+    y_begin := int(state.scroll_offset.y / state.tile_height)
+    x_tiles := int(tile_selector.left / state.tile_width) + 1
+    y_tiles := int(max_y / state.tile_height) + 1
 
-    for y_index in 0..<y_tiles {
-        for x_index in 0..<x_tiles {
+    for y_index in y_begin..<y_begin+y_tiles {
+        for x_index in x_begin..<x_begin+x_tiles {
             x0 := f32(x_index) * state.tile_width - state.scroll_offset[0]
             y0 := f32(y_index) * state.tile_height - state.scroll_offset[1]
-            sprite_type := state.terrain[y_index * state.map_width + x_index]
+
+            index := y_index * state.map_width + x_index
+            if index < 0 do continue
+            sprite_type := state.terrain[index]
+
             sprite := SPRITES[sprite_type]
 
             sprite_box := push_sprite(state, cmds, x0, y0, map_layer, sprite, input_state.ticks)
@@ -230,13 +233,17 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     }
     
     // NOTE(jan): Map scroll.
-    // TODO(jan): Figure out why scrolling seems so choppy.
     time_scale := f32(input_state.slice) / 1000
     key_scroll_scale := 1000 * time_scale
     if input_state.keyboard.left do state.scroll_offset[0] -= key_scroll_scale
     if input_state.keyboard.right do state.scroll_offset[0] += key_scroll_scale
     if input_state.keyboard.up do state.scroll_offset[1] -= key_scroll_scale
     if input_state.keyboard.down do state.scroll_offset[1] += key_scroll_scale
+
+    if state.scroll_offset.x < 0 do state.scroll_offset.x = 0
+    if state.scroll_offset.x > f32(state.map_width) * state.tile_width - max_x do state.scroll_offset.x = f32(state.map_width) * state.tile_width - max_x
+    if state.scroll_offset.y < 0 do state.scroll_offset.y = 0
+    if state.scroll_offset.y > f32(state.map_height) * state.tile_height - max_y do state.scroll_offset.y = f32(state.map_height) * state.tile_height - max_y
 
     map_box := gfx.AABox {
         left = 0,
