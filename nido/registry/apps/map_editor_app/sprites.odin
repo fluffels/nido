@@ -99,6 +99,76 @@ CURSOR := Animation {
     frame_duration = 100,
 }
 
+WATER_BL := Animation {
+    frames = []Frame {
+        {128, 56}, {136, 56}, {144, 56}, {152, 56}, {160, 56}, {168, 56}, {176, 56}, {184, 56},
+    },
+    frame_duration = 100,
+}
+
+WATER_BR := Animation {
+    frames = []Frame {
+        {128, 64}, {136, 64}, {144, 64}, {152, 64}, {160, 64}, {168, 64}, {176, 64}, {184, 64},
+    },
+    frame_duration = 100,
+}
+
+WATER_CENTER := Animation {
+    frames = []Frame {
+        {128, 72}, {136, 72}, {144, 72}, {152, 72}, {160, 72}, {168, 72}, {176, 72}, {184, 72},
+    },
+    frame_duration = 100,
+}
+
+WATER_DEEP := Animation {
+    frames = []Frame {
+        {128, 80}, {136, 80}, {144, 80}, {152, 80}, {160, 80}, {168, 80}, {176, 80}, {184, 80},
+    },
+    frame_duration = 100,
+}
+
+WATER_MID_BOTTOM := Animation {
+    frames = []Frame {
+        {128, 88}, {136, 88}, {144, 88}, {152, 88}, {160, 88}, {168, 88}, {176, 88}, {184, 88},
+    },
+    frame_duration = 100,
+}
+
+WATER_MID_LEFT := Animation {
+    frames = []Frame {
+        {128, 96}, {136, 96}, {144, 96}, {152, 96}, {160, 96}, {168, 96}, {176, 96}, {184, 96},
+    },
+    frame_duration = 100,
+}
+
+WATER_MID_RIGHT := Animation {
+    frames = []Frame {
+        {128, 104}, {136, 104}, {144, 104}, {152, 104}, {160, 104}, {168, 104}, {176, 104}, {184, 104},
+    },
+    frame_duration = 100,
+}
+
+WATER_MID_TOP := Animation {
+    frames = []Frame {
+        {128, 112}, {136, 112}, {144, 112}, {152, 112}, {160, 112}, {168, 112}, {176, 112}, {184, 112},
+    },
+    frame_duration = 100,
+}
+
+WATER_TOP_LEFT := Animation {
+    frames = []Frame {
+        {128, 120}, {136, 120}, {144, 120}, {152, 120}, {160, 120}, {168, 120}, {176, 120}, {184, 120},
+    },
+    frame_duration = 100,
+}
+
+WATER_TOP_RIGHT := Animation {
+    frames = []Frame {
+        {128, 128}, {136, 128}, {144, 128}, {152, 128}, {160, 128}, {168, 128}, {176, 128}, {184, 128},
+    },
+    frame_duration = 100,
+}
+
 SPRITES := []Sprite {
     TERRAIN_SPRITES[0], TERRAIN_SPRITES[1], TERRAIN_SPRITES[2], TERRAIN_SPRITES[3],
     TERRAIN_SPRITES[4], TERRAIN_SPRITES[5], TERRAIN_SPRITES[6], TERRAIN_SPRITES[7],
@@ -107,11 +177,11 @@ SPRITES := []Sprite {
     TERRAIN_SPRITES[16], TERRAIN_SPRITES[17], TERRAIN_SPRITES[18], TERRAIN_SPRITES[19],
     TERRAIN_SPRITES[20], TERRAIN_SPRITES[21], TERRAIN_SPRITES[22], TERRAIN_SPRITES[23],
 
-                                              // NOTE(jan): Water corners.
+                                              // NOTE(jan): River corners.
     TERRAIN_SPRITES[24], TERRAIN_SPRITES[25], TERRAIN_SPRITES[26], TERRAIN_SPRITES[27],
     RIVER_HORIZONTAL, RIVER_VERTICAL,         TERRAIN_SPRITES[28], TERRAIN_SPRITES[29],
 
-    // NOTE(jan): Last row of water stuff.
+    // NOTE(jan): Last row of river stuff.
     WATER_BOTTOM_LEFT, WATERFALL_BOTTOM, WATERFALL_TOP, TERRAIN_SPRITES[30],
                          // NOTE(jan): Pit                                              
     TERRAIN_SPRITES[31], TERRAIN_SPRITES[58], TERRAIN_SPRITES[59], TERRAIN_SPRITES[60],
@@ -123,14 +193,18 @@ SPRITES := []Sprite {
     TERRAIN_SPRITES[49], TERRAIN_SPRITES[44], TERRAIN_SPRITES[32], TERRAIN_SPRITES[50],
     TERRAIN_SPRITES[51], TERRAIN_SPRITES[33], TERRAIN_SPRITES[52], TERRAIN_SPRITES[53],
     TERRAIN_SPRITES[54], TERRAIN_SPRITES[55], TERRAIN_SPRITES[56], TERRAIN_SPRITES[57],
+
+    // NOTE(jan): Water.
+    TERRAIN_SPRITES[34], WATER_TOP_LEFT, WATER_MID_TOP, WATER_TOP_RIGHT,
+    TERRAIN_SPRITES[36], WATER_MID_LEFT, WATER_CENTER, WATER_MID_RIGHT,
+    WATER_DEEP, WATER_BL, WATER_MID_BOTTOM, WATER_BR,
     
     
     
     
 
     // NOTE(jan): Misc.
-    TERRAIN_SPRITES[34],
-    TERRAIN_SPRITES[36], TERRAIN_SPRITES[37], TERRAIN_SPRITES[38],
+    TERRAIN_SPRITES[37], TERRAIN_SPRITES[38],
     TERRAIN_SPRITES[40], TERRAIN_SPRITES[41], TERRAIN_SPRITES[42],
 }
 
