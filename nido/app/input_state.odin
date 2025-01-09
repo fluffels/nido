@@ -20,6 +20,8 @@ Keyboard :: struct {
     end: b32,
     page_up: b32,
     page_down: b32,
+    q: bool,
+    ctrl: bool,
 }
 
 InputState :: struct {

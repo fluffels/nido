@@ -637,6 +637,7 @@ main :: proc() {
 						case sdl2.Keycode.PAGEUP: input_state.key_down.page_up = true
 						case sdl2.Keycode.DOWN: input_state.key_down.down = true
 						case sdl2.Keycode.UP: input_state.key_down.up = true
+						case sdl2.Keycode.Q: input_state.key_down.q = true
 					}
 				case sdl2.EventType.QUIT:
 					done = true;
@@ -668,6 +669,7 @@ main :: proc() {
 				right = keys[sdl2.SCANCODE_RIGHT] != 0,
 				up = keys[sdl2.SCANCODE_UP] != 0,
 				down = keys[sdl2.SCANCODE_DOWN] != 0,
+				ctrl = keys[sdl2.SCANCODE_LCTRL] != 0,
 			}
 			input_state.mouse = app.Mouse {
 				pos = pos,

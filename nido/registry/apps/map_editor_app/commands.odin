@@ -109,6 +109,47 @@ mouse_over :: proc (box: gfx.AABox, mouse: app.Mouse) -> bool {
     return (mouse.pos.x >= box.left) && (mouse.pos.x <= box.right) && (mouse.pos.y >= box.top) && (mouse.pos.y <= box.bottom)
 }
 
+flood_fill :: proc (state: ^MapEditor, x: int, y: int, target: int, replacement: int) {
+    if x < 0 || x >= state.map_width || y < 0 || y >= state.map_height {
+        return
+    }
+
+    if state.terrain[y * state.map_width + x] != target {
+        return
+    }
+
+    if target == replacement {
+        return
+    }
+
+    coord :[2]int = {x, y}
+    stack := make([dynamic][2]int, context.temp_allocator)
+    append(&stack, coord)
+
+    for len(stack) > 0 {
+        coord = stack[len(stack) - 1]
+        ordered_remove(&stack, len(stack) - 1)
+        
+        idx := coord.y * state.map_width + coord.x
+        if state.terrain[idx] != target do continue
+        
+        state.terrain[idx] = replacement
+
+        if coord.x > 0 {
+            append(&stack, [2]int{coord.x - 1, coord.y})
+        }
+        if coord.y > 0 {
+            append(&stack, [2]int{coord.x, coord.y - 1})
+        }
+        if coord.x < state.map_width - 1 {
+            append(&stack, [2]int{coord.x + 1, coord.y})
+        }
+        if coord.y < state.map_height - 1 {
+            append(&stack, [2]int{coord.x, coord.y + 1})
+        }
+    }
+}
+
 emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputState) -> (result: app.CommandList) {
     state := cast(^MapEditor)a.state
 
@@ -195,7 +236,6 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     }
 
     // NOTE(jan): Selected tile indicator
-    // TODO(jan): This is broken.
     if state.selected_sprite != -1 {
         x := tile_selector.left + state.tile_width * 1.5
         y := tile_selector.top
@@ -211,8 +251,8 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
 
     for y_index in y_begin..<y_begin+y_tiles {
         for x_index in x_begin..<x_begin+x_tiles {
-            x0 := f32(x_index) * state.tile_width - state.scroll_offset[0]
-            y0 := f32(y_index) * state.tile_height - state.scroll_offset[1]
+            x0 := f32(x_index) * state.tile_width - state.scroll_offset.x
+            y0 := f32(y_index) * state.tile_height - state.scroll_offset.y
 
             index := y_index * state.map_width + x_index
             if index < 0 do continue
@@ -226,12 +266,20 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
                 if state.selected_doodad != -1 {
                     state.doodads[y_index * state.map_width + x_index] = state.selected_doodad
                 } else if state.selected_sprite != -1 {
-                    state.terrain[y_index * state.map_width + x_index] = state.selected_sprite
+                    if input_state.keyboard.ctrl {
+                        flood_fill(state, x_index, y_index, state.terrain[y_index * state.map_width + x_index], state.selected_sprite)
+                    } else {
+                        state.terrain[y_index * state.map_width + x_index] = state.selected_sprite
+                    }
                 }
             }
 
             if mouse_down_right(sprite_box, input_state.mouse) {
-                state.selected_sprite = sprite_type
+                state.doodads[y_index * state.map_width + x_index] = -1
+            }
+
+            if mouse_over(sprite_box, input_state.mouse) && input_state.key_down.q {
+                state.selected_sprite = state.terrain[y_index * state.map_width + x_index]
             }
 
             // NOTE(jan): Mouse cursor. 
@@ -240,10 +288,10 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     }
 
     // NOTE(jan): Doodads.
-    for y_index in 0..<y_tiles {
-        for x_index in 0..<x_tiles {
-            x0 := f32(x_index) * state.tile_width
-            y0 := f32(y_index) * state.tile_height
+    for y_index in y_begin..<y_begin+y_tiles {
+        for x_index in x_begin..<x_begin+x_tiles {
+            x0 := f32(x_index) * state.tile_width - state.scroll_offset.x
+            y0 := f32(y_index) * state.tile_height - state.scroll_offset.y
 
             doodad_type := state.doodads[y_index * state.map_width + x_index]
             if (doodad_type != -1) {
@@ -261,11 +309,6 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     if input_state.keyboard.up do state.scroll_offset[1] -= key_scroll_scale
     if input_state.keyboard.down do state.scroll_offset[1] += key_scroll_scale
 
-    if state.scroll_offset.x < 0 do state.scroll_offset.x = 0
-    if state.scroll_offset.x > f32(state.map_width) * state.tile_width - max_x do state.scroll_offset.x = f32(state.map_width) * state.tile_width - max_x
-    if state.scroll_offset.y < 0 do state.scroll_offset.y = 0
-    if state.scroll_offset.y > f32(state.map_height) * state.tile_height - max_y do state.scroll_offset.y = f32(state.map_height) * state.tile_height - max_y
-
     map_box := gfx.AABox {
         left = 0,
         top = 0,
@@ -277,6 +320,11 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
         mouse_scroll_scale := -200 * time_scale
         state.scroll_offset += input_state.mouse.delta * mouse_scroll_scale
     }
+
+    if state.scroll_offset.x < 0 do state.scroll_offset.x = 0
+    if state.scroll_offset.x > f32(state.map_width) * state.tile_width - max_x do state.scroll_offset.x = f32(state.map_width) * state.tile_width - max_x
+    if state.scroll_offset.y < 0 do state.scroll_offset.y = 0
+    if state.scroll_offset.y > f32(state.map_height) * state.tile_height - max_y do state.scroll_offset.y = f32(state.map_height) * state.tile_height - max_y
 
     return
 }

@@ -21,6 +21,15 @@ load_map :: proc (state: ^MapEditor) {
                            int(map_bytes[i*4 + 2]) << 16 |
                            int(map_bytes[i*4 + 3]) << 24
     }
+
+    offset := state.map_height*state.map_width*4
+    for i in 0..<state.map_height*state.map_width {
+        value := u32(map_bytes[offset + i*4 + 0]) <<  0 |
+                 u32(map_bytes[offset + i*4 + 1]) <<  8 |
+                 u32(map_bytes[offset + i*4 + 2]) << 16 |
+                 u32(map_bytes[offset + i*4 + 3]) << 24
+        state.doodads[i] = int(transmute(i32)value)
+    }
 }
 
 save_map :: proc (state: ^MapEditor) {
@@ -37,7 +46,16 @@ save_map :: proc (state: ^MapEditor) {
         bytes[index*4 + 2] = u8((type >> 16) & 0xFF);
         bytes[index*4 + 3] = u8((type >> 24) & 0xFF);
     }
-
     os.write(f, bytes)
+
+    doodad_bytes := make([]u8, len(state.doodads) * 4, context.temp_allocator)
+    for doodad, index in state.doodads {
+        doodad_bytes[index*4 + 0] = u8((doodad      ) & 0xFF);
+        doodad_bytes[index*4 + 1] = u8((doodad >>  8) & 0xFF);
+        doodad_bytes[index*4 + 2] = u8((doodad >> 16) & 0xFF);
+        doodad_bytes[index*4 + 3] = u8((doodad >> 24) & 0xFF);
+    }
+    os.write(f, doodad_bytes)
+
     os.close(f)
 }
