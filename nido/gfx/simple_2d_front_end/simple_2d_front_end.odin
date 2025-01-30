@@ -7,6 +7,12 @@ Quad :: struct {
     size: [2]f32,
 }
 
+Triangle :: struct {
+    a: [2]f32,
+    b: [2]f32,
+    c: [2]f32,
+}
+
 RegisterTextureCommand :: struct {
     handle: u32,
 }
@@ -37,6 +43,12 @@ DrawTexturedQuadCommand :: struct {
     z: f32,
 }
 
+DrawTriangleCommand :: struct {
+    triangle: Triangle,
+    color: [4]f32,
+    z: f32,
+}
+
 DrawGlyphCommand :: struct {
     texture_handle: u32,
     quad: Quad,
@@ -49,6 +61,7 @@ Command :: union {
     DrawBoxCommand,
     DrawGlyphCommand,
     DrawTexturedQuadCommand,
+    DrawTriangleCommand,
     RegisterTextureCommand,
     UpdateTextureFromFileCommand,
     UpdateTextureFromBitmapCommand,
@@ -61,6 +74,15 @@ CommandList :: struct {
 cmd_draw_box :: proc (cmds: ^CommandList, box: Quad, color: [4]f32, z: f32) {
     cmd := DrawBoxCommand {
         quad = box,
+        color = color,
+        z = z,
+    }
+    append(&cmds.commands, cmd)
+}
+
+cmd_draw_triangle :: proc (cmds: ^CommandList, triangle: Triangle, color: [4]f32, z: f32) {
+    cmd := DrawTriangleCommand {
+        triangle = triangle,
         color = color,
         z = z,
     }

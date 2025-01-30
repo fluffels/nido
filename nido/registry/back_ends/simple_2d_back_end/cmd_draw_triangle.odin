@@ -5,7 +5,7 @@ import "core:log"
 import "../../../gfx"
 import "../../../gfx/simple_2d_front_end"
 
-cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxCommand) {
+cmd_draw_triangle :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawTriangleCommand) {
     batch_index := -1
     for b, i in state.batches {
         if b.pipeline.meta.name != TRIANGLE_PASS.name do continue
@@ -30,15 +30,7 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
     gfx.vulkan_mesh_push_vertex(
         mesh,
         {
-            {cmd.quad.position.x, cmd.quad.position.y, cmd.z},
-            {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
-        }
-    );
-    
-    gfx.vulkan_mesh_push_vertex(
-        mesh,
-        {
-            {cmd.quad.position.x + cmd.quad.size.x, cmd.quad.position.y, cmd.z},
+            {cmd.triangle.a.x, cmd.triangle.a.y, cmd.z},
             {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
         }
     );
@@ -46,7 +38,7 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
     gfx.vulkan_mesh_push_vertex(
         mesh,
         {
-            {cmd.quad.position.x + cmd.quad.size.x, cmd.quad.position.y + cmd.quad.size.y, cmd.z},
+            {cmd.triangle.b.x, cmd.triangle.b.y, cmd.z},
             {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
         }
     );
@@ -54,7 +46,7 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
     gfx.vulkan_mesh_push_vertex(
         mesh,
         {
-            {cmd.quad.position.x, cmd.quad.position.y + cmd.quad.size.y, cmd.z},
+            {cmd.triangle.c.x, cmd.triangle.c.y, cmd.z},
             {cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a},
         }
     );
@@ -62,7 +54,4 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
     append(&mesh.indices, first_index + 0)
     append(&mesh.indices, first_index + 1)
     append(&mesh.indices, first_index + 2)
-    append(&mesh.indices, first_index + 2)
-    append(&mesh.indices, first_index + 3)
-    append(&mesh.indices, first_index + 0)
 }

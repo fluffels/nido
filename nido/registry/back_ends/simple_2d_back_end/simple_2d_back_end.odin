@@ -47,6 +47,8 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
             switch c in cmd {
                 case simple_2d_front_end.DrawBoxCommand:
                     cmd_draw_box(state, c)
+                case simple_2d_front_end.DrawTriangleCommand:
+                    cmd_draw_triangle(state, c)
                 case simple_2d_front_end.RegisterTextureCommand:
                     cmd_register_texture(state, c, request)
                 case simple_2d_front_end.UpdateTextureFromFileCommand:

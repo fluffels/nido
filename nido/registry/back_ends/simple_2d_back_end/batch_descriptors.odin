@@ -2,9 +2,9 @@ package simple_2d_back_end
 
 import "../../../gfx"
 
-// NOTE(jan): Pipeline for colored boxes.
-BOX_PASS := gfx.VulkanPipelineMetadata {
-    name = "boxes",
+// NOTE(jan): Pipeline for colored triangles.
+TRIANGLE_PASS := gfx.VulkanPipelineMetadata {
+    name = "triangles",
     modules = {
         "ortho_xyz_rgba",
         "color",
@@ -32,7 +32,7 @@ GLYPH_PASS := gfx.VulkanPipelineMetadata {
 PASSES := gfx.VulkanPassMetadata {
     enable_depth = true,
     pipelines = []gfx.VulkanPipelineMetadata {
-        BOX_PASS,
+        TRIANGLE_PASS,
         TEXTURED_QUAD_PASS,
         GLYPH_PASS,
     },
