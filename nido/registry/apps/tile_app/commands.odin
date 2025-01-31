@@ -32,7 +32,7 @@ rand_blueish_color :: proc() -> gfx.Color {
 }
 
 draw_tile :: proc(cmds: ^fe.CommandList, pos: [2]f32, size: [2]f32, tile: Tile) {
-    f : f32 = 1
+    f : f32 = 0
 
     left := pos[0] + f
     right := pos[0] + size[0] - f
@@ -45,7 +45,8 @@ draw_tile :: proc(cmds: ^fe.CommandList, pos: [2]f32, size: [2]f32, tile: Tile) 
     bottom_left := [2]f32{ left, bottom }
     middle := [2]f32{ (left + right) / 2, (top + bottom) / 2 }
 
-    fe.cmd_draw_triangle(cmds, { top_left, top_right, middle }, tile.colors[Directions.NORTH], 0.99)
+    g : f32 = 1
+    fe.cmd_draw_triangle(cmds, { { left + g, top }, { right - g, top }, { middle.x, middle.y - g } }, tile.colors[Directions.NORTH], 0.99)
     fe.cmd_draw_triangle(cmds, { top_right, bottom_right, middle }, tile.colors[Directions.EAST], 0.99)
     fe.cmd_draw_triangle(cmds, { bottom_right, bottom_left, middle }, tile.colors[Directions.SOUTH], 0.99)
     fe.cmd_draw_triangle(cmds, { bottom_left, top_left, middle }, tile.colors[Directions.WEST], 0.99)
