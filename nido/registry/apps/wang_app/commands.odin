@@ -43,7 +43,20 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     if max_x > max_y do max_x = max_y
     if max_y > max_x do max_y = max_x
 
-    tiles_per_side := 14
+    wang_tiles := make([]WangTile, 256, context.temp_allocator)
+    i := 0
+    for north in WangTileColor.GREEN..=WangTileColor.WHITE {
+        for east in WangTileColor.GREEN..=WangTileColor.WHITE {
+            for south in WangTileColor.GREEN..=WangTileColor.WHITE {
+                for west in WangTileColor.GREEN..=WangTileColor.WHITE {
+                    wang_tiles[i] = WangTile{north, east, south, west}
+                    i += 1
+                }
+            }
+        }
+    }
+
+    tiles_per_side := 100
     tiles := make([]WangTile, tiles_per_side * tiles_per_side, context.temp_allocator)
     tile_length := max_x / f32(tiles_per_side)
 
