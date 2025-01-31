@@ -8,6 +8,7 @@ import "../back_end"
 
 import "apps/map_editor_app"
 import "apps/terminal_app"
+import "apps/tile_app"
 import "apps/wang_app"
 
 import "back_ends/demo"
@@ -53,6 +54,7 @@ make_registry :: proc () -> (registry: Registry) {
     registry.app = make([dynamic]app.App, registry.allocator)
     registry.back_end = make([dynamic]back_end.BackEnd, registry.allocator)
 
+    register(&registry, tile_app.make_app())
     register(&registry, wang_app.make_app())
     register(&registry, map_editor_app.make_app())
     register(&registry, terminal_app.make_app())
