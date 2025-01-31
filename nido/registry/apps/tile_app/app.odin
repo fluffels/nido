@@ -7,7 +7,7 @@ import "../../../font"
 import "../../../logext"
 
 init :: proc(state: ^State, request: app.Initialize) {
-    state.tiles_per_side = 20
+    state.tiles_per_side = 30
     state.tiles = make([]Tile, state.tiles_per_side * state.tiles_per_side, context.allocator)
     state.orig = make([]Tile, state.tiles_per_side * state.tiles_per_side, context.allocator)
 
@@ -42,11 +42,14 @@ init :: proc(state: ^State, request: app.Initialize) {
         }
     }
 
-    state.worms = make([]Worm, 3, context.allocator)
+    state.worms = make([]Worm, 0, context.allocator)
     for &worm in state.worms {
         worm.tile = [2]int{ rand.int_max(state.tiles_per_side), rand.int_max(state.tiles_per_side) }
         worm.direction = Directions(rand.int_max(int(Directions.MAX)))
     }
+
+    state.wave.x = 0
+    state.wave.d = Directions.SOUTH
 }
 
 cleanup :: proc(state: ^State, request: app.Cleanup) { }

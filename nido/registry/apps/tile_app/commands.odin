@@ -31,7 +31,11 @@ rand_blueish_color :: proc() -> gfx.Color {
     }
 }
 
-draw_tile :: proc(cmds: ^fe.CommandList, pos: [2]f32, size: [2]f32, tile: Tile) {
+calc_perceived_brightness :: proc(color: [4]f32) -> f32 {
+    return 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]
+}
+
+draw_tile :: proc(cmds: ^fe.CommandList, pos: [2]f32, size: [2]f32, tile: Tile, tile_length: f32) {
     f : f32 = 0
 
     left := pos[0] + f
@@ -45,11 +49,14 @@ draw_tile :: proc(cmds: ^fe.CommandList, pos: [2]f32, size: [2]f32, tile: Tile) 
     bottom_left := [2]f32{ left, bottom }
     middle := [2]f32{ (left + right) / 2, (top + bottom) / 2 }
 
-    g : f32 = 1
+    g : f32 = tile_length / 10
     fe.cmd_draw_triangle(cmds, { { left + g, top }, { right - g, top }, { middle.x, middle.y - g } }, tile.colors[Directions.NORTH], 0.99)
-    fe.cmd_draw_triangle(cmds, { top_right, bottom_right, middle }, tile.colors[Directions.EAST], 0.99)
-    fe.cmd_draw_triangle(cmds, { bottom_right, bottom_left, middle }, tile.colors[Directions.SOUTH], 0.99)
-    fe.cmd_draw_triangle(cmds, { bottom_left, top_left, middle }, tile.colors[Directions.WEST], 0.99)
+    fe.cmd_draw_triangle(cmds, { { right, top + g }, { right, bottom - g }, { middle.x + g, middle.y } }, tile.colors[Directions.EAST], 0.99)
+    fe.cmd_draw_triangle(cmds, { { right - g, bottom }, { left + g, bottom }, { middle.x, middle.y + g } }, tile.colors[Directions.SOUTH], 0.99)
+    fe.cmd_draw_triangle(cmds, { { left, bottom - g }, { left, top + g }, { middle.x - g, middle.y } }, tile.colors[Directions.WEST], 0.99)
+    // fe.cmd_draw_triangle(cmds, { top_right, bottom_right, middle }, tile.colors[Directions.EAST], 0.99)
+    // fe.cmd_draw_triangle(cmds, { bottom_right, bottom_left, middle }, tile.colors[Directions.SOUTH], 0.99)
+    // fe.cmd_draw_triangle(cmds, { bottom_left, top_left, middle }, tile.colors[Directions.WEST], 0.99)
 }
 
 emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputState) -> (result: app.CommandList) {
@@ -82,7 +89,7 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
             tile_index := x + y * state.tiles_per_side
             tile := state.tiles[tile_index]
             pos := [2]f32{ f32(x) * tile_length, f32(y) * tile_length }
-            draw_tile(cmds, pos, tile_size, tile)
+            draw_tile(cmds, pos, tile_size, tile, tile_length)
             for dir in 0..<int(Directions.MAX) {
                 state.tiles[tile_index].colors[dir] = adjust_color_brightness(tile.colors[dir], -0.1)
             }
@@ -134,6 +141,99 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
             }
         } else {
             worm.direction = dir
+        }
+    }
+
+    // spark_count := rand.int_max(2)
+    spark_count := 0
+    for i in 0..<spark_count {
+        x := rand.int_max(state.tiles_per_side)
+        y := rand.int_max(state.tiles_per_side)
+        tile_index := x + y * state.tiles_per_side
+        tile := &state.tiles[tile_index]
+        color := rand_blueish_color()
+        dir := Directions(rand.int_max(int(Directions.MAX)))
+        tile.colors[dir] = color
+        if dir == Directions.NORTH && y > 0 {
+            paired_tile := &state.tiles[x + (y - 1) * state.tiles_per_side]
+            paired_tile.colors[Directions.SOUTH] = color
+        } else if dir == Directions.EAST && x < state.tiles_per_side - 1 {
+            paired_tile := &state.tiles[x + 1 + y * state.tiles_per_side]
+            paired_tile.colors[Directions.WEST] = color
+        } else if dir == Directions.SOUTH && y < state.tiles_per_side - 1 {
+            paired_tile := &state.tiles[x + (y + 1) * state.tiles_per_side]
+            paired_tile.colors[Directions.NORTH] = color
+        } else if dir == Directions.WEST && x > 0 {
+            paired_tile := &state.tiles[x - 1 + y * state.tiles_per_side]
+            paired_tile.colors[Directions.EAST] = color
+        }
+    }
+
+    if true && (input_state.ticks % 1 == 0) {
+        lowest_brightness := f32(100)
+        lowest_tile := [2]int { 0, 0 }
+        lowest_dir := Directions.NORTH
+        for y in 0..<state.tiles_per_side {
+            for x in 0..<state.tiles_per_side {
+                tile_index := x + y * state.tiles_per_side
+                tile := state.tiles[tile_index]
+                for dir in 0..<int(Directions.MAX) {
+                    brightness := calc_perceived_brightness(tile.colors[dir])
+                    if brightness < lowest_brightness {
+                        lowest_brightness = brightness
+                        lowest_tile = [2]int { x, y }
+                        lowest_dir = Directions(dir)
+                    }
+                }
+            }
+        }
+        lowest_index := lowest_tile[0] + lowest_tile[1] * state.tiles_per_side
+        state.tiles[lowest_index].colors[lowest_dir] = rand_blueish_color()
+        if lowest_dir == Directions.NORTH && lowest_tile[1] > 0 {
+            paired_tile := &state.tiles[lowest_tile[0] + (lowest_tile[1] - 1) * state.tiles_per_side]
+            paired_tile.colors[Directions.SOUTH] = state.tiles[lowest_index].colors[lowest_dir]
+        } else if lowest_dir == Directions.EAST && lowest_tile[0] < state.tiles_per_side - 1 {
+            paired_tile := &state.tiles[lowest_tile[0] + 1 + lowest_tile[1] * state.tiles_per_side]
+            paired_tile.colors[Directions.WEST] = state.tiles[lowest_index].colors[lowest_dir]
+        } else if lowest_dir == Directions.SOUTH && lowest_tile[1] < state.tiles_per_side - 1 {
+            paired_tile := &state.tiles[lowest_tile[0] + (lowest_tile[1] + 1) * state.tiles_per_side]
+            paired_tile.colors[Directions.NORTH] = state.tiles[lowest_index].colors[lowest_dir]
+        } else if lowest_dir == Directions.WEST && lowest_tile[0] > 0 {
+            paired_tile := &state.tiles[lowest_tile[0] - 1 + lowest_tile[1] * state.tiles_per_side]
+            paired_tile.colors[Directions.EAST] = state.tiles[lowest_index].colors[lowest_dir]
+        }
+    }
+
+    if (false) {
+    // if (input_state.ticks % 3 == 0) {
+        if state.wave.d == Directions.SOUTH {
+            index := state.wave.x
+            for index < len(state.tiles) {
+                tile := &state.tiles[index]
+                tile.colors[Directions.SOUTH] = rand_blueish_color()
+                next_index := index + state.tiles_per_side
+                if next_index < len(state.tiles) {
+                    paired_tile := &state.tiles[next_index]
+                    paired_tile.colors[Directions.NORTH] = tile.colors[Directions.SOUTH]
+                }
+                index = next_index
+            }
+            state.wave.d = Directions.EAST
+        }
+        if state.wave.d == Directions.EAST {
+            index := state.wave.x
+            for index < len(state.tiles) {
+                tile := &state.tiles[index]
+                tile.colors[Directions.EAST] = rand_blueish_color()
+                next_index := index + 1
+                if next_index < len(state.tiles) {
+                    paired_tile := &state.tiles[next_index]
+                    paired_tile.colors[Directions.WEST] = tile.colors[Directions.EAST]
+                }
+                index += state.tiles_per_side
+            }
+            state.wave.d = Directions.SOUTH
+            state.wave.x = (state.wave.x + 1) % state.tiles_per_side
         }
     }
 

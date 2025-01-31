@@ -19,9 +19,15 @@ Worm :: struct {
     direction: Directions,
 }
 
+Wave :: struct {
+    x: int,
+    d: Directions,
+}
+
 State :: struct {
     orig: []Tile,
     tiles: []Tile,
     worms: []Worm,
     tiles_per_side: int,
+    wave: Wave,
 }
