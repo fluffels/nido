@@ -63,6 +63,9 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
         }
     }
 
+    // TODO(jan): From some command.
+    cmd_post_process(state)
+
     // NOTE(jan): Upload meshes to GPU.
     for &batch in state.batches {
         gfx.vulkan_mesh_upload(vulkan, &batch.mesh)
@@ -72,7 +75,7 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
     // TODO(jan): Dynamic uniform bindings.
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
-    for _, pipeline in state.vulkan_pass.pipelines {
+    for _, pipeline in state.main_pass.pipelines {
         // NOTE(jan): Assume that descriptor set 0 is always uniforms.
         gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
     }
@@ -81,28 +84,31 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
 draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
     cmd := request.cmd
     vulkan := request.vulkan
-    vulkan_pass := state.vulkan_pass
 
-    clears := [?]vk.ClearValue {
-        vk.ClearValue { color = { float32 = gfx.gray }},
-        vk.ClearValue { depthStencil = { depth = 0, stencil = 0 }},
+    // NOTE(jan): Main pass.
+    main_pass := state.main_pass
+    {
+        clears := [?]vk.ClearValue {
+            vk.ClearValue { color = { float32 = gfx.gray }},
+            vk.ClearValue { depthStencil = { depth = 0, stencil = 0 }},
+        }
+        vk_pass := vk.RenderPassBeginInfo {
+            sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
+            clearValueCount = u32(len(clears)),
+            pClearValues = raw_data(&clears),
+            framebuffer = main_pass.framebuffers[request.image_index],
+            renderArea = vk.Rect2D {
+                extent = vulkan.swap.extent,
+                offset = {0, 0},
+            },
+            renderPass = main_pass.render_pass,
+        }
+        vk.CmdBeginRenderPass(cmd, &vk_pass, vk.SubpassContents.INLINE)
     }
-
-    pass := vk.RenderPassBeginInfo {
-        sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
-        clearValueCount = u32(len(clears)),
-        pClearValues = raw_data(&clears),
-        framebuffer = vulkan_pass.framebuffers[request.image_index],
-        renderArea = vk.Rect2D {
-            extent = vulkan.swap.extent,
-            offset = {0, 0},
-        },
-        renderPass = vulkan_pass.render_pass,
-    }
-
-    vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
 
     for &batch in state.batches {
+        // TODO(jan): Better way to skip post pass.
+        if batch.pipeline.meta.name == "post" do continue
         vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, batch.pipeline.handle)
         // TODO(jan): Dynamic uniform binding.
         vk.CmdBindDescriptorSets(
@@ -132,14 +138,64 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
     }
 
     vk.CmdEndRenderPass(cmd)
+
+    // NOTE(jan): Post pass.
+    post_pass := state.post_pass
+    {
+        clears := [?]vk.ClearValue {
+            vk.ClearValue { color = { float32 = gfx.gray }},
+            vk.ClearValue { depthStencil = { depth = 0, stencil = 0 }},
+        }
+        vk_pass := vk.RenderPassBeginInfo {
+            sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
+            clearValueCount = u32(len(clears)),
+            pClearValues = raw_data(&clears),
+            framebuffer = post_pass.framebuffers[request.image_index],
+            renderArea = vk.Rect2D {
+                extent = vulkan.swap.extent,
+                offset = {0, 0},
+            },
+            renderPass = post_pass.render_pass
+        }
+        vk.CmdBeginRenderPass(cmd, &vk_pass, vk.SubpassContents.INLINE)
+    }
+
+    for &batch in state.batches {
+        // TODO(jan): Better way to skip non post pass.
+        if batch.pipeline.meta.name != "post" do continue
+        vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, batch.pipeline.handle)
+        vk.CmdBindDescriptorSets(
+            cmd,
+            vk.PipelineBindPoint.GRAPHICS,
+            batch.pipeline.layout,
+            0, u32(len(batch.pipeline.descriptor_sets)),
+            raw_data(batch.pipeline.descriptor_sets),
+            0, nil,
+        )
+        // NOTE(jan): Bind textures.
+        // TODO(jan): Some way to specify this binding.
+        gfx.vulkan_descriptor_update_combined_image_sampler(
+            vulkan,
+            batch.pipeline.descriptor_sets[0],
+            0,
+            []gfx.VulkanImage { state.main_pass.images[request.image_index] },
+            state.sampler,
+        )
+        gfx.vulkan_mesh_bind(cmd, &batch.mesh)
+        vk.CmdDrawIndexed(cmd, u32(len(batch.mesh.indices)), 1, 0, 0, 0)
+    }
+
+    vk.CmdEndRenderPass(cmd)
 }
 
 resize_begin :: proc (state: ^Simple2DBackEnd, request: back_end.ResizeBegin) {
-    gfx.vulkan_pass_destroy(request.vulkan, &state.vulkan_pass)
+    gfx.vulkan_pass_destroy(request.vulkan, &state.main_pass)
+    gfx.vulkan_pass_destroy(request.vulkan, &state.post_pass)
 }
 
 resize_end :: proc (state: ^Simple2DBackEnd, request: back_end.ResizeEnd) {
-    state.vulkan_pass = gfx.vulkan_pass_create(request.vulkan, PASSES)
+    state.main_pass = gfx.vulkan_pass_create(request.vulkan, MAIN_PASS)
+    state.post_pass = gfx.vulkan_pass_create(request.vulkan, POST_PASS)
 }
 
 cleanup_frame :: proc (state: ^Simple2DBackEnd, request: back_end.CleanupFrame) {
@@ -159,7 +215,8 @@ cleanup :: proc (state: ^Simple2DBackEnd, request: back_end.Cleanup) {
     gfx.vulkan_mesh_destroy(vulkan, &state.box_mesh)
     gfx.vulkan_mesh_destroy(vulkan, &state.glyph_mesh)
     gfx.vulkan_buffer_destroy(vulkan, &state.uniform_buffer)
-    gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
+    gfx.vulkan_pass_destroy(vulkan, &state.main_pass)
+    gfx.vulkan_pass_destroy(vulkan, &state.post_pass)
 }
 
 handler :: proc (program: ^back_end.BackEnd, request: back_end.Request) {

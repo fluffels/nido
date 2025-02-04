@@ -16,7 +16,7 @@ cmd_draw_textured_quad :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_en
     }
 
     if batch_index == -1 {
-        pipeline, ok := state.vulkan_pass.pipelines[TEXTURED_QUAD_PASS.name]
+        pipeline, ok := state.main_pass.pipelines[TEXTURED_QUAD_PASS.name]
         if (!ok) {
             log.warnf("Missing pipeline: %s", TEXTURED_QUAD_PASS.name)
             return

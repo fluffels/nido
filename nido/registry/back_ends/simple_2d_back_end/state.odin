@@ -16,11 +16,13 @@ Simple2DBackEnd :: struct {
     glyph_mesh: gfx.VulkanMesh,
 
     batches: [dynamic]gfx.RenderBatch,
+    post_pass_batch: [dynamic]gfx.RenderBatch,
 
     texture_registry: TextureRegistry,
 
     uniforms: Uniforms,
     uniform_buffer: gfx.VulkanBuffer,
 
-    vulkan_pass: gfx.VulkanPass,
+    main_pass: gfx.VulkanPass,
+    post_pass: gfx.VulkanPass,
 }

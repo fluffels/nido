@@ -214,7 +214,8 @@ vulkan_image_create_prepass :: proc(
         format,
         {
             vk.ImageUsageFlag.COLOR_ATTACHMENT,
-             vk.ImageUsageFlag.SAMPLED,
+            vk.ImageUsageFlag.SAMPLED,
+            vk.ImageUsageFlag.STORAGE,
         },
         { vk.ImageAspectFlag.COLOR },
         {},

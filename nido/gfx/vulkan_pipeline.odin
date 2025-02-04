@@ -79,6 +79,7 @@ vulkan_pipelines_create :: proc(
     vulkan: ^Vulkan,
     metadata: []VulkanPipelineMetadata,
     render_pass: vk.RenderPass,
+    enable_depth: b32,
 ) -> (
     pipelines: map[string]VulkanPipeline,
 ) {
@@ -362,10 +363,10 @@ vulkan_pipelines_create :: proc(
             },
             pDepthStencilState = &vk.PipelineDepthStencilStateCreateInfo {
                 sType = vk.StructureType.PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-                depthTestEnable = true,
-                depthWriteEnable = true,
+                depthTestEnable = enable_depth,
+                depthWriteEnable = enable_depth,
                 depthCompareOp = vk.CompareOp.GREATER_OR_EQUAL,
-                depthBoundsTestEnable = false,
+                depthBoundsTestEnable = enable_depth,
             },
             pColorBlendState = &vk.PipelineColorBlendStateCreateInfo {
                 sType = vk.StructureType.PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
@@ -397,6 +398,7 @@ vulkan_pipelines_create :: proc(
         )
         log.infof("Pipeline created.")
 
+        pipeline.render_pass = render_pass
         pipelines[meta.name] = pipeline
     }
 

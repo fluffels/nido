@@ -5,6 +5,8 @@ import vk "vendor:vulkan"
 
 VulkanPassMetadata :: struct {
 	enable_depth: b32,
+	write_to_texture: b32,
+	read_from_texture: b32,
 	pipelines: []VulkanPipelineMetadata,
 }
 
@@ -16,6 +18,9 @@ VulkanPass :: struct {
 
 	depth_buffer: VulkanImage,
     framebuffers: [dynamic]vk.Framebuffer,
+
+	// NOTE(jan): Backing images for prepass.
+	images: [dynamic]VulkanImage,
 }
 
 vulkan_pass_create :: proc(
@@ -28,6 +33,16 @@ vulkan_pass_create :: proc(
     vulkan_pass = VulkanPass {
 		metadata = metadata,
 		framebuffers = make([dynamic]vk.Framebuffer, allocator),
+	}
+
+	initial_layout := vk.ImageLayout.UNDEFINED
+	final_layout := vk.ImageLayout.PRESENT_SRC_KHR
+
+	if metadata.write_to_texture {
+		for i in 0..<len(vulkan.swap.views) {
+			append(&vulkan_pass.images, vulkan_image_create_prepass(vulkan, vulkan.swap.extent, vulkan.swap.format))
+		}
+		final_layout = vk.ImageLayout.SHADER_READ_ONLY_OPTIMAL
 	}
 
 	// NOTE(jan): Create a render pass.
@@ -46,8 +61,8 @@ vulkan_pass_create :: proc(
 			storeOp = vk.AttachmentStoreOp.STORE,
 			stencilLoadOp = vk.AttachmentLoadOp.DONT_CARE,
 			stencilStoreOp = vk.AttachmentStoreOp.DONT_CARE,
-			initialLayout = vk.ImageLayout.UNDEFINED,
-			finalLayout = vk.ImageLayout.PRESENT_SRC_KHR,
+			initialLayout = initial_layout,
+			finalLayout = final_layout,
 		})
 		append(&color_refs, vk.AttachmentReference {
 			attachment = u32(len(attachments)) - 1,
@@ -79,14 +94,20 @@ vulkan_pass_create :: proc(
 		})
 		if (metadata.enable_depth) {
 			subpasses[0].pDepthStencilAttachment = raw_data(depth_refs)
+		} else {
+			subpasses[0].pDepthStencilAttachment = nil
 		}
 
 		append(&dependencies, vk.SubpassDependency {
+			// TODO(jan): Is this accurate?
 			srcSubpass = vk.SUBPASS_EXTERNAL,
 			dstSubpass = 0,
+			// TODO(jan): Is this accurate?
 			srcStageMask = { vk.PipelineStageFlag.COLOR_ATTACHMENT_OUTPUT },
+			// TODO(jan): Is this accurate?
 			dstStageMask = { vk.PipelineStageFlag.COLOR_ATTACHMENT_OUTPUT },
 			srcAccessMask = { },
+			// TODO(jan): Is this accurate?
 			dstAccessMask = { vk.AccessFlag.COLOR_ATTACHMENT_WRITE },
 		})
 
@@ -107,7 +128,7 @@ vulkan_pass_create :: proc(
 	}
 
     // NOTE(jan): Create pipelines.
-	vulkan_pass.pipelines = vulkan_pipelines_create(vulkan, vulkan_pass.metadata.pipelines, vulkan_pass.render_pass)
+	vulkan_pass.pipelines = vulkan_pipelines_create(vulkan, vulkan_pass.metadata.pipelines, vulkan_pass.render_pass, metadata.enable_depth)
 
     // NOTE(jan): Create framebuffers.
 	log.infof("Creating framebuffers...")
@@ -118,7 +139,13 @@ vulkan_pass_create :: proc(
 
     for view, i in vulkan.swap.views {
 		attachments := make([dynamic]vk.ImageView, context.temp_allocator)
-		append(&attachments, vulkan.swap.views[i])
+
+		if !metadata.write_to_texture {
+			append(&attachments, vulkan.swap.views[i])
+		} else {
+			append(&attachments, vulkan_pass.images[i].view)
+		}
+
 		if (metadata.enable_depth) {
 			append(&attachments, vulkan_pass.depth_buffer.view)
 		}

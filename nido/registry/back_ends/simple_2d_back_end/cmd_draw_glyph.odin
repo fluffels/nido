@@ -14,7 +14,7 @@ cmd_draw_glyph :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawGl
     }
 
     if batch_index == -1 {
-        pipeline, ok := state.vulkan_pass.pipelines[GLYPH_PASS.name]
+        pipeline, ok := state.main_pass.pipelines[GLYPH_PASS.name]
         if (!ok) {
             log.warnf("Missing pipeline: %s", GLYPH_PASS.name)
             return

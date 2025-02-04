@@ -14,7 +14,7 @@ cmd_draw_triangle :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.Dra
     }
 
     if batch_index == -1 {
-        pipeline, ok := state.vulkan_pass.pipelines[TRIANGLE_PASS.name]
+        pipeline, ok := state.main_pass.pipelines[TRIANGLE_PASS.name]
         if (!ok) {
             log.warnf("Missing pipeline: %s", TRIANGLE_PASS.name)
             return
