@@ -35,6 +35,8 @@ vulkan_debug :: proc "stdcall" (
 	context_pointer := cast(^runtime.Context)user_data
 	context = context_pointer^
 	switch {
+		case vk.DebugReportFlagEXT.INFORMATION in flags:
+			log.infof("[%s] %s", layer_prefix, message)
 		case vk.DebugReportFlagEXT.ERROR in flags:
 			log.errorf("[%s] %s", layer_prefix, message)
 		case vk.DebugReportFlagEXT.WARNING in flags:
@@ -106,6 +108,7 @@ main :: proc() {
 
 	// NOTE(jan): Check if the layers we require are available.
 	required_layers := make([dynamic]string, context.temp_allocator);
+	layers_to_enable := make([dynamic]string, context.temp_allocator);
 	{
 		log.infof("Required layers: ")
 		for layer in required_layers {
@@ -137,6 +140,7 @@ main :: proc() {
 		for required_layer in required_layers {
 			if slice.contains(available_layer_names[:], required_layer) {
 				log.infof("\t\u2713 %s", required_layer)
+				append(&layers_to_enable, required_layer)
 			} else {
 				log.fatalf("\t\u274C %s", required_layer)
 				fmt.panicf("Layer %s is required.", required_layer)
@@ -147,6 +151,7 @@ main :: proc() {
 		for optional_layer in optional_layers {
 			if slice.contains(available_layer_names[:], optional_layer) {
 				log.infof("\t\u2713 %s", optional_layer)
+				append(&layers_to_enable, optional_layer)
 			} else {
 				log.warnf("\t\u274C %s", optional_layer)
 			}
@@ -243,8 +248,8 @@ main :: proc() {
 			pApplicationInfo = &app,
 			enabledExtensionCount = u32(len(required_extensions)),
 			ppEnabledExtensionNames = gfx.vulkanize_strings(required_extensions),
-			enabledLayerCount = u32(len(required_layers)),
-			ppEnabledLayerNames = gfx.vulkanize_strings(required_layers),
+			enabledLayerCount = u32(len(layers_to_enable)),
+			ppEnabledLayerNames = gfx.vulkanize_strings(layers_to_enable),
 		}
 
 		#partial switch result := vk.CreateInstance(&create, nil, &vulkan.handle); result {
