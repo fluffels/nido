@@ -26,6 +26,7 @@ VulkanModule :: struct {
 
 VulkanPipeline :: struct {
     meta: VulkanPipelineMetadata,
+    moduleDescriptions: [dynamic]ShaderModuleDescription,
     handle: vk.Pipeline,
     descriptor_set_layouts: [dynamic]vk.DescriptorSetLayout,
     descriptor_pool: vk.DescriptorPool,
@@ -102,6 +103,7 @@ vulkan_pipelines_create :: proc(
         modules := make([dynamic]VulkanModule, len(meta.modules), temp_allocator)
         for module_name, i in meta.modules {
             modules[i] = vulkan.modules[module_name] or_else fmt.panicf("no module '%s' is loaded", module_name)
+            append(&pipeline.moduleDescriptions, modules[i].description)
         }
 
         stages := make([dynamic]vk.PipelineShaderStageCreateInfo, temp_allocator)
@@ -115,7 +117,7 @@ vulkan_pipelines_create :: proc(
                     case ShaderType.Fragment:
                         stage_flag = vk.ShaderStageFlag.FRAGMENT
                     case:
-                        log.info("\t\t... \u274C which is currently unsupported, skipping")
+                        log.warnf("\t\t... \u274C which is currently unsupported, skipping")
                 }
                 append(&stages, vk.PipelineShaderStageCreateInfo {
                     sType = vk.StructureType.PIPELINE_SHADER_STAGE_CREATE_INFO,
