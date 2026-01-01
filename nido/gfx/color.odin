@@ -24,7 +24,7 @@ green    := Color { 0.5215686275, 0.6000000000, 0.0000000000, 1.0000000000 }
 white    := Color { 1, 1, 1, 1 }
 black    := Color { 0, 0, 0, 0 }
 
-color_from_hex :: proc(hex: u32) -> Color {
+color_from_hex :: proc "contextless" (hex: u32) -> Color {
     r := f32((hex >> 16) & 0xFF)  / 255.0
     g := f32((hex >>  8) & 0xFF)  / 255.0
     b := f32( hex        & 0xFF)  / 255.0
