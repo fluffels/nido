@@ -159,8 +159,7 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
         context.allocator = context.temp_allocator
         cmds = fe.make_list()
     }
-    result.type = "simple_2d_front_end"
-    result.list = cast(rawptr)cmds
+    result = cmds
 
     if state.sprite_sheet_handle == nil {
         state.sprite_sheet_handle = fe.cmd_register_texture(cmds)

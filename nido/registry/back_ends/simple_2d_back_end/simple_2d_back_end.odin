@@ -38,11 +38,11 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
     // NOTE(jan): Translate commands to render batches.
     state.batches = make([dynamic]gfx.RenderBatch, context.temp_allocator)
     for app_cmd_list in request.app_cmd_lists {
-        if app_cmd_list.type != "simple_2d_front_end" {
-            log.warn("Command list of type '%v' is not supported by simple_2d_back_end", app_cmd_list.type)
+        cmd_list, ok := app_cmd_list.(^simple_2d_front_end.CommandList)
+        if !ok {
+            log.warnf("Command list %v is not supported by simple_2d_back_end", app_cmd_list)
             continue
         }
-        cmd_list := cast(^simple_2d_front_end.CommandList)app_cmd_list.list
         for cmd in cmd_list.commands {
             switch c in cmd {
                 case simple_2d_front_end.DrawBoxCommand:

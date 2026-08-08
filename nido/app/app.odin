@@ -6,6 +6,7 @@ import "core:mem/virtual"
 import vk "vendor:vulkan"
 
 import "../gfx"
+import fe "../gfx/simple_2d_front_end"
 
 Initialize :: struct {
     user_data: rawptr,
@@ -42,9 +43,10 @@ is_system_app :: proc(app: ^App) -> bool {
     return .System in app.flags
 }
 
-CommandList :: struct {
-    type: string,
-    list: rawptr,
+// NOTE(jan): One variant per supported front end. Adding a new front end
+// means adding it here and to the switch in the back end(s) that consume it.
+CommandList :: union {
+    ^fe.CommandList,
 }
 
 AppProc :: #type proc (app: ^App, request: Request)

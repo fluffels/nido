@@ -17,8 +17,7 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
         cmds = fe.make_list()
     }
 
-    result.type = "simple_2d_front_end"
-    result.list = cast(rawptr)cmds
+    result = cmds
 
     state := cast(^Terminal)a.state
 
