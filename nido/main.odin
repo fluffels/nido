@@ -546,27 +546,13 @@ main :: proc() {
                           64)
 	vulkan.resize_allocator = mem.dynamic_pool_allocator(&vulkan.resize_pool)
 
-	// NOTE(jan): Create semaphores used to control presentation.
-	image_ready, cmd_buffer_done : vk.Semaphore
-	{
-		create := vk.SemaphoreCreateInfo {
-			sType = vk.StructureType.SEMAPHORE_CREATE_INFO,
-		}
-		gfx.check(
-			vk.CreateSemaphore(vulkan.device, &create, nil, &image_ready),
-			"could not create semaphore",
-		)
-		gfx.check(
-			vk.CreateSemaphore(vulkan.device, &create, nil, &cmd_buffer_done),
-			"could not create semaphore",
-		)
-	}
-	log.infof("Semaphores created.")
-
-	// NOTE(jan): Create command pools and per-frame buffer.
-	transient_cmd_pool := gfx.vulkan_cmd_create_transient_pool(vulkan)
+	// NOTE(jan): Create command pool, then one FrameResources (command
+	// buffers, fences, semaphore, scratch memory, descriptor arena) per
+	// swapchain image.
 	cmd_pool := gfx.vulkan_cmd_create_per_frame_pool(vulkan)
-	cmd      := gfx.vulkan_cmd_allocate_buffer(vulkan, cmd_pool)
+	gfx.vulkan_frames_create(&vulkan, cmd_pool)
+	vulkan.image_ready = gfx.vulkan_semaphore_pool_create(&vulkan, len(vulkan.swap.views))
+	log.infof("Per-image frame resources created.")
 
 	// NOTE(jan): Initialize registry.
 	reg := registry.make_registry()
@@ -606,10 +592,6 @@ main :: proc() {
 	last_frame_mouse: linalg.Vector2f32;
 
 	new_frame: for (!done) {
-		free_all(context.temp_allocator)
-
-		vulkan.temp_buffers = make([dynamic]gfx.VulkanBuffer, context.temp_allocator)
-
 		// NOTE(jan): Handle events.
 		events := make([dynamic]app.Event, context.temp_allocator)
 		input_state: app.InputState
@@ -721,10 +703,19 @@ main :: proc() {
 
 			back_end.resize_begin(&current_back_end, &vulkan)
 
+			// NOTE(jan): cleanup frames before we recreate them.
+			for &frame in vulkan.frames {
+				back_end.cleanup_frame(&current_back_end, &vulkan, &frame)
+			}
+
+			gfx.vulkan_frames_destroy(&vulkan, cmd_pool)
+			gfx.vulkan_semaphore_pool_destroy(&vulkan, &vulkan.image_ready)
 			gfx.vulkan_swap_destroy(&vulkan)
 			free_all(vulkan.resize_allocator)
 
 			gfx.vulkan_swap_create(&vulkan)
+			gfx.vulkan_frames_create(&vulkan, cmd_pool)
+			vulkan.image_ready = gfx.vulkan_semaphore_pool_create(&vulkan, len(vulkan.swap.views))
 
 			back_end.resize_end(&current_back_end, &vulkan)
 		}
@@ -733,28 +724,16 @@ main :: proc() {
 		input_state.screen.x = vulkan.swap.extent.width
 		input_state.screen.y = vulkan.swap.extent.height
 
-		// NOTE(jan): Collect commands from all currently running apps.
-		app_cmd_lists := make([dynamic]app.CommandList, context.temp_allocator)
-		append(&app_cmd_lists, current_app.emit_commands_proc(&current_app, events[:], input_state))
-		for &a in reg.app {
-			if app.is_system_app(&a) {
-				append(&app_cmd_lists, a.emit_commands_proc(&a, events[:], input_state))
-			}
-		}
+		image_ready_index := gfx.vulkan_semaphore_pool_acquire(&vulkan, vulkan.image_ready[:])
 
-		// NOTE(jan): Allocate a transient command buffer for before-frame actions like updating uniforms.
-		transient_cmd := gfx.vulkan_cmd_allocate_and_begin_transient(vulkan, transient_cmd_pool)
-		back_end.prepare_frame(&current_back_end, &vulkan, events[:], input_state, app_cmd_lists[:], transient_cmd)
-		gfx.vulkan_cmd_end_and_submit(vulkan, &transient_cmd)
-
-		// NOTE(jan): Acquire next swap image.
 		swap_image_index: u32;
+		image_ready_semaphore := vulkan.image_ready[image_ready_index].handle
 		{
 			result := vk.AcquireNextImageKHR(
 				vulkan.device,
 				vulkan.swap.handle,
 				bits.U64_MAX,
-				image_ready,
+				image_ready_semaphore,
 				0,
 				&swap_image_index,
 			)
@@ -771,35 +750,115 @@ main :: proc() {
 			}
 		}
 
-		// NOTE(jan): Record command buffer.
+		frame := &vulkan.frames[swap_image_index]
+
+		// NOTE(jan): This submission's fence (below) is what will prove
+		// image_ready_semaphore's wait has been consumed.
+		vulkan.image_ready[image_ready_index].fence = frame.fence
+
+		// NOTE(jan): Wait until the GPU proves it's done with whatever was
+		// last drawn into this image, then reclaim that image's resources.
+		// This is what replaces the old QueueWaitIdle - we only wait for
+		// this one image, not for everything on the queue.
+		gfx.check(
+			vk.WaitForFences(vulkan.device, 1, &frame.fence, true, bits.U64_MAX),
+			"could not wait for per-image fence",
+		)
+
+		// NOTE(jan): cleanup_frame must run before free_all below - it reads
+		// this image's leftover render batches (which mesh GPU buffers to
+		// destroy), and that batch list lives in the CPU scratch memory
+		// free_all is about to wipe.
+		back_end.cleanup_frame(&current_back_end, &vulkan, frame)
+
+		free_all(frame.temp_allocator)
+		for &buffer in frame.temp_buffers do gfx.vulkan_buffer_destroy(&vulkan, &buffer)
+		clear(&frame.temp_buffers)
+		gfx.vulkan_descriptor_pool_reset(&vulkan, &frame.descriptor_pool)
+
+		context.temp_allocator = frame.temp_allocator
+
+		// NOTE(jan): Collect commands from all currently running apps.
+		app_cmd_lists := make([dynamic]app.CommandList, context.temp_allocator)
+		append(&app_cmd_lists, current_app.emit_commands_proc(&current_app, events[:], input_state))
+		for &a in reg.app {
+			if app.is_system_app(&a) {
+				append(&app_cmd_lists, a.emit_commands_proc(&a, events[:], input_state))
+			}
+		}
+
+		// NOTE(jan): Record and submit upload work (textures, meshes) ahead
+		// of the main render pass, into this image's own transient command
+		// buffer. Submitted separately below, before the main submit - same
+		// queue, so it's guaranteed to finish first; it needs no fence of
+		// its own.
+		{
+			begin := vk.CommandBufferBeginInfo {
+				sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
+				flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
+			}
+			gfx.check(
+				vk.BeginCommandBuffer(frame.transient_cmd, &begin),
+				"could not begin transient cmd buffer",
+			)
+		}
+
+		back_end.prepare_frame(&current_back_end, &vulkan, events[:], input_state, app_cmd_lists[:], frame)
+
+		vk.EndCommandBuffer(frame.transient_cmd)
+		{
+			transient_cmd := frame.transient_cmd
+			submit := vk.SubmitInfo {
+				sType = vk.StructureType.SUBMIT_INFO,
+				commandBufferCount = 1,
+				pCommandBuffers = &transient_cmd,
+			}
+			gfx.check(
+				vk.QueueSubmit(vulkan.gfx_queue, 1, &submit, 0),
+				"could not submit transient cmd buffer",
+			)
+		}
+
+		// NOTE(jan): Record main command buffer.
 		begin := vk.CommandBufferBeginInfo {
 			sType = vk.StructureType.COMMAND_BUFFER_BEGIN_INFO,
 			flags = { vk.CommandBufferUsageFlag.ONE_TIME_SUBMIT },
 		}
 		gfx.check(
-			vk.BeginCommandBuffer(cmd, &begin),
+			vk.BeginCommandBuffer(frame.cmd, &begin),
 			"could not begin cmd buffer",
 		)
 
-		back_end.draw_frame(&current_back_end, &vulkan, cmd, swap_image_index)
+		back_end.draw_frame(&current_back_end, &vulkan, frame)
 
-		vk.EndCommandBuffer(cmd)
+		vk.EndCommandBuffer(frame.cmd)
+
+		// NOTE(jan): Reset the fence only now that a submit is actually
+		// about to happen. Resetting any earlier (e.g. before the acquire
+		// result was known to be SUCCESS) risks leaving it stuck unsignaled
+		// if an early-continue path is taken, since nothing would be left
+		// to signal it - the next wait on it would then hang forever.
+		gfx.check(
+			vk.ResetFences(vulkan.device, 1, &frame.fence),
+			"could not reset per-image fence",
+		)
 
 		// NOTE(jan): Submit command buffer.
+		cmd := frame.cmd
 		submit := vk.SubmitInfo {
 			sType = vk.StructureType.SUBMIT_INFO,
 			commandBufferCount = 1,
 			pCommandBuffers = &cmd,
 			waitSemaphoreCount = 1,
-			pWaitSemaphores = &image_ready,
+			pWaitSemaphores = &image_ready_semaphore,
 			pWaitDstStageMask = raw_data(&[?]vk.PipelineStageFlags {
 				{ vk.PipelineStageFlag.COLOR_ATTACHMENT_OUTPUT },
 			}),
 			signalSemaphoreCount = 1,
-			pSignalSemaphores = &cmd_buffer_done,
+			pSignalSemaphores = &frame.render_finished,
 		}
 		gfx.check(
-			vk.QueueSubmit(vulkan.gfx_queue, 1, &submit, 0),
+			vk.QueueSubmit(vulkan.gfx_queue, 1, &submit, frame.fence),
 			"could not submit command buffer",
 		)
 
@@ -809,7 +868,7 @@ main :: proc() {
 			swapchainCount = 1,
 			pSwapchains = &vulkan.swap.handle,
 			waitSemaphoreCount = 1,
-			pWaitSemaphores = &cmd_buffer_done,
+			pWaitSemaphores = &frame.render_finished,
 			pImageIndices = &swap_image_index,
 		}
 		result := vk.QueuePresentKHR(vulkan.gfx_queue, &present);
@@ -826,17 +885,6 @@ main :: proc() {
 			case:
 				panic("unknown error while presenting")
 		}
-
-		// NOTE(jan): Wait to be done.
-		// PERF(jan): This might be slow.
-		vk.QueueWaitIdle(vulkan.gfx_queue)
-
-		back_end.cleanup_frame(&current_back_end, &vulkan)
-
-		for buffer, i in vulkan.temp_buffers {
-			gfx.vulkan_buffer_destroy(&vulkan, &vulkan.temp_buffers[i])
-		}
-		vk.FreeCommandBuffers(vulkan.device, transient_cmd_pool, 1, &transient_cmd)
 	}
 
 	for &a in reg.app {
@@ -844,6 +892,11 @@ main :: proc() {
 	}
 
 	vk.DeviceWaitIdle(vulkan.device)
+	for &frame in vulkan.frames {
+		back_end.cleanup_frame(&current_back_end, &vulkan, &frame)
+	}
+	gfx.vulkan_frames_destroy(&vulkan, cmd_pool)
+	gfx.vulkan_semaphore_pool_destroy(&vulkan, &vulkan.image_ready)
 	back_end.cleanup(&current_back_end, &vulkan)
 
 	// NOTE(jan): This fixes false positives in the leak without having to free unnecessarily in prod.

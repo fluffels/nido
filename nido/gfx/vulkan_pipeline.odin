@@ -30,7 +30,9 @@ VulkanPipeline :: struct {
     handle: vk.Pipeline,
     descriptor_set_layouts: [dynamic]vk.DescriptorSetLayout,
     descriptor_pool: vk.DescriptorPool,
-    descriptor_sets: [dynamic]vk.DescriptorSet,
+    // NOTE(jan): descriptor_sets[image_index][set_index] - one full copy of
+    // this pipeline's descriptor sets per swapchain image.
+    descriptor_sets: [dynamic][dynamic]vk.DescriptorSet,
     layout: vk.PipelineLayout,
     render_pass: vk.RenderPass,
 }
@@ -198,6 +200,10 @@ vulkan_pipelines_create :: proc(
             }
         }
         descriptor_set_count := u32(len(descriptor_set_layout_binding_map))
+        // NOTE(jan): One full copy of this pipeline's descriptor sets per
+        // swapchain image, so two images drawing concurrently with this
+        // pipeline never write over each other's uniform/texture bindings.
+        image_count := u32(len(vulkan.swap.views))
 
         pipeline.descriptor_set_layouts = make([dynamic]vk.DescriptorSetLayout, descriptor_set_count, allocator)
         for descriptor_set_index in 0..<descriptor_set_count {
@@ -227,9 +233,11 @@ vulkan_pipelines_create :: proc(
         }
         
         if (len(sizes) > 0) {
+            for &size in sizes do size.descriptorCount *= image_count
+
             create := vk.DescriptorPoolCreateInfo {
                 sType = vk.StructureType.DESCRIPTOR_POOL_CREATE_INFO,
-                maxSets = u32(len(descriptor_set_layout_binding_map)),
+                maxSets = u32(len(descriptor_set_layout_binding_map)) * image_count,
                 poolSizeCount = u32(len(sizes)),
                 pPoolSizes = raw_data(sizes),
             }
@@ -240,8 +248,12 @@ vulkan_pipelines_create :: proc(
             )
         }
 
-        pipeline.descriptor_sets = make([dynamic]vk.DescriptorSet, descriptor_set_count, allocator)
-        {
+        // NOTE(jan): descriptor_sets[image_index][set_index]. All images
+        // share the same layouts (created above); each just gets its own
+        // instances of the actual sets.
+        pipeline.descriptor_sets = make([dynamic][dynamic]vk.DescriptorSet, image_count, allocator)
+        for image_index in 0..<image_count {
+            pipeline.descriptor_sets[image_index] = make([dynamic]vk.DescriptorSet, descriptor_set_count, allocator)
             alloc := vk.DescriptorSetAllocateInfo {
                 sType = vk.StructureType.DESCRIPTOR_SET_ALLOCATE_INFO,
                 descriptorPool = pipeline.descriptor_pool,
@@ -249,7 +261,7 @@ vulkan_pipelines_create :: proc(
                 pSetLayouts = raw_data(pipeline.descriptor_set_layouts),
             }
             check(
-                vk.AllocateDescriptorSets(vulkan.device, &alloc, raw_data(pipeline.descriptor_sets)),
+                vk.AllocateDescriptorSets(vulkan.device, &alloc, raw_data(pipeline.descriptor_sets[image_index])),
                 "could not allocate descriptor sets",
             )
         }

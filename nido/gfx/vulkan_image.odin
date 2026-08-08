@@ -306,7 +306,7 @@ vulkan_image_copy_from_buffer :: proc(
 
 vulkan_image_update_texture :: proc(
     vulkan: ^Vulkan,
-    cmd: vk.CommandBuffer,
+    frame: ^FrameResources,
     data: []u8,
     image: VulkanImage,
 ) {
@@ -317,16 +317,16 @@ vulkan_image_update_texture :: proc(
         mem.copy_non_overlapping(dst, raw_data(data), len(data))
     vulkan_memory_unmap(vulkan, staging.memory)
 
-    vulkan_image_copy_from_buffer(vulkan^, cmd, image.extent, staging, image)
+    vulkan_image_copy_from_buffer(vulkan^, frame.transient_cmd, image.extent, staging, image)
 
-    append(&vulkan.temp_buffers, staging)
+    append(&frame.temp_buffers, staging)
 
     return
 }
 
 vulkan_image_upload_texture :: proc(
     vulkan: ^Vulkan,
-    cmd: vk.CommandBuffer,
+    frame: ^FrameResources,
     format: vk.Format,
     data: []u8,
 ) -> (image: VulkanImage) {
@@ -348,7 +348,7 @@ vulkan_image_upload_texture :: proc(
         false,
     )
 
-    vulkan_image_update_texture(vulkan, cmd, data, image)
+    vulkan_image_update_texture(vulkan, frame, data, image)
 
     return
 }

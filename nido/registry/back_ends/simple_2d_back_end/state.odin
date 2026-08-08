@@ -15,13 +15,15 @@ Simple2DBackEnd :: struct {
     textured_quad_mesh: gfx.VulkanMesh,
     glyph_mesh: gfx.VulkanMesh,
 
-    batches: [dynamic]gfx.RenderBatch,
+    // NOTE(jan): batches[image_index] - one list per swapchain image.
+    batches: [dynamic][dynamic]gfx.RenderBatch,
     post_pass_batch: [dynamic]gfx.RenderBatch,
 
     texture_registry: TextureRegistry,
 
     uniforms: Uniforms,
-    uniform_buffer: gfx.VulkanBuffer,
+    // NOTE(jan): One persistent buffer per swapchain image.
+    uniform_buffer: [dynamic]gfx.VulkanBuffer,
 
     main_pass: gfx.VulkanPass,
     post_pass: gfx.VulkanPass,

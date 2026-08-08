@@ -24,7 +24,7 @@ DemoState :: struct {
     mesh: gfx.VulkanMesh,
 
     uniforms: Uniforms,
-    uniform_buffer: gfx.VulkanBuffer,
+    uniform_buffer: [dynamic]gfx.VulkanBuffer,
 
     vulkan_pass: gfx.VulkanPass,
 }
@@ -62,7 +62,11 @@ init :: proc (state: ^DemoState, request: back_end.Initialize,) -> (new_state: ^
     // NOTE(jan): Uniforms containing orthographic / perspective projection.
     gfx.identity(&new_state.uniforms.mvp)
 	gfx.identity(&new_state.uniforms.ortho)
-	new_state.uniform_buffer = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
+	image_count := len(vulkan.swap.views)
+	new_state.uniform_buffer = make([dynamic]gfx.VulkanBuffer, image_count)
+	for i in 0..<image_count {
+		new_state.uniform_buffer[i] = gfx.vulkan_buffer_create_uniform(vulkan, size_of(new_state.uniforms))
+	}
 
     // NOTE(jan): Sampler for textures.
 	new_state.linear_sampler = gfx.vulkan_sampler_create_linear(vulkan)
@@ -121,26 +125,27 @@ resize_begin :: proc (state: ^DemoState, request: back_end.ResizeBegin) {
 }
 
 prepare_frame :: proc (state: ^DemoState, request: back_end.PrepareFrame) {
-    cmd := request.cmd
+    frame := request.frame
     vulkan := request.vulkan
+    image_index := frame.index
 
     assert("textured" in state.vulkan_pass.pipelines)
     pipeline := state.vulkan_pass.pipelines["textured"]
 
     // NOTE(jan): Update uniforms.
-    gfx.vulkan_memory_copy(vulkan, state.uniform_buffer, &state.uniforms, size_of(state.uniforms))
-    gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[0], 0, state.uniform_buffer);
+    gfx.vulkan_memory_copy(vulkan, state.uniform_buffer[image_index], &state.uniforms, size_of(state.uniforms))
+    gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[image_index][0], 0, state.uniform_buffer[image_index]);
 
     // NOTE(jan): Update sampler.
     gfx.vulkan_image_update_texture(
         vulkan,
-        cmd,
+        frame,
         state.font_bitmap,
         state.font_sprite_sheet,
     )
     gfx.vulkan_descriptor_update_combined_image_sampler(
         vulkan,
-        pipeline.descriptor_sets[0],
+        pipeline.descriptor_sets[image_index][0],
         1,
         []gfx.VulkanImage { state.font_sprite_sheet },
         state.linear_sampler,
@@ -148,9 +153,11 @@ prepare_frame :: proc (state: ^DemoState, request: back_end.PrepareFrame) {
 }
 
 draw_frame :: proc (state: ^DemoState, request: back_end.DrawFrame) {
-    cmd := request.cmd
+    frame := request.frame
+    cmd := frame.cmd
     vulkan := request.vulkan
     vulkan_pass := state.vulkan_pass
+    image_index := frame.index
 
     assert("textured" in vulkan_pass.pipelines)
     pipeline := vulkan_pass.pipelines["textured"]
@@ -163,7 +170,7 @@ draw_frame :: proc (state: ^DemoState, request: back_end.DrawFrame) {
         sType = vk.StructureType.RENDER_PASS_BEGIN_INFO,
         clearValueCount = u32(len(clears)),
         pClearValues = raw_data(&clears),
-        framebuffer = vulkan_pass.framebuffers[request.image_index],
+        framebuffer = vulkan_pass.framebuffers[image_index],
         renderArea = vk.Rect2D {
             extent = vulkan.swap.extent,
             offset = {0, 0},
@@ -174,13 +181,13 @@ draw_frame :: proc (state: ^DemoState, request: back_end.DrawFrame) {
     vk.CmdBeginRenderPass(cmd, &pass, vk.SubpassContents.INLINE)
 
     vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
-    
+
     vk.CmdBindDescriptorSets(
         cmd,
         vk.PipelineBindPoint.GRAPHICS,
         pipeline.layout,
-        0, u32(len(pipeline.descriptor_sets)),
-        raw_data(pipeline.descriptor_sets),
+        0, u32(len(pipeline.descriptor_sets[image_index])),
+        raw_data(pipeline.descriptor_sets[image_index]),
         0, nil,
     )
 
@@ -203,7 +210,9 @@ cleanup :: proc (state: ^DemoState, request: back_end.Cleanup) {
 
     gfx.vulkan_image_destroy(vulkan, &state.font_sprite_sheet)
     gfx.vulkan_mesh_destroy(vulkan, &state.mesh)
-    gfx.vulkan_buffer_destroy(vulkan, &state.uniform_buffer)
+    for &buffer in state.uniform_buffer {
+        gfx.vulkan_buffer_destroy(vulkan, &buffer)
+    }
     gfx.vulkan_pass_destroy(vulkan, &state.vulkan_pass)
 }
 

@@ -2,7 +2,6 @@ package back_end
 
 import "core:mem"
 import "core:mem/virtual"
-import vk "vendor:vulkan"
 
 import "../app"
 import gfx "../gfx"
@@ -22,7 +21,10 @@ ResizeBegin :: struct {
 
 PrepareFrame :: struct {
     vulkan: ^gfx.Vulkan,
-    cmd: vk.CommandBuffer,
+    // NOTE(jan): Which swapchain image this frame is for. frame.index tells
+    // a back end where to find its own per-image resources (uniform buffer,
+    // descriptor sets); frame.cmd/.transient_cmd are what to record into.
+    frame: ^gfx.FrameResources,
     app_cmd_lists: []app.CommandList,
     // TODO(jan): Remove. These are moved to Apps.
     events: []app.Event,
@@ -32,12 +34,12 @@ PrepareFrame :: struct {
 
 DrawFrame :: struct {
     vulkan: ^gfx.Vulkan,
-    cmd: vk.CommandBuffer,
-    image_index: u32,
+    frame: ^gfx.FrameResources,
 }
 
 CleanupFrame :: struct {
     vulkan: ^gfx.Vulkan,
+    frame: ^gfx.FrameResources,
 }
 
 Cleanup :: struct {
@@ -86,29 +88,29 @@ resize_begin :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan) {
     program.handler(program, request)
 }
 
-prepare_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, events: []app.Event, state: app.InputState, app_cmd_lists: []app.CommandList, cmd: vk.CommandBuffer) {
+prepare_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, events: []app.Event, state: app.InputState, app_cmd_lists: []app.CommandList, frame: ^gfx.FrameResources) {
     request := PrepareFrame {
         vulkan = vulkan,
         events = events,
         input_state = state,
-        cmd = cmd,
+        frame = frame,
         app_cmd_lists = app_cmd_lists
     }
     program.handler(program, request)
 }
 
-draw_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, cmd: vk.CommandBuffer, image_index: u32) {
+draw_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, frame: ^gfx.FrameResources) {
     request := DrawFrame {
         vulkan = vulkan,
-        cmd = cmd,
-        image_index = image_index,
+        frame = frame,
     }
     program.handler(program, request)
 }
 
-cleanup_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan) {
+cleanup_frame :: proc (program: ^BackEnd, vulkan: ^gfx.Vulkan, frame: ^gfx.FrameResources) {
     request := CleanupFrame {
         vulkan = vulkan,
+        frame = frame,
     }
     program.handler(program, request)
 }

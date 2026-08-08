@@ -5,9 +5,9 @@ import "core:log"
 import "../../../gfx"
 import "../../../gfx/simple_2d_front_end"
 
-cmd_draw_textured_quad :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawTexturedQuadCommand) {
+cmd_draw_textured_quad :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawTexturedQuadCommand, image_index: int) {
     batch_index := -1
-    for b, i in state.batches {
+    for b, i in state.batches[image_index] {
         if b.pipeline.meta.name != TEXTURED_QUAD_PASS.name do continue
         if len(b.textures) == 0 do continue
         if b.textures[0].texture_handle != cmd.texture_handle do continue
@@ -22,12 +22,12 @@ cmd_draw_textured_quad :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_en
             return
         }
         // TODO(jan): Maybe add vertex to pipeline meta?
-        append(&state.batches, gfx.make_render_batch(pipeline, TEXTURED_VERTEX, context.temp_allocator))
-        batch_index = len(state.batches) - 1
-        append(&state.batches[batch_index].textures, gfx.RenderBatchTextureMapping{cmd.texture_handle, 0})
+        append(&state.batches[image_index], gfx.make_render_batch(pipeline, TEXTURED_VERTEX, context.temp_allocator))
+        batch_index = len(state.batches[image_index]) - 1
+        append(&state.batches[image_index][batch_index].textures, gfx.RenderBatchTextureMapping{cmd.texture_handle, 0})
     }
 
-    mesh := &state.batches[batch_index].mesh
+    mesh := &state.batches[image_index][batch_index].mesh
 
     first_index := mesh.vertex_count
 

@@ -5,9 +5,9 @@ import "core:log"
 import "../../../gfx"
 import "../../../gfx/simple_2d_front_end"
 
-cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxCommand) {
+cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxCommand, image_index: int) {
     batch_index := -1
-    for b, i in state.batches {
+    for b, i in state.batches[image_index] {
         if b.pipeline.meta.name != TRIANGLE_PASS.name do continue
         batch_index = i
         break
@@ -20,11 +20,11 @@ cmd_draw_box :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.DrawBoxC
             return
         }
         // TODO(jan): Maybe add vertex to pipeline meta?
-        append(&state.batches, gfx.make_render_batch(pipeline, COLOR_VERTEX, context.temp_allocator))
-        batch_index = len(state.batches) - 1
+        append(&state.batches[image_index], gfx.make_render_batch(pipeline, COLOR_VERTEX, context.temp_allocator))
+        batch_index = len(state.batches[image_index]) - 1
     }
 
-    mesh := &state.batches[batch_index].mesh
+    mesh := &state.batches[image_index][batch_index].mesh
     first_index := mesh.vertex_count
 
     gfx.vulkan_mesh_push_vertex(

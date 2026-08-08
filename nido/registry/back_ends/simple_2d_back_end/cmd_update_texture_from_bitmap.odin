@@ -7,11 +7,10 @@ import path "core:path/filepath"
 import image "vendor:stb/image"
 import vk "vendor:vulkan"
 
-import "../../../back_end"
 import "../../../gfx"
 import "../../../gfx/simple_2d_front_end"
 
-cmd_update_texture_from_bitmap :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.UpdateTextureFromBitmapCommand, request: back_end.PrepareFrame) {
+cmd_update_texture_from_bitmap :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_front_end.UpdateTextureFromBitmapCommand, vulkan: ^gfx.Vulkan, frame: ^gfx.FrameResources) {
     // NOTE(jan): Check if the texture has already been handled.
     for &registration in state.texture_registry.textures {
         if registration.handle == cmd.handle {
@@ -22,10 +21,10 @@ cmd_update_texture_from_bitmap :: proc (state: ^Simple2DBackEnd, cmd: simple_2d_
 
             pixels: []u8 = sprite_sheet_pixels[0:size]
 
-            registration.image = gfx.vulkan_image_create_2d_monochrome_texture(request.vulkan, extent)
+            registration.image = gfx.vulkan_image_create_2d_monochrome_texture(vulkan, extent)
             gfx.vulkan_image_update_texture(
-                request.vulkan,
-                request.cmd,
+                vulkan,
+                frame,
                 pixels,
                 registration.image,
             )

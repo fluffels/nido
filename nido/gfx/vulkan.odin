@@ -26,6 +26,12 @@ Vulkan :: struct {
 
     swap: VulkanSwap,
 
+    // NOTE(jan): One entry per swapchain image, sized to len(swap.views).
+    frames: [dynamic]FrameResources,
+
+    // NOTE(jan): Semaphores for vkAcquireNextImageKHR.
+    image_ready: [dynamic]VulkanSemaphore,
+
     modules: map[string]VulkanModule,
 
     // NOTE(jan): Contains objects that live for as long as the device, i.e. shader objects.
@@ -34,7 +40,4 @@ Vulkan :: struct {
 	// NOTE(jan): Contains objects allocated between window resizes, i.e. swapchains, pipelines, etc.
 	resize_pool: mem.Dynamic_Pool,
 	resize_allocator: mem.Allocator,
-
-    // NOTE(jan): To be free'd at the bottom of each frame.
-    temp_buffers: [dynamic]VulkanBuffer,
 }
