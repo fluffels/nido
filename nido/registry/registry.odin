@@ -36,8 +36,18 @@ register_app :: proc (registry: ^Registry, app: app.App) {
 @(private)
 register :: proc{register_app, register_back_end}
 
-advance_back_end_index :: proc (registry: ^Registry) {
-    registry.current_back_end_index = (registry.current_back_end_index + 1) % len(registry.back_end)
+// NOTE(jan): Cycles current_app_index among non-system apps. System apps
+// (e.g. the console) always run and are never selected as "current".
+advance_app_index :: proc (registry: ^Registry) {
+    n := len(registry.app)
+    if n == 0 do return
+    for i in 1..=n {
+        idx := (registry.current_app_index + i) % n
+        if !app.is_system_app(&registry.app[idx]) {
+            registry.current_app_index = idx
+            return
+        }
+    }
 }
 
 get_current_app :: proc (registry: Registry) -> app.App {

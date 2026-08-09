@@ -611,13 +611,8 @@ main :: proc() {
 						case sdl2.Keycode.ESCAPE: done = true
 						case sdl2.Keycode.F1: input_state.key_down.f1 = true
 						case sdl2.Keycode.TAB:
-							back_end.cleanup(&current_back_end, &vulkan)
-							free_all(current_back_end.allocator)
-
-							registry.advance_back_end_index(&reg)
-							current_back_end = registry.get_current_back_end(reg)
-							do_resize = true
-							do_init = true
+							registry.advance_app_index(&reg)
+							current_app = registry.get_current_app(reg)
 						case sdl2.Keycode.HOME: input_state.key_down.home = true
 						case sdl2.Keycode.END: input_state.key_down.end = true
 						case sdl2.Keycode.PAGEDOWN: input_state.key_down.page_down = true
