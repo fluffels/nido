@@ -54,9 +54,9 @@ make_registry :: proc () -> (registry: Registry) {
     registry.app = make([dynamic]app.App, registry.allocator)
     registry.back_end = make([dynamic]back_end.BackEnd, registry.allocator)
 
+    register(&registry, map_editor_app.make_app())
     register(&registry, tile_app.make_app())
     register(&registry, wang_app.make_app())
-    register(&registry, map_editor_app.make_app())
     register(&registry, terminal_app.make_app())
 
     register(&registry, simple_2d_back_end.make_program())
