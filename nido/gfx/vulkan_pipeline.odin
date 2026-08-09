@@ -209,9 +209,14 @@ vulkan_pipelines_create :: proc(
         for descriptor_set_index in 0..<descriptor_set_count {
             binding_map := descriptor_set_layout_binding_map[descriptor_set_index]
 
-            bindings := make([dynamic]vk.DescriptorSetLayoutBinding, len(binding_map), temp_allocator)
-            for binding_index in u32(0)..<u32(len(binding_map)) {
-                bindings[binding_index] = binding_map[binding_index]
+            // NOTE(jan): Collect by the binding numbers actually used in the
+            // shader, not by assuming they're contiguous from 0 - a set
+            // whose only binding is e.g. 1 (no binding 0) would otherwise
+            // silently drop it. Order in the array doesn't need to match
+            // the binding number; each entry names its own .binding.
+            bindings := make([dynamic]vk.DescriptorSetLayoutBinding, 0, len(binding_map), temp_allocator)
+            for _, descriptor_layout_binding in binding_map {
+                append(&bindings, descriptor_layout_binding)
             }
 
             create := vk.DescriptorSetLayoutCreateInfo {
@@ -380,7 +385,6 @@ vulkan_pipelines_create :: proc(
                 depthTestEnable = enable_depth,
                 depthWriteEnable = enable_depth,
                 depthCompareOp = vk.CompareOp.GREATER_OR_EQUAL,
-                depthBoundsTestEnable = enable_depth,
             },
             pColorBlendState = &vk.PipelineColorBlendStateCreateInfo {
                 sType = vk.StructureType.PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
