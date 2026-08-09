@@ -1,6 +1,7 @@
 package gfx
 
 import "core:mem"
+import vk "vendor:vulkan"
 
 RenderBatchTextureMapping :: struct {
     texture_handle: u32,
@@ -11,7 +12,7 @@ RenderBatch :: struct {
     pipeline: VulkanPipeline,
     textures: [dynamic]RenderBatchTextureMapping,
     mesh: VulkanMesh,
-    // TODO(jan): Handle Uniforms.
+    descriptor_set: vk.DescriptorSet,
 }
 
 make_render_batch :: proc(pipeline: VulkanPipeline, desc: VertexDescription, allocator: mem.Allocator) -> RenderBatch {

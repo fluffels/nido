@@ -81,9 +81,38 @@ prepare_frame :: proc (state: ^Simple2DBackEnd, request: back_end.PrepareFrame) 
     // TODO(jan): Dynamic uniform bindings.
 	gfx.ortho_stacked(vulkan.swap.extent.width, vulkan.swap.extent.height, &state.uniforms.ortho)
     gfx.vulkan_memory_copy(vulkan, state.uniform_buffer[image_index], &state.uniforms, size_of(state.uniforms))
-    for _, pipeline in state.main_pass.pipelines {
-        // NOTE(jan): Assume that descriptor set 0 is always uniforms.
-        gfx.vulkan_descriptor_update_uniform(vulkan, pipeline.descriptor_sets[image_index][0], 0, state.uniform_buffer[image_index]);
+
+    for &batch in state.batches[image_index] {
+        layout := batch.pipeline.descriptor_set_layouts[0]
+        batch.descriptor_set = gfx.vulkan_descriptor_pool_allocate(vulkan, &frame.descriptor_pool, layout)
+
+        if batch.pipeline.meta.name == POST_PASS_PIPELINE.name {
+            gfx.vulkan_descriptor_update_combined_image_sampler(
+                vulkan,
+                batch.descriptor_set,
+                0,
+                []gfx.VulkanImage { state.main_pass.images[image_index] },
+                state.sampler,
+            )
+            continue
+        }
+
+        // NOTE(jan): Assume that binding 0 is always uniforms.
+        gfx.vulkan_descriptor_update_uniform(vulkan, batch.descriptor_set, 0, state.uniform_buffer[image_index])
+
+        for texture_binding, i in batch.textures {
+            for texture in state.texture_registry.textures {
+                if texture.handle != texture_binding.texture_handle do continue
+                gfx.vulkan_descriptor_update_combined_image_sampler(
+                    vulkan,
+                    batch.descriptor_set,
+                    u32(i + 1),
+                    []gfx.VulkanImage { texture.image },
+                    state.sampler,
+                )
+                break
+            }
+        }
     }
 }
 
@@ -119,28 +148,15 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
         if batch.pipeline.meta.name == "post" do continue
         vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, batch.pipeline.handle)
         // TODO(jan): Dynamic uniform binding.
+        descriptor_set := batch.descriptor_set
         vk.CmdBindDescriptorSets(
             cmd,
             vk.PipelineBindPoint.GRAPHICS,
             batch.pipeline.layout,
-            0, u32(len(batch.pipeline.descriptor_sets[image_index])),
-            raw_data(batch.pipeline.descriptor_sets[image_index]),
+            0, 1,
+            &descriptor_set,
             0, nil,
         )
-        // NOTE(jan): Bind textures.
-        for texture_binding, i in batch.textures {
-            for texture in state.texture_registry.textures {
-                if texture.handle != texture_binding.texture_handle do continue
-                gfx.vulkan_descriptor_update_combined_image_sampler(
-                    vulkan,
-                    batch.pipeline.descriptor_sets[image_index][0],
-                    u32(i + 1),
-                    []gfx.VulkanImage { texture.image },
-                    state.sampler,
-                )
-                break
-            }
-        }
         gfx.vulkan_mesh_bind(cmd, &batch.mesh)
         vk.CmdDrawIndexed(cmd, u32(len(batch.mesh.indices)), 1, 0, 0, 0)
     }
@@ -172,24 +188,14 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
         // TODO(jan): Better way to skip non post pass.
         if batch.pipeline.meta.name != "post" do continue
         vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, batch.pipeline.handle)
+        descriptor_set := batch.descriptor_set
         vk.CmdBindDescriptorSets(
             cmd,
             vk.PipelineBindPoint.GRAPHICS,
             batch.pipeline.layout,
-            0, u32(len(batch.pipeline.descriptor_sets[image_index])),
-            raw_data(batch.pipeline.descriptor_sets[image_index]),
+            0, 1,
+            &descriptor_set,
             0, nil,
-        )
-        // NOTE(jan): Bind textures.
-        // TODO(jan): Some way to specify this binding.
-        // NOTE(jan): binding=1 to match sampler.frag - other post-process
-        // shaders (lens_filter/grayscale/invert/contrast) use binding=0.
-        gfx.vulkan_descriptor_update_combined_image_sampler(
-            vulkan,
-            batch.pipeline.descriptor_sets[image_index][0],
-            1,
-            []gfx.VulkanImage { state.main_pass.images[image_index] },
-            state.sampler,
         )
         gfx.vulkan_mesh_bind(cmd, &batch.mesh)
         vk.CmdDrawIndexed(cmd, u32(len(batch.mesh.indices)), 1, 0, 0, 0)
