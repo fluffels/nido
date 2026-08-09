@@ -5,6 +5,7 @@ import vk "vendor:vulkan"
 
 VulkanPassMetadata :: struct {
 	enable_depth: b32,
+	enable_blend: b32,
 	write_to_texture: b32,
 	read_from_texture: b32,
 	pipelines: []VulkanPipelineMetadata,
@@ -128,7 +129,7 @@ vulkan_pass_create :: proc(
 	}
 
     // NOTE(jan): Create pipelines.
-	vulkan_pass.pipelines = vulkan_pipelines_create(vulkan, vulkan_pass.metadata.pipelines, vulkan_pass.render_pass, metadata.enable_depth)
+	vulkan_pass.pipelines = vulkan_pipelines_create(vulkan, vulkan_pass.metadata.pipelines, vulkan_pass.render_pass, metadata.enable_depth, metadata.enable_blend)
 
     // NOTE(jan): Create framebuffers.
 	log.infof("Creating framebuffers...")

@@ -40,6 +40,7 @@ POST_PASS_PIPELINE := gfx.VulkanPipelineMetadata {
 
 MAIN_PASS := gfx.VulkanPassMetadata {
     enable_depth = true,
+    enable_blend = true,
     write_to_texture = true,
     read_from_texture = false,
     pipelines = []gfx.VulkanPipelineMetadata {
@@ -51,6 +52,7 @@ MAIN_PASS := gfx.VulkanPassMetadata {
 
 POST_PASS := gfx.VulkanPassMetadata {
     enable_depth = false,
+    enable_blend = false,
     write_to_texture = false,
     read_from_texture = true,
     pipelines = []gfx.VulkanPipelineMetadata {

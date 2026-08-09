@@ -31,6 +31,7 @@ DemoState :: struct {
 
 PASS := gfx.VulkanPassMetadata {
     enable_depth = false,
+    enable_blend = true,
     pipelines = []gfx.VulkanPipelineMetadata {
         {
             name = "textured",

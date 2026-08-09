@@ -83,6 +83,7 @@ vulkan_pipelines_create :: proc(
     metadata: []VulkanPipelineMetadata,
     render_pass: vk.RenderPass,
     enable_depth: b32,
+    enable_blend: b32,
 ) -> (
     pipelines: map[string]VulkanPipeline,
 ) {
@@ -398,7 +399,7 @@ vulkan_pipelines_create :: proc(
                         vk.ColorComponentFlag.B,
                         vk.ColorComponentFlag.A,
                     },
-                    blendEnable = true,
+                    blendEnable = enable_blend,
                     srcColorBlendFactor = vk.BlendFactor.SRC_ALPHA,
                     dstColorBlendFactor = vk.BlendFactor.ONE_MINUS_SRC_ALPHA,
                     colorBlendOp = vk.BlendOp.ADD,
