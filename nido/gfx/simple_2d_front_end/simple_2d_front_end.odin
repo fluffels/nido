@@ -55,6 +55,7 @@ DrawGlyphCommand :: struct {
     tex: Quad,
     color: [3]f32,
     z: f32,
+    clip: Maybe(Quad),
 }
 
 Command :: union {
@@ -98,13 +99,14 @@ cmd_draw_textured_quad :: proc (cmds: ^CommandList, box: Quad, tex: Quad, z: f32
     append(&cmds.commands, cmd)
 }
 
-cmd_draw_glyph :: proc (cmds: ^CommandList, texture_handle: u32, box: Quad, tex: Quad, color: [3]f32, z: f32) {
+cmd_draw_glyph :: proc (cmds: ^CommandList, texture_handle: u32, box: Quad, tex: Quad, color: [3]f32, z: f32, clip: Maybe(Quad) = nil) {
     cmd := DrawGlyphCommand {
         texture_handle = texture_handle,
         quad = box,
         tex = tex,
         color = color,
         z = z,
+        clip = clip,
     }
     append(&cmds.commands, cmd)
 }

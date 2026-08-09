@@ -13,6 +13,8 @@ RenderBatch :: struct {
     textures: [dynamic]RenderBatchTextureMapping,
     mesh: VulkanMesh,
     descriptor_set: vk.DescriptorSet,
+    // NOTE(jan): nil means "no clip - use the full swapchain extent."
+    clip: Maybe(vk.Rect2D),
 }
 
 make_render_batch :: proc(pipeline: VulkanPipeline, desc: VertexDescription, allocator: mem.Allocator) -> RenderBatch {

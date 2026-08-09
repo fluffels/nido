@@ -183,6 +183,9 @@ draw_frame :: proc (state: ^DemoState, request: back_end.DrawFrame) {
 
     vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, pipeline.handle)
 
+    scissor := vk.Rect2D { offset = {0, 0}, extent = vulkan.swap.extent }
+    vk.CmdSetScissor(cmd, 0, 1, &scissor)
+
     vk.CmdBindDescriptorSets(
         cmd,
         vk.PipelineBindPoint.GRAPHICS,

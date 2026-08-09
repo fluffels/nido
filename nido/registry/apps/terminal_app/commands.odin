@@ -96,7 +96,7 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
         index += 1
         line_start := index
 
-        baseline := version.size
+        baseline: f32 = 0
         for ; index < len(log); index += 1 {
             if log[index] != '\n' do continue
 
@@ -112,10 +112,10 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
                 if repack_required do state.repack_required = true
             }
 
-            baseline += text_span.extent.y
+            baseline += text_span.baseline_offset + version.size
             append(&text_spans, text_span)
+            if baseline > max_y / 2 do break
 
-            if baseline > cast(f32)input_state.screen.y do break
             line_start = index + 1
         }
     } else {
@@ -162,15 +162,16 @@ emit_commands :: proc (a: ^app.App, events: []app.Event, input_state: app.InputS
     x: f32 = 10
     y: f32 = f32(input_state.screen.y) / 2.0 - 10
     if state.top_down == true do y = version.size
+    clip := fe.Quad { {0, 0}, {max_x, max_y / 2} }
     for span in text_spans {
         y -= span.baseline_offset * f32(scroll_d)
 
         for glyph in span.glyphs {
             q := glyph.quad
 
-            fe.cmd_draw_glyph(cmds, state.sprite_sheet_handle.?, { {q.x0 + x, q.y0 + y}, {q.x1 - q.x0, q.y1 - q.y0} }, { {q.s0, q.t0}, {q.s1 - q.s0, q.t1 - q.t0} }, gfx.base0.rgb, 0.99)
+            fe.cmd_draw_glyph(cmds, state.sprite_sheet_handle.?, { {q.x0 + x, q.y0 + y}, {q.x1 - q.x0, q.y1 - q.y0} }, { {q.s0, q.t0}, {q.s1 - q.s0, q.t1 - q.t0} }, gfx.base0.rgb, 0.99, clip)
         }
-    
+
         y -= version.size * f32(scroll_d)
     }
 

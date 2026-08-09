@@ -147,6 +147,8 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
         // TODO(jan): Better way to skip post pass.
         if batch.pipeline.meta.name == "post" do continue
         vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, batch.pipeline.handle)
+        scissor := batch.clip.? or_else vk.Rect2D { offset = {0, 0}, extent = vulkan.swap.extent }
+        vk.CmdSetScissor(cmd, 0, 1, &scissor)
         // TODO(jan): Dynamic uniform binding.
         descriptor_set := batch.descriptor_set
         vk.CmdBindDescriptorSets(
@@ -188,6 +190,8 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
         // TODO(jan): Better way to skip non post pass.
         if batch.pipeline.meta.name != "post" do continue
         vk.CmdBindPipeline(cmd, vk.PipelineBindPoint.GRAPHICS, batch.pipeline.handle)
+        scissor := vk.Rect2D { offset = {0, 0}, extent = vulkan.swap.extent }
+        vk.CmdSetScissor(cmd, 0, 1, &scissor)
         descriptor_set := batch.descriptor_set
         vk.CmdBindDescriptorSets(
             cmd,

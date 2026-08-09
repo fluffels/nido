@@ -320,6 +320,8 @@ vulkan_pipelines_create :: proc(
             }
         }
 
+        dynamic_states := [1]vk.DynamicState { vk.DynamicState.SCISSOR }
+
         create := vk.GraphicsPipelineCreateInfo {
             sType = vk.StructureType.GRAPHICS_PIPELINE_CREATE_INFO,
             stageCount = u32(len(stages)),
@@ -408,6 +410,11 @@ vulkan_pipelines_create :: proc(
                     alphaBlendOp = vk.BlendOp.ADD,
                 },
                 blendConstants = [4]f32 {0, 0, 0, 0},
+            },
+            pDynamicState = &vk.PipelineDynamicStateCreateInfo {
+                sType = vk.StructureType.PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                dynamicStateCount = 1,
+                pDynamicStates = raw_data(dynamic_states[:]),
             },
         }
 
