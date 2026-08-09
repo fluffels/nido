@@ -34,7 +34,7 @@ POST_PASS_PIPELINE := gfx.VulkanPipelineMetadata {
     name = "post",
     modules = {
         "ndc_xyz_uv",
-        "lens_filter",
+        "sampler",
     },
 }
 

@@ -182,10 +182,12 @@ draw_frame :: proc (state: ^Simple2DBackEnd, request: back_end.DrawFrame) {
         )
         // NOTE(jan): Bind textures.
         // TODO(jan): Some way to specify this binding.
+        // NOTE(jan): binding=1 to match sampler.frag - other post-process
+        // shaders (lens_filter/grayscale/invert/contrast) use binding=0.
         gfx.vulkan_descriptor_update_combined_image_sampler(
             vulkan,
             batch.pipeline.descriptor_sets[image_index][0],
-            0,
+            1,
             []gfx.VulkanImage { state.main_pass.images[image_index] },
             state.sampler,
         )
